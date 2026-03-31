@@ -80,6 +80,7 @@ input, textarea {user-select:text;-webkit-user-select:text}
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 600; color: var(--tx);
   cursor: grab; user-select: none; pointer-events: auto;
+  z-index: 11;
 }
 .group-title:active { cursor: grabbing; }
 .group-resizer {
@@ -99,6 +100,11 @@ input, textarea {user-select:text;-webkit-user-select:text}
   z-index: 20; box-shadow: 0 1px 5px rgba(0,0,0,0.15); pointer-events: auto;
 }
 .group-box.selected .group-np, .group-box.hovered .group-np { opacity: 1; }
+.group-frame-sensor { position: absolute; pointer-events: auto; z-index: 10; }
+.group-frame-sensor.top { top: -8px; left: -8px; right: -8px; height: 16px; }
+.group-frame-sensor.bottom { bottom: -8px; left: -8px; right: -8px; height: 16px; }
+.group-frame-sensor.left { top: -8px; left: -8px; bottom: -8px; width: 16px; }
+.group-frame-sensor.right { top: -8px; right: -8px; bottom: -8px; width: 16px; }
 .group-np:hover, .group-np:active { background: var(--ac); color: #fff; border-color: var(--ac); }
 .group-np.top { top: -10px; left: 50%; transform: translateX(-50%); }
 .group-np.bottom { bottom: -10px; left: 50%; transform: translateX(-50%); }
@@ -1572,16 +1578,9 @@ function addExpandCircle(grp,ex,fromId,eid){
   const r=11;
 
   // Stub line from exit point to button center
-  const stub=mkSVG('path');
-  const sh = e.shape || gls;
-  let d = `M${ex.x} ${ex.y} L${cx} ${cy}`;
-  if (sh !== 'straight' || (e.cp1x != null)) {
-    const cpx = (e.cp1x != null) ? (ex.x + (e.cp1x - ex.x) * 0.3) : ex.x; // scale CP for partial curve
-    const cpy = (e.cp1y != null) ? (ex.y + (e.cp1y - ex.y) * 0.3) : ex.y;
-    d = `M${ex.x} ${ex.y} Q ${cpx} ${cpy} ${cx} ${cy}`;
-  }
-  stub.setAttribute('d', d);
-  stub.setAttribute('fill','none');
+  const stub=mkSVG('line');
+  stub.setAttribute('x1',ex.x);stub.setAttribute('y1',ex.y);
+  stub.setAttribute('x2',cx);stub.setAttribute('y2',cy);
   stub.setAttribute('stroke',clr);stub.setAttribute('stroke-width','1.5');
   stub.setAttribute('stroke-dasharray','4,3');stub.style.pointerEvents='none';
   grp.appendChild(stub);
@@ -1610,7 +1609,7 @@ function addExpandCircle(grp,ex,fromId,eid){
   hitA.addEventListener('mouseenter',()=>{
     previewGrp=mkSVG('g');previewGrp.style.opacity='0.35';previewGrp.style.pointerEvents='none';
     e.collapsed=false;
-    renderBranchPreview(e.to,previewGrp,{x:cx,y:cy});
+    renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
     e.collapsed=true;
     svgl.insertBefore(previewGrp,glLink);
   });
@@ -1623,30 +1622,19 @@ function addExpandCircle(grp,ex,fromId,eid){
 
 // Render a ghost preview of a branch into an SVG group (no interaction, just visual)
 // Draws the root node of the branch plus all descendants
-function renderBranchPreview(rootId,g,fromPt){
+function renderBranchPreview(rootId,g,fromPt,initialEdge){
   const rootN=gN(rootId);
   const lineElems=[];  // collect lines
   const nodeElems=[];  // collect node boxes + labels
 
   // Stub line from button to root node
   if(fromPt&&rootN){
-    const inE = edges.find(ee => ee.to === rootId && !ee.isLink);
-    const clr = (inE && inE.color) || LCOLS[0];
-    const sh = (inE && inE.shape) || gls;
+    const d=initialEdge?mkPathD(initialEdge):`M${fromPt.x},${fromPt.y}L${rootN.x},${rootN.y}`;
     const stub=mkSVG('path');
-    let d = `M${fromPt.x} ${fromPt.y} L${rootN.x} ${rootN.y}`;
-    
-    if (inE && (sh !== 'straight' || inE.cp1x != null)) {
-       const cp1x = inE.cp1x ?? fromPt.x;
-       const cp1y = inE.cp1y ?? fromPt.y;
-       const cp2x = inE.cp2x ?? rootN.x;
-       const cp2y = inE.cp2y ?? rootN.y;
-       d = `M${fromPt.x},${fromPt.y} C${cp1x},${cp1y} ${cp2x},${cp2y} ${rootN.x},${rootN.y}`;
-    }
-    
-    stub.setAttribute('d', d);
-    stub.setAttribute('fill','none');
-    stub.setAttribute('stroke',clr);stub.setAttribute('stroke-width','1.5');
+    stub.setAttribute('d',d);
+    stub.setAttribute('fill', 'none');
+    stub.setAttribute('stroke', (initialEdge&&initialEdge.color)||LCOLS[0]);
+    stub.setAttribute('stroke-width','1.5');
     stub.style.pointerEvents='none';lineElems.push(stub);
   }
 
@@ -1738,8 +1726,9 @@ function render(){
         if (sh === 'bezier' || sh === 'straight') {
           const cp = getCP(e);
           const cp1x=cp.cp1x, cp1y=cp.cp1y, cp2x=cp.cp2x, cp2y=cp.cp2y;
+          const {fx, fy, tx, ty} = getEdgePts(e);
           const arm=(x1,y1,x2,y2)=>{const a=mkSVG('line');a.setAttribute('class','bz-arm');a.setAttribute('x1',x1);a.setAttribute('y1',y1);a.setAttribute('x2',x2);a.setAttribute('y2',y2);return a};
-          grp.appendChild(arm(f.x,f.y,cp1x,cp1y));grp.appendChild(arm(t.x,t.y,cp2x,cp2y));
+          grp.appendChild(arm(fx,fy,cp1x,cp1y));grp.appendChild(arm(tx,ty,cp2x,cp2y));
           [[cp1x,cp1y,'1'],[cp2x,cp2y,'2']].forEach(([cx,cy,cp])=>{
             const h=mkSVG('circle');h.setAttribute('class','bz-handle');h.setAttribute('r','8');
             h.setAttribute('cx',cx);h.setAttribute('cy',cy);h.dataset.eid=e.id;h.dataset.cp=cp;grp.appendChild(h);
@@ -1789,7 +1778,10 @@ function render(){
     const title=document.createElement('div');
     title.className='group-title';
     title.textContent=n.label;
-    title.addEventListener('mousedown',ev=>{if(ev.button!==0)return;ev.stopPropagation();onNodeMD(ev,n.id)});
+    title.addEventListener('mousedown',ev=>{
+      if(ev.button!==0 && ev.button!==1) return;
+      ev.stopPropagation(); onNodeMD(ev,n.id);
+    });
     title.addEventListener('touchstart',ev=>{ev.stopPropagation();onNdTS(ev,n.id)},{passive:false});
     title.addEventListener('touchmove',ev=>{onNdTM(ev,n.id)},{passive:false});
     title.addEventListener('touchend',ev=>{onNdTE(ev,n.id)});
@@ -1798,7 +1790,16 @@ function render(){
       ev.preventDefault();ev.stopPropagation();
       showGroupCtx(ev.clientX,ev.clientY,n.id);
     });
-    // Show plus buttons on hover (since group-box has pointer-events:none)
+    // Sensors for border hover (+ buttons)
+    ['top','bottom','left','right'].forEach(pos => {
+      const sensor = document.createElement('div');
+      sensor.className = 'group-frame-sensor ' + pos;
+      sensor.addEventListener('mouseenter',()=>div.classList.add('hovered'));
+      sensor.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
+      div.appendChild(sensor);
+    });
+
+    // Show plus buttons on hover via title too
     title.addEventListener('mouseenter',()=>div.classList.add('hovered'));
     title.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
     
@@ -1817,6 +1818,8 @@ function render(){
     
     ['top','bottom','left','right'].forEach(pos=>{
       const np=document.createElement('div');np.className='np group-np '+pos;np.textContent='+';
+      np.addEventListener('mouseenter',()=>div.classList.add('hovered'));
+      np.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
       np.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,np,pos)});
       div.appendChild(np);
     });
@@ -1930,7 +1933,8 @@ function renderEdgesOnly(){
         if (sh === 'bezier' || sh === 'straight') {
           const cp = getCP(e);
           const cp1x=cp.cp1x, cp1y=cp.cp1y, cp2x=cp.cp2x, cp2y=cp.cp2y;
-          [[f.x,f.y,cp1x,cp1y],[t.x,t.y,cp2x,cp2y]].forEach(([x1,y1,x2,y2])=>{const a=mkSVG('line');a.setAttribute('class','bz-arm');a.setAttribute('x1',x1);a.setAttribute('y1',y1);a.setAttribute('x2',x2);a.setAttribute('y2',y2);grp.appendChild(a)});
+          const {fx, fy, tx, ty} = getEdgePts(e);
+          [[fx,fy,cp1x,cp1y],[tx,ty,cp2x,cp2y]].forEach(([x1,y1,x2,y2])=>{const a=mkSVG('line');a.setAttribute('class','bz-arm');a.setAttribute('x1',x1);a.setAttribute('y1',y1);a.setAttribute('x2',x2);a.setAttribute('y2',y2);grp.appendChild(a)});
           [[cp1x,cp1y,'1'],[cp2x,cp2y,'2']].forEach(([cx,cy,cp])=>{const h=mkSVG('circle');h.setAttribute('class','bz-handle');h.setAttribute('r','8');h.setAttribute('cx',cx);h.setAttribute('cy',cy);h.dataset.eid=e.id;h.dataset.cp=cp;grp.appendChild(h)});
         }
       }
@@ -2266,6 +2270,13 @@ function findNodeAt(sx,sy,excludeId){
   
   for(const n of nodes) {
     if(n.id === excludeId) continue;
+    // skip group if dragged node is geometrically inside it
+    if(n.type === 'group' && excludeId != null) {
+      const exN = gN(excludeId);
+      if(exN && exN.x >= n.x - n.width/2 && exN.x <= n.x + n.width/2 && exN.y >= n.y - n.height/2 && exN.y <= n.y + n.height/2) {
+        continue;
+      }
+    }
     const {hw, hh} = nodeHalfExtents(n.id);
     if(Math.abs(p.x - n.x) <= hw && Math.abs(p.y - n.y) <= hh) {
       if(n.type === 'group') insideGroup = n.id;
@@ -2276,9 +2287,14 @@ function findNodeAt(sx,sy,excludeId){
   if(insideNode) return insideNode;
   if(insideGroup) return insideGroup;
   
-  const MAX_DIST = 15*15;
+  // Snap radius: 0 for mouse/desktop, small for touch
+  const MAX_DIST = isMob() ? (24*24) : 0;
   for(const n of nodes) {
     if(n.id === excludeId) continue;
+    if(n.type === 'group' && excludeId != null) {
+      const exN = gN(excludeId);
+      if(exN && exN.x >= n.x - n.width/2 && exN.x <= n.x + n.width/2 && exN.y >= n.y - n.height/2 && exN.y <= n.y + n.height/2) continue;
+    }
     const {hw, hh} = nodeHalfExtents(n.id);
     const dx = Math.max(Math.abs(n.x - p.x) - hw, 0);
     const dy = Math.max(Math.abs(n.y - p.y) - hh, 0);
@@ -2334,17 +2350,21 @@ function onNodeMD(ev,id){
 
   ms.dragging=true;
   ms.dragId=id;
+  ms.dragButton = ev.button; // Capture if it's middle-click or something else
   const rc=wrap.getBoundingClientRect();
   const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
   
   ms.dragOffsets = [];
   
+  // Independent group dragging: if it's middle-click or Ctrl-click, only move the box
+  const moveOnlyFrame = (ev.button === 1) || (ev.ctrlKey && !selNSet.has(id));
+
   const addNodeToDrag = (nid) => {
     if(!ms.dragOffsets.find(d=>d.id===nid)) {
       const n = gN(nid);
       if(n && !n.locked) {
         ms.dragOffsets.push({ id: nid, ox: p.x - n.x, oy: p.y - n.y });
-        if(n.type === 'group') {
+        if(n.type === 'group' && !moveOnlyFrame) {
           // Find all nodes inside this group
           nodes.forEach(child => {
             if(child.id !== nid && !child.locked && child.x >= n.x - n.width/2 && child.x <= n.x + n.width/2 && child.y >= n.y - n.height/2 && child.y <= n.y + n.height/2) {
