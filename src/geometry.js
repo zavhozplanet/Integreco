@@ -736,7 +736,7 @@ function render(){
       });
     }
     div.appendChild(ni);
-    div.addEventListener('mousedown',ev=>{if(ev.button!==0)return;ev.stopPropagation();onNodeMD(ev,n.id)});
+    div.addEventListener('mousedown',ev=>{if(ev.button!==0 && ev.button!==1)return;ev.stopPropagation();onNodeMD(ev,n.id)});
     div.addEventListener('contextmenu',ev=>{
       ev.preventDefault();ev.stopPropagation();
       if(selNSet.has(n.id) && selNSet.size > 1) {

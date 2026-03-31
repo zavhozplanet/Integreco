@@ -245,7 +245,7 @@ window.addEventListener('mouseup',ev=>{
     bzDrag={active:false};return;
   }
   if(ms.dragging&&ms.drgd){sh();render();}  // save history + re-render once on drop
-  else if(ms.dragging && !ms.drgd && selNSet.has(ms.dragId) && !(ev.ctrlKey || ev.metaKey)) {
+  else if(ms.dragging && !ms.drgd && selNSet.has(ms.dragId) && !(ev.ctrlKey || ev.metaKey || ev.button === 1)) {
     selNode(ms.dragId);
   }
   ms.dragging=false;ms.panning=false;ms.drgd=false;

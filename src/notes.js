@@ -44,23 +44,26 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     document.getElementById('n-del-btn').style.display = 'flex';
   }
   
+  const isLabelEmpty = !n.label || String(n.label).trim() === '' || n.label === '+';
+  const isNoteEmpty = !n.note || String(n.note).trim() === '';
+
   if (fromTrashIndex === null && mode === 'auto') {
-    if (!n.label) mode = 'edit';
-    else if (!n.note) mode = 'edit';
+    if (isLabelEmpty) mode = 'edit';
+    else if (isNoteEmpty) mode = 'edit';
     else mode = 'view';
   }
 
-  titleInput.value=n.label||'';
-  areaInput.value=n.note||'';
-  noteTab(mode);
+  titleInput.value = n.label === '+' ? '' : (n.label || '');
+  areaInput.value = n.note || '';
+  noteTab(mode, false); // pass false so noteTab doesn't instantly focus narea
   document.getElementById('nmod').classList.add('show');
   
   setTimeout(()=>{
     if(mode==='edit') {
-      if(!n.label) titleInput.focus();
+      if(isLabelEmpty) titleInput.focus();
       else areaInput.focus();
     } else {
-      if(!n.label) titleInput.focus();
+      if(isLabelEmpty) titleInput.focus();
     }
   }, 200);
 }
@@ -88,7 +91,7 @@ function closeNoteAndOpenTrash() {
   closeNote();
   openTrash();
 }
-function noteTab(mode){
+function noteTab(mode, autoFocus=true){
   if(mode==='view'){
     const txt=document.getElementById('narea').value;
     document.getElementById('nrendered').innerHTML=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(https?:\/\/[^\s<>"]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
@@ -97,7 +100,7 @@ function noteTab(mode){
   } else {
     document.getElementById('narea').style.display='block';document.getElementById('nrendered').style.display='none';
     document.getElementById('ntab-e').classList.add('on');document.getElementById('ntab-v').classList.remove('on');
-    document.getElementById('narea').focus();
+    if(autoFocus) document.getElementById('narea').focus();
   }
 }
 function toggleNBurger(ev){
