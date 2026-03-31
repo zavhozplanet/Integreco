@@ -124,13 +124,13 @@
 <!-- burger menu -->
 <div id="mmenu">
   <div class="mi" id="mi-share"><span class="mic">🔗</span></div>
-  <div class="mi" id="mi-dl" onclick="toggleExportSub()"><span class="mic">⬇</span></div>
+  <div class="mi" id="mi-dl" onclick="toggleExportSub(event)"><span class="mic">⬇</span></div>
   <div id="export-sub">
-    <div class="esi" onclick="exportFmt('jsonld')">JSON-LD</div>
-    <div class="esi" onclick="exportFmt('md')">MD</div>
-    <div class="esi" onclick="exportFmt('png')">PNG</div>
+    <div class="esi" onclick="exportData()">💾 Сохранить в память</div>
+    <div class="esi" onclick="exportFmt('jsonld')">👁️🧠 JSON-LD</div>
+    <div class="esi" onclick="exportFmt('md')">📄 MD</div>
+    <div class="esi" onclick="exportFmt('png')">🖼️ PNG</div>
   </div>
-  <div class="mi" id="mi-export" onclick="exportData()"><span class="mic">💾</span></div>
   <div class="mi" id="mi-import" onclick="document.getElementById('import-file').click()"><span class="mic">📂</span></div>
   <input type="file" id="import-file" style="display:none" onchange="importData(this)">
   <div class="mi" id="mi-newtab" onclick="newTab()"><span class="mic">➕</span></div>

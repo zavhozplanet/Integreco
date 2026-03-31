@@ -7,7 +7,7 @@ function toggleMenu(ev){
   if(isOpening) hideAllMenus();
   mmenu.classList.toggle('show');
 }
-function toggleExportSub(){document.getElementById('export-sub').classList.toggle('open')}
+function toggleExportSub(ev){if(ev)ev.stopPropagation();document.getElementById('export-sub').classList.toggle('open')}
 
 document.getElementById('mi-share').onclick=()=>{
   const url=window.location.href;

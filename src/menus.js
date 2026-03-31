@@ -14,6 +14,17 @@ function buildCtxRow(items){
   });
 }
 
+function posMenu(m, cx, cy) {
+  const mw = m.offsetWidth || 220;
+  const mh = m.offsetHeight || 300;
+  let x = cx, y = cy;
+  if (x + mw > window.innerWidth) x = window.innerWidth - mw - 10;
+  if (y + mh > window.innerHeight) y = Math.max(10, window.innerHeight - mh - 10);
+  if (x < 0) x = 10;
+  m.style.left = x + 'px';
+  m.style.top = y + 'px';
+}
+
 function showMultiCtx(cx, cy) {
   hideAllMenus();
   const allLocked = [...selNSet].every(id => gN(id)?.locked);
@@ -32,9 +43,7 @@ function showMultiCtx(cx, cy) {
     {icon:'🗑',title:'🗑️',danger:true,action:()=>{hideCtxMenu();ctxExecMulti('delete')}}
   ]);
   ctxMenu.style.display='flex';
-  const pw=220,ph=260;
-  ctxMenu.style.left=Math.min(cx,window.innerWidth-pw)+'px';
-  ctxMenu.style.top=Math.min(cy,window.innerHeight-ph)+'px';
+  posMenu(ctxMenu, cx, cy);
 }
 
 function getSelectionData() {
@@ -179,9 +188,7 @@ function showNodeCtx(cx,cy,id){
   
   buildCtxRow(rows);
   ctxMenu.style.display='flex';
-  const pw=220,ph=260;
-  ctxMenu.style.left=Math.min(cx,window.innerWidth-pw)+'px';
-  ctxMenu.style.top=Math.min(cy,window.innerHeight-ph)+'px';
+  posMenu(ctxMenu, cx, cy);
 }
 
 function showGroupCtx(cx,cy,id){
@@ -206,9 +213,7 @@ function showGroupCtx(cx,cy,id){
   
   buildCtxRow(rows);
   ctxMenu.style.display='flex';
-  const pw=220,ph=260;
-  ctxMenu.style.left=Math.min(cx,window.innerWidth-pw)+'px';
-  ctxMenu.style.top=Math.min(cy,window.innerHeight-ph)+'px';
+  posMenu(ctxMenu, cx, cy);
 }
 
 function showGroupBgCtx(cx,cy,id){
@@ -315,6 +320,18 @@ function applyBg(groupId=null){
   } else {
     base.style.backgroundColor = bg.color;
     base.style.backgroundImage = 'none';
+  }
+
+  if(!groupId){
+    const actualColor = isPaper ? '#f4e4bc' : bg.color;
+    const lum = getLuminance(actualColor);
+    if(lum < 0.3){
+      document.body.style.setProperty('--sel-color', '#fff');
+      document.body.style.setProperty('--sel-shadow', 'rgba(255,255,255,0.4)');
+    } else {
+      document.body.style.removeProperty('--sel-color');
+      document.body.style.removeProperty('--sel-shadow');
+    }
   }
 
   // 2. Photo Layer
@@ -482,8 +499,7 @@ function renderCanvCtx(){
 function showCanvCtx(cx,cy){
   hideAllMenus();
   canvCtx.style.display='block';
-  canvCtx.style.left=Math.min(cx,window.innerWidth-230)+'px';
-  canvCtx.style.top=Math.min(cy,window.innerHeight-550)+'px';
+  posMenu(canvCtx, cx, cy);
   canvCtx._cx=cx;canvCtx._cy=cy;
   renderCanvCtx();
 }

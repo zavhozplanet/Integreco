@@ -10,15 +10,13 @@ function onNodeMD(ev,id){
   // double-click on node body → open note
   if(ms.lastId===id&&now-ms.lastT<350&&!ms.drgd){
     ms={};
-    const n = gN(id);
-    if(n.type === 'note' || n.note) openNote(id, 'view');
-    else openNote(id, 'edit');
+    openNote(id, 'auto');
     return;
   }
   ms.lastId=id;ms.lastT=now;ms.drgd=false;
   if(linkMode){handleLinkClick(id);return}
 
-  if(ev.ctrlKey || ev.metaKey) {
+  if(ev.ctrlKey || ev.metaKey || ev.button === 1) {
     if(selNSet.has(id)) {
       selNSet.delete(id);
       if(selNSet.size===1) { selN=[...selNSet][0]; selNSet.clear(); }
@@ -294,7 +292,10 @@ svgl.addEventListener('contextmenu',ev=>{
     selEdge(eid,ev.clientX,ev.clientY,false);  // false = no handles on RMB
   }
 });
-window.addEventListener('contextmenu',ev=>ev.preventDefault());
+window.addEventListener('contextmenu',ev=>{
+  if(ev.target.isContentEditable||['INPUT','TEXTAREA'].includes(ev.target.tagName))return;
+  ev.preventDefault();
+});
 
 window.addEventListener('keydown',ev=>{
   if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;

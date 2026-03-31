@@ -44,11 +44,25 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     document.getElementById('n-del-btn').style.display = 'flex';
   }
   
+  if (fromTrashIndex === null && mode === 'auto') {
+    if (!n.label) mode = 'edit';
+    else if (!n.note) mode = 'edit';
+    else mode = 'view';
+  }
+
   titleInput.value=n.label||'';
   areaInput.value=n.note||'';
   noteTab(mode);
   document.getElementById('nmod').classList.add('show');
-  if(mode==='edit') setTimeout(()=>areaInput.focus(),200);
+  
+  setTimeout(()=>{
+    if(mode==='edit') {
+      if(!n.label) titleInput.focus();
+      else areaInput.focus();
+    } else {
+      if(!n.label) titleInput.focus();
+    }
+  }, 200);
 }
 function closeNote(){
   if(noteNodeId) {
