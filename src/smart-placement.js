@@ -47,36 +47,74 @@ function alignGroupNodes(gId) {
   const g = gN(gId);
   if (!g || g.type !== 'group') return;
   const inGroup = nodes.filter(n => 
-    n.type !== 'group' && 
-    n.x >= g.x - g.width/2 && n.x <= g.x + g.width/2 && 
-    n.y >= g.y - g.height/2 && n.y <= g.y + g.height/2
+    n.type !== 'group' && isVisible(n.id) &&
+    n.x >= g.x - g.width / 2 && n.x <= g.x + g.width / 2 && 
+    n.y >= g.y - g.height / 2 && n.y <= g.y + g.height / 2
   );
   if (inGroup.length === 0) return;
 
   sh();
-  // Sort by Y then X to keep natural flow
-  inGroup.sort((a, b) => (a.y - b.y) || (a.x - b.x));
-
-  const count = inGroup.length;
-  const cols = Math.ceil(Math.sqrt(count));
-  const rows = Math.ceil(count / cols);
-
-  const pad = 40;
-  const availW = g.width - pad * 2;
-  const availH = g.height - pad * 2;
   
-  const dx = cols > 1 ? availW / (cols - 1) : 0;
-  const dy = rows > 1 ? availH / (rows - 1) : 0;
+  // Title height is ~28px. We need some padding.
+  const titleH = 35;
+  const margin = 15;
 
-  const startX = g.x - g.width/2 + pad;
-  const startY = g.y - g.height/2 + pad;
-
-  inGroup.forEach((n, i) => {
-    const r = Math.floor(i / cols);
-    const c = i % cols;
-    n.x = startX + c * dx + (cols === 1 ? availW/2 : 0);
-    n.y = startY + r * dy + (rows === 1 ? availH/2 : 0);
+  // Find max dimensions to avoid overflow
+  let maxW = 0, maxH = 0;
+  inGroup.forEach(n => {
+    const {hw, hh} = nodeHalfExtents(n.id);
+    if (hw > maxW) maxW = hw;
+    if (hh > maxH) maxH = hh;
   });
+
+  const minX = g.x - g.width / 2 + maxW + margin;
+  const maxX = g.x + g.width / 2 - maxW - margin;
+  const minY = g.y - g.height / 2 + titleH + maxH + margin;
+  const maxY = g.y + g.height / 2 - maxH - margin;
+
+  const distribute = (targetNodes, axis, min, max) => {
+    if (targetNodes.length === 1) {
+      targetNodes[0][axis] = (min + max) / 2;
+      return;
+    }
+    // Sort original values
+    const sorted = targetNodes.map(n => n[axis]).sort((a, b) => a - b);
+    // Find unique "lanes" with tolerance (so near-aligned nodes stay aligned)
+    const unique = [];
+    if (sorted.length > 0) {
+      unique.push(sorted[0]);
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] - unique[unique.length - 1] > 30) { 
+          unique.push(sorted[i]);
+        }
+      }
+    }
+    
+    // Distribution map: original unique value -> new distributed value
+    const map = new Map();
+    const count = unique.length;
+    // If range is inverted or too small, just center everything
+    if (max <= min || count <= 1) {
+      const center = (min + max) / 2;
+      unique.forEach(u => map.set(u, center));
+    } else {
+      const step = (max - min) / (count - 1);
+      unique.forEach((u, i) => map.set(u, min + i * step));
+    }
+    
+    targetNodes.forEach(n => {
+      let best = unique[0];
+      let mD = Math.abs(n[axis] - best);
+      for (let u of unique) {
+        let d = Math.abs(n[axis] - u);
+        if (d < mD) { mD = d; best = u; }
+      }
+      n[axis] = map.get(best);
+    });
+  };
+
+  distribute(inGroup, 'x', minX, maxX);
+  distribute(inGroup, 'y', minY, maxY);
 
   render();
 }
