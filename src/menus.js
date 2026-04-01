@@ -207,6 +207,7 @@ function showGroupCtx(cx,cy,id){
     {icon:'<div class="cdm-preview group"></div>',title:'Группа',action:()=>{hideCtxMenu();addToGroup()}},
     {icon:'⬆️',title:'⬆️',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.push(n);render()}}},
     {icon:'⬇️',title:'⬇️',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.unshift(n);render()}}},
+    {icon:'[ \ / ]',title:'Выровнять',action:()=>{hideCtxMenu();alignGroupNodes(id)}},
     {icon:lockIcon,title:lockIcon,action:()=>{hideCtxMenu();sh();g.locked=!g.locked;render()}},
     {icon:'🗑️',title:'🗑️',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
   ];

@@ -11,6 +11,22 @@ function s2c(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom}}
 function c2s(cx,cy){return{x:cx*zoom+panX,y:cy*zoom+panY}}
 
 function isVisible(id){
+  const n = gN(id);
+  if(n && n.type === 'group') {
+    const inGroup = nodes.filter(x => 
+      x.type !== 'group' && 
+      x.x >= n.x - n.width/2 && x.x <= n.x + n.width/2 && 
+      x.y >= n.y - n.height/2 && x.y <= n.y + n.height/2
+    );
+    if(inGroup.length > 0) {
+      const anyVisible = inGroup.some(x => isBaseVisible(x.id));
+      if(!anyVisible) return false;
+    }
+  }
+  return isBaseVisible(id);
+}
+
+function isBaseVisible(id){
   if(branchViewId){
     let c=id;for(let i=0;i<200;i++){if(c===branchViewId)return true;const p=gPar(c);if(p==null)return false;c=p}
     return false;

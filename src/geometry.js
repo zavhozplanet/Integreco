@@ -478,6 +478,7 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
   const rootN=gN(rootId);
   const lineElems=[];  // collect lines
   const nodeElems=[];  // collect node boxes + labels
+  const previewNodeIds = new Set();
 
   // Stub line from button to root node
   if(fromPt&&rootN){
@@ -492,6 +493,7 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
 
   // Root node box + label
   if(rootN){
+    previewNodeIds.add(rootId);
     const{hw,hh}=nodeHalfExtents(rootId);
     const rect=mkSVG('rect');
     rect.setAttribute('x',rootN.x-hw);rect.setAttribute('y',rootN.y-hh);
@@ -509,6 +511,7 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
   function collectNode(id){
     gCh(id).forEach(cid=>{
       const par=gN(id),chi=gN(cid);if(!par||!chi)return;
+      previewNodeIds.add(cid);
       const pe=edges.find(x=>x.from===id&&x.to===cid);
       const clr=(pe&&pe.color)||LCOLS[0];
       const d=pe?mkPathD(pe):`M${par.x},${par.y}L${chi.x},${chi.y}`;
@@ -532,7 +535,29 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
   }
   collectNode(rootId);
 
-  // Lines first, then nodes on top
+  const groupElems = [];
+  nodes.filter(n => n.type === 'group').forEach(gr => {
+    const hasAnyInPreview = Array.from(previewNodeIds).some(nid => {
+      const n = gN(nid);
+      return n.x >= gr.x - gr.width/2 && n.x <= gr.x + gr.width/2 && 
+             n.y >= gr.y - gr.height/2 && n.y <= gr.y + gr.height/2;
+    });
+    if(hasAnyInPreview) {
+      const rect = mkSVG('rect');
+      rect.setAttribute('x', gr.x - gr.width/2);
+      rect.setAttribute('y', gr.y - gr.height/2);
+      rect.setAttribute('width', gr.width);
+      rect.setAttribute('height', gr.height);
+      rect.setAttribute('fill', 'rgba(200,200,200,0.1)');
+      rect.setAttribute('stroke', '#aaa');
+      rect.setAttribute('stroke-width', '2');
+      rect.setAttribute('stroke-dasharray', '5,5');
+      groupElems.push(rect);
+    }
+  });
+
+  // Order: Groups -> Lines -> Nodes
+  groupElems.forEach(el=>g.appendChild(el));
   lineElems.forEach(el=>g.appendChild(el));
   nodeElems.forEach(el=>g.appendChild(el));
 }

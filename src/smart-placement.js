@@ -43,3 +43,41 @@ function addChild(parentId, dirHint){
   else setTimeout(()=>editNode(id,true),50);
 }
 
+function alignGroupNodes(gId) {
+  const g = gN(gId);
+  if (!g || g.type !== 'group') return;
+  const inGroup = nodes.filter(n => 
+    n.type !== 'group' && 
+    n.x >= g.x - g.width/2 && n.x <= g.x + g.width/2 && 
+    n.y >= g.y - g.height/2 && n.y <= g.y + g.height/2
+  );
+  if (inGroup.length === 0) return;
+
+  sh();
+  // Sort by Y then X to keep natural flow
+  inGroup.sort((a, b) => (a.y - b.y) || (a.x - b.x));
+
+  const count = inGroup.length;
+  const cols = Math.ceil(Math.sqrt(count));
+  const rows = Math.ceil(count / cols);
+
+  const pad = 40;
+  const availW = g.width - pad * 2;
+  const availH = g.height - pad * 2;
+  
+  const dx = cols > 1 ? availW / (cols - 1) : 0;
+  const dy = rows > 1 ? availH / (rows - 1) : 0;
+
+  const startX = g.x - g.width/2 + pad;
+  const startY = g.y - g.height/2 + pad;
+
+  inGroup.forEach((n, i) => {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    n.x = startX + c * dx + (cols === 1 ? availW/2 : 0);
+    n.y = startY + r * dy + (rows === 1 ? availH/2 : 0);
+  });
+
+  render();
+}
+
