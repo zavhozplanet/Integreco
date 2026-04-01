@@ -29,3 +29,24 @@ function toast(msg,duration=2000){
   clearTimeout(t._t);t._t=setTimeout(()=>{t.style.display='none'},duration);
 }
 
+function pruneGroupEdges() {
+  let toRemove = [];
+  edges.forEach(e => {
+    const fn = gN(e.from), tn = gN(e.to);
+    if (!fn || !tn) return;
+    if (fn.type === 'group' && tn.type !== 'group') {
+      const hw = (fn.width || 300)/2, hh = (fn.height || 200)/2;
+      if (tn.x >= fn.x - hw && tn.x <= fn.x + hw && tn.y >= fn.y - hh && tn.y <= fn.y + hh)
+        toRemove.push(e.id);
+    } else if (tn.type === 'group' && fn.type !== 'group') {
+      const hw = (tn.width || 300)/2, hh = (tn.height || 200)/2;
+      if (fn.x >= tn.x - hw && fn.x <= tn.x + hw && fn.y >= tn.y - hh && fn.y <= tn.y + hh)
+        toRemove.push(e.id);
+    }
+  });
+  if (toRemove.length > 0) {
+    edges = edges.filter(e => !toRemove.includes(e.id));
+    if (selE && toRemove.includes(selE)) selE = null;
+  }
+}
+
