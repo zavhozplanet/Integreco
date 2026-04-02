@@ -612,15 +612,22 @@ function render(){
           });
         }
       }
-      // Hover: delayed removal so button stays visible when mouse moves onto it
+      // Hover: delayed removal so endpoints stay clickable
       let hoverTid=null;
-      const showH=()=>{
-        clearTimeout(hoverTid);
-        grp.classList.add('hovered');
-      };
-      const hideH=()=>{hoverTid=setTimeout(()=>grp.classList.remove('hovered'),80)};
+      const showH=()=>{clearTimeout(hoverTid);grp.classList.add('hovered')};
+      const hideH=()=>{hoverTid=setTimeout(()=>grp.classList.remove('hovered'),200)};
       hit.addEventListener('mouseenter',showH);
       hit.addEventListener('mouseleave',hideH);
+      // Endpoint grab circles — for edge reconnection
+      const {fx:efx, fy:efy, tx:etx, ty:ety} = getEdgePts(e);
+      [['from',efx,efy],['to',etx,ety]].forEach(([which,cx,cy])=>{
+        const epc=mkSVG('circle');epc.setAttribute('class','edge-endpoint');
+        epc.setAttribute('cx',cx);epc.setAttribute('cy',cy);epc.setAttribute('r','5');
+        epc.dataset.eid=e.id;epc.dataset.which=which;
+        epc.addEventListener('mouseenter',showH);
+        epc.addEventListener('mouseleave',hideH);
+        grp.appendChild(epc);
+      });
       grp._showH=showH;grp._hideH=hideH;
     }
     if(e.dash!=='link'){
@@ -802,9 +809,8 @@ function renderEdgesOnly(){
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
       let hoverTid=null;
       const showH=()=>{clearTimeout(hoverTid);grp.classList.add('hovered')};
-      const hideH=()=>{hoverTid=setTimeout(()=>grp.classList.remove('hovered'),80)};
+      const hideH=()=>{hoverTid=setTimeout(()=>grp.classList.remove('hovered'),200)};
       hit.addEventListener('mouseenter',showH);hit.addEventListener('mouseleave',hideH);
-      grp._showH=showH;grp._hideH=hideH;
       if(isSel&&selEHandles){
         const sh = e.shape || gls;
         if (sh === 'bezier' || sh === 'straight') {
@@ -815,6 +821,17 @@ function renderEdgesOnly(){
           [[cp1x,cp1y,'1'],[cp2x,cp2y,'2']].forEach(([cx,cy,cp])=>{const h=mkSVG('circle');h.setAttribute('class','bz-handle');h.setAttribute('r','8');h.setAttribute('cx',cx);h.setAttribute('cy',cy);h.dataset.eid=e.id;h.dataset.cp=cp;grp.appendChild(h)});
         }
       }
+      // Endpoint circles for reconnection drag
+      const {fx:efx, fy:efy, tx:etx, ty:ety} = getEdgePts(e);
+      [['from',efx,efy],['to',etx,ety]].forEach(([which,cx,cy])=>{
+        const epc=mkSVG('circle');epc.setAttribute('class','edge-endpoint');
+        epc.setAttribute('cx',cx);epc.setAttribute('cy',cy);epc.setAttribute('r','5');
+        epc.dataset.eid=e.id;epc.dataset.which=which;
+        epc.addEventListener('mouseenter',showH);
+        epc.addEventListener('mouseleave',hideH);
+        grp.appendChild(epc);
+      });
+      grp._showH=showH;grp._hideH=hideH;
     }
     // Collapse/expand buttons update with curve
     if(e.dash!=='link'){

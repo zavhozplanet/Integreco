@@ -105,3 +105,42 @@ function delBranch(id, skipTrash=false){
   selN=null;render();
 }
 
+// Insert a new node at the midpoint of an edge (via LP button)
+function insertNodeOnEdge(edgeId){
+  const e=gE(edgeId);if(!e)return;
+  const mid=edgePt(e,0.5);
+  sh();
+  const newId=++idC;
+  const node={id:newId,x:mid.x,y:mid.y,label:'+',col:false,note:'',type:'node',locked:false};
+  nodes.push(node);
+  // New edges: keep style of original
+  const e1={...e,id:++idC,to:newId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  const e2={...e,id:++idC,from:newId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  edges=edges.filter(x=>x.id!==edgeId);
+  edges.push(e1,e2);
+  selE=null;selN=newId;
+  render();
+  if(isMob())showMobRename(newId,true);
+  else setTimeout(()=>editNode(newId,true),50);
+}
+
+// Insert an existing node between the two endpoints of an edge (drag-to-line)
+function insertNodeBetween(edgeId, nodeId){
+  const e=gE(edgeId);if(!e)return;
+  // Don't insert if the node is already an endpoint
+  if(e.from===nodeId||e.to===nodeId)return;
+  sh();
+  // Remove the existing edge; add two new ones: from→node, node→to
+  const fromId=e.from, toId=e.to;
+  const e1={...e,id:++idC,to:nodeId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  const e2={...e,id:++idC,from:nodeId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  // Remove existing edge from/to this node to avoid loops
+  edges=edges.filter(x=>x.id!==edgeId);
+  // Also remove existing parent edge of nodeId (so it gets re-rooted here)
+  edges=edges.filter(x=>!(x.to===nodeId&&!x.isLink));
+  edges.push(e1,e2);
+  pruneGroupEdges();
+  render();
+  toast('\u2295 Узел встроен в линию');
+}
+

@@ -115,6 +115,8 @@ input, textarea {user-select:text;-webkit-user-select:text}
 .selected .ni{border-color:var(--sel-color, var(--ac))!important;box-shadow:0 0 0 3px var(--sel-shadow, rgba(74,124,247,.18)),var(--sh)!important}
 .link-target .ni{border-color:var(--grn)!important;box-shadow:0 0 0 3px rgba(67,195,122,.25),var(--sh)!important}
 .branch-root .ni{border-color:#f5a623!important;box-shadow:0 0 0 2px rgba(245,166,35,.3),var(--sh)!important}
+/* Highlight when an edge endpoint is dragged over this node */
+.ep-target .ni{border-color:var(--ac)!important;box-shadow:0 0 0 4px rgba(74,124,247,.3),var(--sh)!important;transform:scale(1.07)}
 
 /* plus buttons on node edges */
 .np{position:absolute;width:22px;height:22px;border-radius:50%;
@@ -166,8 +168,18 @@ input, textarea {user-select:text;-webkit-user-select:text}
 .ep.dashed{stroke-dasharray:6,4}
 .ep.dotted{stroke-dasharray:2,4}
 .ep.link{stroke-dasharray:7,5;opacity:.8}
-.ehit{fill:none;stroke:transparent;stroke-width:9;cursor:pointer;pointer-events:stroke}
+/* Larger hit area for easier clicking */
+.ehit{fill:none;stroke:transparent;stroke-width:18;cursor:pointer;pointer-events:stroke}
 .ep.sel-e{stroke:var(--sel-color, var(--ac))!important}
+/* Hover highlight — thicken line when hovered */
+.edge-group.hovered .ep:not(.sel-e){stroke-width:2.5!important}
+/* Endpoint grab circles — always lightly visible, bright on hover */
+.edge-endpoint{fill:#fff;stroke:var(--ac);stroke-width:1.5;cursor:crosshair;
+  pointer-events:all;opacity:0;transition:opacity .12s;filter:drop-shadow(0 1px 2px rgba(0,0,0,.18))}
+.edge-group.hovered .edge-endpoint{opacity:1}
+.edge-endpoint.dragging{opacity:1;fill:var(--ac)}
+/* Drop target when dragging a node over a line */
+.edge-group.drop-target .ep{stroke-width:4!important;filter:drop-shadow(0 0 6px rgba(74,124,247,.5))}
 .bz-handle{cursor:grab;fill:#fff;stroke:var(--sel-color, var(--ac));stroke-width:1.5;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.18));pointer-events:all}
 .bz-handle:active{cursor:grabbing;fill:var(--sel-color, var(--ac))}

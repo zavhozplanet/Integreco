@@ -3,6 +3,7 @@
 ================================================================ */
 let ms={};   // mouse state
 let bzDrag={active:false};
+let epDrag={active:false}; // edge endpoint reconnection drag
 
 function onNodeMD(ev,id){
   ev.stopPropagation();hideAllMenus();hideCanvDblMenu();
@@ -72,6 +73,19 @@ function onNodeMD(ev,id){
 
 svgl.addEventListener('mousedown',ev=>{
   if(ev.button===2)return; // rightclick handled by contextmenu event
+  // Edge endpoint drag: reconnect
+  if(ev.target.classList.contains('edge-endpoint')){
+    ev.preventDefault();ev.stopPropagation();
+    const eid=parseInt(ev.target.dataset.eid);
+    const which=ev.target.dataset.which; // 'from' or 'to'
+    const e=gE(eid);if(!e)return;
+    const rc=wrap.getBoundingClientRect();
+    const fixedId=which==='from'?e.to:e.from;
+    const fixedN=gN(fixedId);
+    epDrag={active:true,eid,which,fixedX:fixedN.x,fixedY:fixedN.y};
+    ev.target.classList.add('dragging');
+    return;
+  }
   if(ev.target.classList.contains('bz-handle')){
     ev.preventDefault();ev.stopPropagation();
     bzDrag={active:true,eid:ev.target.dataset.eid,cp:ev.target.dataset.cp};return;
@@ -137,6 +151,20 @@ window.addEventListener('mousemove',ev=>{
   if(groupResize.active){updateGroupResize(ev);return}
   if(ms.drgCreate){updateDragCreate(ev.clientX-rc.left,ev.clientY-rc.top);return}
   if(plusDrag.active){updatePlusDrag(ev);return}
+  // Edge endpoint reconnection: draw ghost line
+  if(epDrag.active){
+    const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
+    glLink.setAttribute('d',`M${epDrag.fixedX},${epDrag.fixedY}L${p.x},${p.y}`);
+    glLink.style.display='block';
+    // Highlight hovered node
+    const hovN=findNodeAt(p.x,p.y);
+    document.querySelectorAll('.node.ep-target').forEach(el=>el.classList.remove('ep-target'));
+    if(hovN){
+      const el=document.getElementById('nd'+hovN);
+      if(el)el.classList.add('ep-target');
+    }
+    return;
+  }
   if(bzDrag.active){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);const e=gE(parseInt(bzDrag.eid));if(!e)return;
     const sh = e.shape || gls;
@@ -210,6 +238,23 @@ window.addEventListener('mousemove',ev=>{
           const el = document.getElementById('nd'+doff.id);
           if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
         });
+        // Highlight edges that this single node is hovering over (drop-target)
+        if(ms.dragOffsets.length===1 && !selNSet.size){
+          const dn=gN(ms.dragOffsets[0].id);
+          document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+          if(dn){
+            edges.forEach(e=>{
+              if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
+              // sample midpoint of edge
+              const mid=edgePt(e,0.5);
+              const fdist=Math.hypot(dn.x-mid.x,dn.y-mid.y);
+              if(fdist<60){
+                const grpEl=document.querySelector(`.edge-group[data-eid="${e.id}"]`);
+                if(grpEl)grpEl.classList.add('drop-target');
+              }
+            });
+          }
+        }
         renderEdgesOnly();
       }
     }
@@ -235,6 +280,33 @@ window.addEventListener('mouseup',ev=>{
   if(groupResize.active){endGroupResize();return}
   if(ms.drgCreate){endDragCreate(ev.clientX-rc.left,ev.clientY-rc.top);ms={};return}
   if(plusDrag.active){endPlusDrag(ev);return}
+  // Edge endpoint reconnection: finalize
+  if(epDrag.active){
+    glLink.style.display='none';
+    document.querySelectorAll('.node.ep-target').forEach(el=>el.classList.remove('ep-target'));
+    document.querySelectorAll('.edge-endpoint.dragging').forEach(el=>el.classList.remove('dragging'));
+    const rc=wrap.getBoundingClientRect();
+    const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
+    const e=gE(epDrag.eid);
+    if(e){
+      const targetId=findNodeAt(p.x,p.y, epDrag.which==='from'?e.from:e.to);
+      if(targetId && targetId!==e.from && targetId!==e.to){
+        // Prevent duplicate edges
+        const dupExists=edges.some(x=>x.id!==e.id&&((x.from===e.from&&x.to===targetId)||(x.from===targetId&&x.to===e.from)));
+        if(!dupExists){
+          sh();
+          if(epDrag.which==='from')e.from=targetId;
+          else e.to=targetId;
+          e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null; // reset CPs
+          render();
+          toast('🔗 Переподключено');
+        } else {
+          toast('Связь уже существует');
+        }
+      }
+    }
+    epDrag={active:false};return;
+  }
   if(bzDrag.active){
     if(!bzDrag.moved && bzDrag.pendingSel!=null){
       // LMB click (no drag) → select with handles, no LP panel
@@ -244,7 +316,25 @@ window.addEventListener('mouseup',ev=>{
     }
     bzDrag={active:false};return;
   }
-  if(ms.dragging&&ms.drgd){pruneGroupEdges();sh();render();}  // save history + re-render once on drop
+  if(ms.dragging&&ms.drgd){
+    // Check if a single node was dropped on a highlighted edge — insert in break
+    if(ms.dragOffsets&&ms.dragOffsets.length===1&&!selNSet.size){
+      const dropTarget=document.querySelector('.edge-group.drop-target');
+      document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+      if(dropTarget){
+        const dropEid=parseInt(dropTarget.dataset.eid);
+        const dropNodeId=ms.dragOffsets[0].id;
+        if(dropEid&&dropNodeId){
+          insertNodeBetween(dropEid,dropNodeId);
+        }
+        ms.dragging=false;ms.panning=false;ms.drgd=false;
+        return;
+      }
+    } else {
+      document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+    }
+    pruneGroupEdges();sh();render();
+  }  // save history + re-render once on drop
   else if(ms.dragging && !ms.drgd && selNSet.has(ms.dragId) && !(ev.ctrlKey || ev.metaKey || ev.button === 1)) {
     selNode(ms.dragId);
   }

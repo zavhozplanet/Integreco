@@ -9,6 +9,20 @@ function gPar(id){const e=edges.find(e=>e.to===id);return e?e.from:null}
 function isMob(){return window.innerWidth<768||('ontouchstart' in window)}
 function s2c(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom}}
 function c2s(cx,cy){return{x:cx*zoom+panX,y:cy*zoom+panY}}
+// Find node at canvas coords (cx,cy), optionally excluding excludeId
+function findNodeAt(cx,cy,excludeId){
+  let best=null,bestD=Infinity;
+  nodes.forEach(n=>{
+    if(!isVisible(n.id)||n.id===excludeId)return;
+    let hw,hh;
+    if(n.type==='group'){hw=(n.width||300)/2;hh=(n.height||200)/2}
+    else{const ext=nodeHalfExtents(n.id);hw=ext.hw;hh=ext.hh}
+    if(cx>=n.x-hw&&cx<=n.x+hw&&cy>=n.y-hh&&cy<=n.y+hh){
+      const d=Math.hypot(cx-n.x,cy-n.y);if(d<bestD){bestD=d;best=n.id}
+    }
+  });
+  return best;
+}
 
 function isVisible(id){
   const n = gN(id);
