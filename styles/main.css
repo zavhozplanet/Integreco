@@ -188,7 +188,25 @@ input, textarea {user-select:text;-webkit-user-select:text}
 #ghost-ln{stroke:var(--ac);stroke-width:1.5;fill:none;stroke-dasharray:6,4;pointer-events:none;display:none}
 #ghost-hd{fill:var(--ac);display:none;pointer-events:none}
 
+.edge-label-v3{width:140px;height:200px;display:flex;align-items:center;justify-content:center;
+  text-align:center;pointer-events:none}
+.edge-label-v3 span{background:rgba(255,255,255,0.5);color:var(--tx);font-size:11px;font-weight:500;
+  padding:3px 8px;border-radius:6px;line-height:1.25;white-space:pre-wrap;word-break:break-word;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);display:inline-block;max-width:140px}
+.is-dark-bg .edge-label-v3 span{background:rgba(30,28,25,0.5);color:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.edge-edit{position:fixed;z-index:9999;background:#fff;border:1.5px solid var(--ac);border-radius:6px;
+  font-family:'Inter',sans-serif;font-size:13px;padding:4px 8px;text-align:center;resize:none;
+  box-shadow:0 4px 15px rgba(0,0,0,.18);min-width:80px;overflow:hidden;outline:none}
+
 /* ── LINKING MODE overlay ── */
+/* Plus Submenu */
+.lp-plus-sub{display:none;position:absolute;bottom:calc(100% + 5px);right:0;background:#fff;
+  border:1.5px solid var(--nbr);border-radius:12px;padding:6px;min-width:110px;
+  box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;animation:lpFadeIn .15s ease-out}
+@keyframes lpFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.lp-si{padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background .15s}
+.lp-si:hover{background:var(--nb)}
 #link-overlay{position:fixed;inset:0;background:rgba(100,160,255,.08);
   border:3px solid rgba(74,124,247,.3);pointer-events:none;z-index:2;display:none}
 #link-hint{position:fixed;top:60px;left:50%;transform:translateX(-50%);

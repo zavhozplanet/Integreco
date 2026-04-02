@@ -14,7 +14,9 @@ let idC=0;
 let zoom=1, panX=0, panY=0;
 let gls='straight', gld='solid'; // kept for legacy mobile sheet
 // Default settings for newly created edges
-let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null}; // null=use LCOLS[0]
+let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null};
+let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null};
+ // null=use LCOLS[0]
 let bgSettings = {
   color: '#f0ede8',
   lastColor: '#f0ede8',

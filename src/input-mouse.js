@@ -90,10 +90,13 @@ svgl.addEventListener('mousedown',ev=>{
     ev.preventDefault();ev.stopPropagation();
     bzDrag={active:true,eid:ev.target.dataset.eid,cp:ev.target.dataset.cp};return;
   }
-  // find edge group
   const grpEl=ev.target.closest('.edge-group');
   if(grpEl){
     ev.stopPropagation();const eid=parseInt(grpEl.dataset.eid);const e=gE(eid);if(!e)return;
+    if(ev.detail===2){
+       deselAll(); editEdge(eid); return;
+    }
+    ms.drgd=false;
     const sh = e.shape || gls;
     if (sh === 'straight') {
       bzDrag={active:true,eid,cp:'straight',sx:ev.clientX,sy:ev.clientY,origCP:{...getCP(e)},moved:false,pendingSel:eid};

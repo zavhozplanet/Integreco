@@ -326,10 +326,12 @@ function applyBg(groupId=null){
   if(!groupId){
     const actualColor = isPaper ? '#f4e4bc' : bg.color;
     const lum = getLuminance(actualColor);
-    if(lum < 0.3){
+    if(lum < 0.45){
+      document.body.classList.add('is-dark-bg');
       document.body.style.setProperty('--sel-color', '#fff');
       document.body.style.setProperty('--sel-shadow', 'rgba(255,255,255,0.4)');
     } else {
+      document.body.classList.remove('is-dark-bg');
       document.body.style.removeProperty('--sel-color');
       document.body.style.removeProperty('--sel-shadow');
     }

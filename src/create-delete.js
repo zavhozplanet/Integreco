@@ -13,17 +13,17 @@ function mkEdge(fromId,toId,isLink){
   
   if(isLink){
     return {id:nid(),from:fromId,to:toId,
-      shape:glDefaults.shape||gls,
-      dash:glDefaults.dash||'dashed',
-      width:glDefaults.width||1.5,
-      dir:glDefaults.dir||'none',
-      color:glDefaults.color||LCOLS[0],
+      shape:linkDefaults.shape||'straight',
+      dash:linkDefaults.dash||'link',
+      width:linkDefaults.width||1,
+      dir:linkDefaults.dir||'none',
+      color:linkDefaults.color||LCOLS[0],
       cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,isLink:true};
   }
   
   return{id:nid(),from:fromId,to:toId,
-    shape:glDefaults.shape||gls,
-    dash:glDefaults.dash||gld,
+    shape:glDefaults.shape||'straight',
+    dash:glDefaults.dash||'solid',
     color:glDefaults.color||LCOLS[0],
     width:glDefaults.width||1.5,
     dir:glDefaults.dir||'forward',

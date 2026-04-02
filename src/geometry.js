@@ -375,7 +375,7 @@ function drawArrowheads(grp,e,clr){
 
 // Collapse (−) button: placed ON the bezier curve, ~30px from the exit point
 function addCollapseBtn(grp,ex,clr,e){
-  const btnPt=bzAtDist(e,ex.ti,55)||{x:ex.x+ex.nx*55,y:ex.y+ex.ny*55,nx:ex.nx,ny:ex.ny};
+  const btnPt=bzAtDist(e,ex.ti,28)||{x:ex.x+ex.nx*28,y:ex.y+ex.ny*28,nx:ex.nx,ny:ex.ny};
   const bx=btnPt.x,by2=btnPt.y;
   const btnG=mkSVG('g');btnG.setAttribute('class','ecbtn');
   btnG.style.cursor='pointer';btnG.style.pointerEvents='all';
@@ -424,8 +424,8 @@ function addExpandCircle(grp,ex,fromId,eid){
   const f=gN(fromId);if(!f)return;
   const clr=e.color||LCOLS[0];
   const num=branchNum(eid);
-  // Same position as collapse button would be (55px along curve from exit)
-  const btnPt=bzAtDist(e,ex.ti,55)||{x:ex.x+ex.nx*55,y:ex.y+ex.ny*55,nx:ex.nx,ny:ex.ny};
+  // Same position as collapse button would be (28px along curve from exit)
+  const btnPt=bzAtDist(e,ex.ti,28)||{x:ex.x+ex.nx*28,y:ex.y+ex.ny*28,nx:ex.nx,ny:ex.ny};
   const cx=btnPt.x,cy=btnPt.y;
   const r=11;
 
@@ -598,6 +598,17 @@ function render(){
       ep.setAttribute('stroke',clr);ep.setAttribute('stroke-width',isSel?Math.max(e.width||1.5,2):(e.width||1.5));
       ep.setAttribute('fill','none');grp.appendChild(ep);
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
+      if(e.label){
+        const mid=edgePt(e,0.5);
+        const fo=mkSVG('foreignObject');
+        fo.setAttribute('x',mid.x-70);fo.setAttribute('y',mid.y-100);
+        fo.setAttribute('width',140);fo.setAttribute('height',200);
+        fo.setAttribute('style','overflow:visible;pointer-events:none');
+        const div=document.createElement('div');
+        div.className='edge-label-v3';
+        const span=document.createElement('span');span.textContent=e.label;
+        div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
+      }
       if(isSel&&selEHandles){
         const sh = e.shape || gls;
         if (sh === 'bezier' || sh === 'straight') {
@@ -639,7 +650,7 @@ function render(){
         });
       }
     }
-    if(e.dash!=='link'){
+    if(true){
       const ex=lineExitFrom(e);
       if(e.collapsed){
         addExpandCircle(grp,ex,e.from,e.id);
@@ -816,6 +827,17 @@ function renderEdgesOnly(){
       ep.setAttribute('class','ep '+(e.dash==='link'?'link':(e.dash||'solid'))+(isSel?' sel-e':''));
       ep.setAttribute('stroke',clr);ep.setAttribute('stroke-width',isSel?Math.max(e.width||1.5,2):(e.width||1.5));ep.setAttribute('fill','none');grp.appendChild(ep);
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
+      if(e.label){
+        const mid=edgePt(e,0.5);
+        const fo=mkSVG('foreignObject');
+        fo.setAttribute('x',mid.x-70);fo.setAttribute('y',mid.y-100);
+        fo.setAttribute('width',140);fo.setAttribute('height',200);
+        fo.setAttribute('style','overflow:visible;pointer-events:none');
+        const div=document.createElement('div');
+        div.className='edge-label-v3';
+        const span=document.createElement('span');span.textContent=e.label;
+        div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
+      }
 
       // Hover helpers
       let hoverTid=null;
@@ -856,7 +878,7 @@ function renderEdgesOnly(){
       }
     }
     // Collapse/expand buttons update with curve
-    if(e.dash!=='link'){
+    if(true){
       const sh = e.shape || gls;
       if(!e.collapsed && (!isSel || sh === 'elbow')){
         const ex=lineExitFrom(e);

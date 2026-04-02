@@ -45,7 +45,7 @@ function isBaseVisible(id){
     let c=id;for(let i=0;i<200;i++){if(c===branchViewId)return true;const p=gPar(c);if(p==null)return false;c=p}
     return false;
   }
-  let c=id;for(let i=0;i<200;i++){const p=gPar(c);if(p==null)return true;const e=edges.find(e=>e.from===p&&e.to===c);if(e&&e.collapsed)return false;c=p}
+  let c=id;for(let i=0;i<200;i++){const p=gPar(c);if(p==null)return true;const e=edges.find(e=>e.from===p&&e.to===c);if(e&&e.collapsed&&e.dash!=='link')return false;c=p}
   return true;
 }
 
@@ -79,4 +79,3 @@ function pruneGroupEdges() {
     if (selE && toRemove.includes(selE)) selE = null;
   }
 }
-

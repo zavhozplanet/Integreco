@@ -68,6 +68,9 @@ function saveToLocalStorage() {
     edges,
     bgSettings,
     snapSettings,
+    glDefaults,
+    linkDefaults,
+    lastUsedMapRootId,
     idC
   };
   try {
@@ -87,9 +90,23 @@ function loadFromLocalStorage() {
         edges = parsed.edges;
         bgSettings = parsed.bgSettings;
         if (parsed.snapSettings) snapSettings = parsed.snapSettings;
+        if (parsed.glDefaults) glDefaults = parsed.glDefaults;
+        if (parsed.linkDefaults) linkDefaults = parsed.linkDefaults;
+        if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
         idC = parsed.idC;
         render();
         applyBg();
+        
+        // Auto-center on root
+        requestAnimationFrame(()=>{
+          const root = gN(lastUsedMapRootId) || nodes.find(n => n.type === 'root');
+          if (root) {
+            zoom = 1;
+            panX = window.innerWidth / 2 - root.x;
+            panY = window.innerHeight / 2 - root.y;
+            applyT();
+          }
+        });
         return true;
       }
     } catch (err) {

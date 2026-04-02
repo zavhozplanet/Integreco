@@ -292,9 +292,14 @@
     <button class="lp-pin" id="pin-color" onclick="setDefault('color')" title="🎨 📌">📌</button>
   </div>
   <!-- Delete + Insert -->
-  <div class="lpr2" style="margin-top:2px">
-    <div class="lpb2 del-btn" onclick="deleteSelectedEdge()" title="🗑️ 🔗">✕</div>
-    <div class="lpb2" id="ep-insert" onclick="insertNodeOnEdge(selE)" title="⊕ Вставить узел в разрыв" style="font-size:18px">⊕</div>
+  <div class="lpr2" style="position:relative;margin-top:2px">
+    <div class="lpb2 del-btn" onclick="deleteSelectedEdge()" title="Удалить соединение">✕</div>
+    <div class="lpb2" id="ep-plus-btn" onclick="togglePlusSub(event)" title="⊕ Вставить в разрыв" style="font-size:18px">⊕</div>
+    <div id="lp-plus-sub" class="lp-plus-sub" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1.5px solid var(--nbr);border-radius:10px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:110px">
+      <div class="lp-si" onclick="insertObjectOnEdge(selE,'node')">⚪ Узел</div>
+      <div class="lp-si" onclick="insertObjectOnEdge(selE,'note')">📝 Заметка</div>
+      <div class="lp-si" onclick="insertObjectOnEdge(selE,'group')">📦 Группа</div>
+    </div>
   </div>
 </div>
 
@@ -392,6 +397,13 @@
     </div>
     <div class="lsec">Цвет</div>
     <div class="lpr" id="lclr-m" style="gap:10px;padding-bottom:8px"></div>
+    <div style="height:1px;background:#f0ede8;margin:10px 0 4px"></div>
+    <div class="sh-title">Вставить в разрыв</div>
+    <div class="lpr" style="flex-wrap:wrap;padding-bottom:12px;gap:8px">
+      <div class="lpb" onclick="insertObjectOnEdge(selE,'node')">⚪ Узел</div>
+      <div class="lpb" onclick="insertObjectOnEdge(selE,'note')">📝 Заметка</div>
+      <div class="lpb" onclick="insertObjectOnEdge(selE,'group')">📦 Группа</div>
+    </div>
   </div>
 </div>
 

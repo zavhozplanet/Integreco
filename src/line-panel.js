@@ -6,14 +6,26 @@ function showLpAt(cx,cy,eid){
   const e=gE(eid);if(!e)return;lpPanel.style.display='flex';
   lpPanel.style.left=Math.min(cx,window.innerWidth-235)+'px';
   lpPanel.style.top=Math.min(cy+14,window.innerHeight-260)+'px';
+  document.getElementById('lp-plus-sub').style.display='none';
   syncLP(e);
+}
+function togglePlusSub(e){
+  e.stopPropagation();
+  const sub=document.getElementById('lp-plus-sub');
+  sub.style.display=sub.style.display==='block'?'none':'block';
 }
 function syncLP(e){
   ['straight','bezier','elbow'].forEach(s=>document.getElementById('ep-'+s)?.classList.toggle('on',(e.shape||gls)===s));
-  ['solid','dashed','dotted'].forEach(s=>document.getElementById('ep-'+s)?.classList.toggle('on',(e.dash==='link'?'solid':(e.dash||gld))===s));
+  const dashVal = e.dash === 'link' ? 'dashed' : (e.dash || 'solid');
+  ['solid','dashed','dotted'].forEach(s=>document.getElementById('ep-'+s)?.classList.toggle('on',dashVal===s));
   [['w1',1],['w15',1.5],['w3',3]].forEach(([id,v])=>document.getElementById('ep-'+id)?.classList.toggle('on',(e.width||1.5)===v));
   ['forward','backward','both','none'].forEach(d=>document.getElementById('ep-dir-'+d)?.classList.toggle('on',(e.dir||'forward')===d));
   document.getElementById('ep-clr').querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.dataset.c===(e.color||LCOLS[0])));
+  
+  // Hide branch-color button for links
+  const bbtn=document.getElementById('lp-branch-btn');
+  if(bbtn) bbtn.style.display=(e.dash==='link'||e.isLink)?'none':'flex';
+
   syncPinBtns();
   // Reset branch button when switching to a different edge
   updateBranchBtn(null);
@@ -21,10 +33,12 @@ function syncLP(e){
 function syncPinBtns(){
   const e=gE(selE);
   document.getElementById('pin-shape')?.classList.toggle('active',e&&(e.shape||gls)===glDefaults.shape);
-  document.getElementById('pin-dash')?.classList.toggle('active',e&&(e.dash||gld)===glDefaults.dash);
-  document.getElementById('pin-width')?.classList.toggle('active',e&&(e.width||1.5)===glDefaults.width);
-  document.getElementById('pin-dir')?.classList.toggle('active',e&&(e.dir||'forward')===glDefaults.dir);
-  document.getElementById('pin-color')?.classList.toggle('active',e&&(e.color||LCOLS[0])===(glDefaults.color||LCOLS[0]));
+  const d=e&&(e.isLink?linkDefaults:glDefaults);
+  document.getElementById('pin-shape')?.classList.toggle('active',e&&(e.shape||(e.isLink?linkDefaults:glDefaults).shape)===d.shape);
+  document.getElementById('pin-dash')?.classList.toggle('active',e&&(e.dash||(e.isLink?linkDefaults:glDefaults).dash)===d.dash);
+  document.getElementById('pin-width')?.classList.toggle('active',e&&(e.width||(e.isLink?linkDefaults:glDefaults).width)===d.width);
+  document.getElementById('pin-dir')?.classList.toggle('active',e&&(e.dir||(e.isLink?linkDefaults:glDefaults).dir)===d.dir);
+  document.getElementById('pin-color')?.classList.toggle('active',e&&(e.color||(e.isLink?linkDefaults:glDefaults).color)===d.color);
 }
 function closeLp(){lpPanel.style.display='none'}
 function setEP(prop,val,btn){
@@ -36,11 +50,12 @@ function setEP(prop,val,btn){
 }
 function setDefault(prop){
   const e=gE(selE);if(!e)return;
-  if(prop==='shape'){glDefaults.shape=e.shape||gls;gls=glDefaults.shape}
-  else if(prop==='dash'){glDefaults.dash=e.dash||gld;gld=glDefaults.dash}
-  else if(prop==='width')glDefaults.width=e.width||1.5;
-  else if(prop==='dir')glDefaults.dir=e.dir||'forward';
-  else if(prop==='color')glDefaults.color=e.color||LCOLS[0];
+  const d=(e.isLink?linkDefaults:glDefaults);
+  if(prop==='shape')d.shape=e.shape||(e.isLink?linkDefaults:glDefaults).shape;
+  else if(prop==='dash')d.dash=e.dash||(e.isLink?linkDefaults:glDefaults).dash;
+  else if(prop==='width')d.width=e.width||(e.isLink?linkDefaults:glDefaults).width;
+  else if(prop==='dir')d.dir=e.dir||(e.isLink?linkDefaults:glDefaults).dir;
+  else if(prop==='color')d.color=e.color||(e.isLink?linkDefaults:glDefaults).color;
   toast('Настройка сохранена как «По умолчанию»');
   syncPinBtns();
 }
@@ -66,13 +81,30 @@ function updateBranchBtn(clr){
     btn.style.background='';btn.style.borderColor='';btn.style.color='';
   }
 }
+function insertObjectOnEdge(edgeId, type='node'){
+  const e=gE(edgeId);if(!e)return;
+  const mid=edgePt(e,0.5);
+  sh();
+  const newNodeId=mkNode(mid.x,mid.y,'',null,false,type);
+  // Rewire
+  const toId=e.to;
+  e.to=newNodeId;
+  // Second half inheriting all properties
+  const e2=mkEdge(newNodeId,toId,e.dash==='link'||e.isLink);
+  e2.color=e.color; e2.width=e.width; e2.shape=e.shape; e2.dir=e.dir; e2.dash=e.dash;
+  edges.push(e2);
+  render();
+  setTimeout(()=>editNode(newNodeId,true),50);
+}
 function applyColorToBranch(){
   const e=gE(selE);if(!e)return;
   const clr=e.color||LCOLS[0];
   sh();
   e.color=clr;
   function colorDown(id){
-    edges.filter(x=>x.from===id).forEach(x=>{x.color=clr;colorDown(x.to)});
+    edges.filter(x=>x.from===id && x.dash!=='link').forEach(x=>{
+      x.color=clr; colorDown(x.to);
+    });
   }
   colorDown(e.to);
   updateBranchBtn(clr);
@@ -92,15 +124,18 @@ const lsOv=document.getElementById('ls-ov');const lsSht=document.getElementById(
 const lclrM=document.getElementById('lclr-m');
 LCOLS.forEach(c=>{
   const d=document.createElement('div');d.className='cdot';d.style.background=c;d.dataset.c=c;
-  d.onclick=()=>{const e=gE(selE);if(!e)return;sh();e.color=c;lclrM.querySelectorAll('.cdot').forEach(x=>x.classList.remove('on'));d.classList.add('on');render()};
+  d.onclick=()=>{const e=gE(selE);if(!e)return;sh();e.color=c;
+    const def=(e.dash==='link'||e.isLink)?linkDefaults:glDefaults;def.color=c;
+    lclrM.querySelectorAll('.cdot').forEach(x=>x.classList.remove('on'));d.classList.add('on');render()};
   lclrM.appendChild(d);
 });
 
 function showLSheet(){
   const e=gE(selE);const sec=document.getElementById('ls-edge-sec');sec.style.display=e?'block':'none';
+  const dashVal = e.dash === 'link' ? 'dashed' : (e.dash || 'solid');
   if(e){
     ['straight','bezier','elbow'].forEach(s=>document.getElementById('esm-'+s)?.classList.toggle('on',(e.shape||gls)===s));
-    ['solid','dashed','dotted'].forEach(s=>document.getElementById('edm-'+s)?.classList.toggle('on',(e.dash==='link'?'solid':(e.dash||gld))===s));
+    ['solid','dashed','dotted'].forEach(s=>document.getElementById('edm-'+s)?.classList.toggle('on',dashVal===s));
     [['1',1],['15',1.5],['3',3]].forEach(([id,v])=>document.getElementById('ewm-'+id)?.classList.toggle('on',(e.width||1.5)===v));
     ['forward','backward','both','none'].forEach(d=>document.getElementById('edirm-'+d)?.classList.toggle('on',(e.dir||'forward')===d));
     lclrM.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('on',d.dataset.c===(e.color||LCOLS[0])));
@@ -111,7 +146,21 @@ function closeLSheet(){lsOv.classList.remove('show');lsSht.classList.remove('sho
 
 function setGLSM(s,btn){gls=s;document.querySelectorAll('[id^=gsm-]').forEach(b=>b.classList.remove('on'));btn.classList.add('on')}
 function setGLDM(s,btn){gld=s;document.querySelectorAll('[id^=gdm-]').forEach(b=>b.classList.remove('on'));btn.classList.add('on')}
-function setEPM(prop,val,btn,pfx){const e=gE(selE);if(!e)return;sh();if(prop==='shape'){e.shape=val;e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null}else if(prop==='dash')e.dash=val;else if(prop==='width')e.width=val;else if(prop==='dir')e.dir=val;document.querySelectorAll('[id^='+pfx+'-]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');render()}
+function setEPM(prop,val,btn,pfx){const e=gE(selE);if(!e)return;sh();
+  if(prop==='shape'){e.shape=val;e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null}
+  else if(prop==='dash')e.dash=val;
+  else if(prop==='width')e.width=val;
+  else if(prop==='dir')e.dir=val;
+  // Use correct defaults
+  const d=(e.dash==='link'||e.isLink)?linkDefaults:glDefaults;
+  if(prop==='shape')d.shape=val;
+  else if(prop==='dash')d.dash=val;
+  else if(prop==='width')d.width=val;
+  else if(prop==='dir')d.dir=val;
+  saveToLocalStorage();
+  render();
+  document.querySelectorAll('[id^='+pfx+'-]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+}
 
 /* ================================================================
    CENTER BUTTON (short = last node, long = root)

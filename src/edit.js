@@ -76,3 +76,47 @@ function endGroupResize(){
   }
 }
 
+function editEdge(eid){
+  const e=gE(eid);if(!e)return;
+  const mid=edgePt(e,0.5);
+  const sp=c2s(mid.x, mid.y);
+  
+  // Cleanup any old editor just in case
+  const old=document.getElementById('edge-editor-active'); if(old)old.remove();
+
+  const ta=document.createElement('textarea');
+  ta.id='edge-editor-active';
+  ta.className='edge-edit';
+  ta.value=e.label||'';
+  ta.placeholder='Название связи...';
+  ta.rows=1;
+  
+  // Extremely visible styling for debugging/visibility
+  ta.style.left=sp.x+'px';ta.style.top=sp.y+'px';
+  ta.style.transform='translate(-50%,-50%)';
+  ta.style.border='2px solid #4a7cf7'; 
+  
+  const container = document.getElementById('wrap') || document.body;
+  container.appendChild(ta);
+  
+  setTimeout(()=>{
+    ta.focus();
+    ta.select();
+    // Auto-resize
+    ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
+  },50);
+
+  let done=false;
+  const finish=()=>{
+    if(done)return;done=true;
+    const val=ta.value.trim();
+    if(val!==e.label){sh();e.label=val;saveToLocalStorage();}
+    ta.remove();render();
+  };
+  ta.addEventListener('blur',finish);
+  ta.addEventListener('keydown',ev=>{
+    if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}
+    if(ev.key==='Escape'){done=true;ta.remove();render()}
+  });
+}
+
