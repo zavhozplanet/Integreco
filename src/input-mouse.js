@@ -154,10 +154,17 @@ window.addEventListener('mousemove',ev=>{
   // Edge endpoint reconnection: draw ghost line
   if(epDrag.active){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
-    glLink.setAttribute('d',`M${epDrag.fixedX},${epDrag.fixedY}L${p.x},${p.y}`);
+    // ghost-ln is a <line>, not <path> — use x1/y1/x2/y2
+    glLink.setAttribute('x1', epDrag.fixedX);
+    glLink.setAttribute('y1', epDrag.fixedY);
+    glLink.setAttribute('x2', p.x);
+    glLink.setAttribute('y2', p.y);
     glLink.style.display='block';
-    // Highlight hovered node
-    const hovN=findNodeAt(p.x,p.y);
+    ghHd.setAttribute('cx', p.x);
+    ghHd.setAttribute('cy', p.y);
+    ghHd.style.display='block';
+    // Highlight hovered node — findNodeAt expects screen-relative coords
+    const hovN=findNodeAt(ev.clientX-rc.left,ev.clientY-rc.top);
     document.querySelectorAll('.node.ep-target').forEach(el=>el.classList.remove('ep-target'));
     if(hovN){
       const el=document.getElementById('nd'+hovN);
@@ -238,14 +245,14 @@ window.addEventListener('mousemove',ev=>{
           const el = document.getElementById('nd'+doff.id);
           if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
         });
-        // Highlight edges that this single node is hovering over (drop-target)
+        renderEdgesOnly();
+        // Highlight edges for drop-target AFTER renderEdgesOnly,
+        // because renderEdgesOnly recreates all SVG edge groups
         if(ms.dragOffsets.length===1 && !selNSet.size){
           const dn=gN(ms.dragOffsets[0].id);
-          document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
           if(dn){
             edges.forEach(e=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
-              // sample midpoint of edge
               const mid=edgePt(e,0.5);
               const fdist=Math.hypot(dn.x-mid.x,dn.y-mid.y);
               if(fdist<60){
@@ -255,7 +262,6 @@ window.addEventListener('mousemove',ev=>{
             });
           }
         }
-        renderEdgesOnly();
       }
     }
     return;
@@ -283,13 +289,14 @@ window.addEventListener('mouseup',ev=>{
   // Edge endpoint reconnection: finalize
   if(epDrag.active){
     glLink.style.display='none';
+    ghHd.style.display='none';
     document.querySelectorAll('.node.ep-target').forEach(el=>el.classList.remove('ep-target'));
     document.querySelectorAll('.edge-endpoint.dragging').forEach(el=>el.classList.remove('dragging'));
     const rc=wrap.getBoundingClientRect();
-    const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
     const e=gE(epDrag.eid);
     if(e){
-      const targetId=findNodeAt(p.x,p.y, epDrag.which==='from'?e.from:e.to);
+      // findNodeAt expects screen-relative coords, not canvas coords
+      const targetId=findNodeAt(ev.clientX-rc.left,ev.clientY-rc.top, epDrag.which==='from'?e.from:e.to);
       if(targetId && targetId!==e.from && targetId!==e.to){
         // Prevent duplicate edges
         const dupExists=edges.some(x=>x.id!==e.id&&((x.from===e.from&&x.to===targetId)||(x.from===targetId&&x.to===e.from)));

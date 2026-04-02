@@ -618,14 +618,20 @@ function render(){
       const hideH=()=>{hoverTid=setTimeout(()=>grp.classList.remove('hovered'),200)};
       hit.addEventListener('mouseenter',showH);
       hit.addEventListener('mouseleave',hideH);
-      // Endpoint grab circles — for edge reconnection
-      const {fx:efx, fy:efy, tx:etx, ty:ety} = getEdgePts(e);
-      [['from',efx,efy],['to',etx,ety]].forEach(([which,cx,cy])=>{
-        const epc=mkSVG('circle');epc.setAttribute('class','edge-endpoint');
-        epc.setAttribute('cx',cx);epc.setAttribute('cy',cy);epc.setAttribute('r','5');
-        epc.dataset.eid=e.id;epc.dataset.which=which;
-        epc.addEventListener('mouseenter',showH);
-        epc.addEventListener('mouseleave',hideH);
+      // Endpoint grab circles — positioned outside node border so they aren't hidden
+      const exitPt = lineExitFrom(e);
+      const entryPt = lineEntryTo(e);
+      const EP_R = 6, EP_OFF = 8;
+      const epPositions = [
+        ['from', exitPt.x + exitPt.nx * EP_OFF, exitPt.y + exitPt.ny * EP_OFF],
+        ['to',   entryPt.x - entryPt.nx * EP_OFF, entryPt.y - entryPt.ny * EP_OFF]
+      ];
+      epPositions.forEach(([which, cx, cy]) => {
+        const epc = mkSVG('circle'); epc.setAttribute('class', 'edge-endpoint');
+        epc.setAttribute('cx', cx); epc.setAttribute('cy', cy); epc.setAttribute('r', String(EP_R));
+        epc.dataset.eid = e.id; epc.dataset.which = which;
+        epc.addEventListener('mouseenter', showH);
+        epc.addEventListener('mouseleave', hideH);
         grp.appendChild(epc);
       });
       grp._showH=showH;grp._hideH=hideH;
@@ -821,14 +827,20 @@ function renderEdgesOnly(){
           [[cp1x,cp1y,'1'],[cp2x,cp2y,'2']].forEach(([cx,cy,cp])=>{const h=mkSVG('circle');h.setAttribute('class','bz-handle');h.setAttribute('r','8');h.setAttribute('cx',cx);h.setAttribute('cy',cy);h.dataset.eid=e.id;h.dataset.cp=cp;grp.appendChild(h)});
         }
       }
-      // Endpoint circles for reconnection drag
-      const {fx:efx, fy:efy, tx:etx, ty:ety} = getEdgePts(e);
-      [['from',efx,efy],['to',etx,ety]].forEach(([which,cx,cy])=>{
-        const epc=mkSVG('circle');epc.setAttribute('class','edge-endpoint');
-        epc.setAttribute('cx',cx);epc.setAttribute('cy',cy);epc.setAttribute('r','5');
-        epc.dataset.eid=e.id;epc.dataset.which=which;
-        epc.addEventListener('mouseenter',showH);
-        epc.addEventListener('mouseleave',hideH);
+      // Endpoint grab circles — positioned outside node border
+      const exitPt2 = lineExitFrom(e);
+      const entryPt2 = lineEntryTo(e);
+      const EP_R2 = 6, EP_OFF2 = 8;
+      const epPos2 = [
+        ['from', exitPt2.x + exitPt2.nx * EP_OFF2, exitPt2.y + exitPt2.ny * EP_OFF2],
+        ['to',   entryPt2.x - entryPt2.nx * EP_OFF2, entryPt2.y - entryPt2.ny * EP_OFF2]
+      ];
+      epPos2.forEach(([which, cx, cy]) => {
+        const epc = mkSVG('circle'); epc.setAttribute('class', 'edge-endpoint');
+        epc.setAttribute('cx', cx); epc.setAttribute('cy', cy); epc.setAttribute('r', String(EP_R2));
+        epc.dataset.eid = e.id; epc.dataset.which = which;
+        epc.addEventListener('mouseenter', showH);
+        epc.addEventListener('mouseleave', hideH);
         grp.appendChild(epc);
       });
       grp._showH=showH;grp._hideH=hideH;
