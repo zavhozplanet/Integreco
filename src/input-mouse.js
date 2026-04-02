@@ -258,12 +258,12 @@ window.addEventListener('mousemove',ev=>{
             edges.forEach(e=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
               let minDist = Infinity;
-              for(let t=0; t<=1; t+=0.1){
+              for(let t=0; t<=1; t+=0.01){
                 const p = edgePt(e, t);
                 const d = Math.hypot(dn.x-p.x, dn.y-p.y);
                 if(d < minDist) minDist = d;
               }
-              if(minDist < 25 && minDist < bestDist){
+              if(minDist < 15 && minDist < bestDist){
                 bestDist = minDist;
                 bestEid = e.id;
               }
