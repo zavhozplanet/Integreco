@@ -250,16 +250,29 @@ window.addEventListener('mousemove',ev=>{
         // because renderEdgesOnly recreates all SVG edge groups
         if(ms.dragOffsets.length===1 && !selNSet.size){
           const dn=gN(ms.dragOffsets[0].id);
+          const dnEl=document.getElementById('nd'+dn.id);
+          if(dnEl) dnEl.classList.remove('drop-node-target');
           if(dn){
+            let bestDist = Infinity;
+            let bestEid = null;
             edges.forEach(e=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
-              const mid=edgePt(e,0.5);
-              const fdist=Math.hypot(dn.x-mid.x,dn.y-mid.y);
-              if(fdist<60){
-                const grpEl=document.querySelector(`.edge-group[data-eid="${e.id}"]`);
-                if(grpEl)grpEl.classList.add('drop-target');
+              let minDist = Infinity;
+              for(let t=0; t<=1; t+=0.1){
+                const p = edgePt(e, t);
+                const d = Math.hypot(dn.x-p.x, dn.y-p.y);
+                if(d < minDist) minDist = d;
+              }
+              if(minDist < 25 && minDist < bestDist){
+                bestDist = minDist;
+                bestEid = e.id;
               }
             });
+            if(bestEid !== null){
+              const grpEl=document.querySelector(`.edge-group[data-eid="${bestEid}"]`);
+              if(grpEl) grpEl.classList.add('drop-target');
+              if(dnEl) dnEl.classList.add('drop-node-target');
+            }
           }
         }
       }
@@ -328,9 +341,12 @@ window.addEventListener('mouseup',ev=>{
     if(ms.dragOffsets&&ms.dragOffsets.length===1&&!selNSet.size){
       const dropTarget=document.querySelector('.edge-group.drop-target');
       document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+      const dropNodeId=ms.dragOffsets[0].id;
+      const dnEl=document.getElementById('nd'+dropNodeId);
+      if(dnEl) dnEl.classList.remove('drop-node-target');
+      
       if(dropTarget){
         const dropEid=parseInt(dropTarget.dataset.eid);
-        const dropNodeId=ms.dragOffsets[0].id;
         if(dropEid&&dropNodeId){
           insertNodeBetween(dropEid,dropNodeId);
         }
