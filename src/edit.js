@@ -39,32 +39,31 @@ function editNode(id, isNew=false){
 
 let groupResize={active:false};
 
-function startGroupResize(ev, id){
+function startGroupResize(ev, id, corner){
   ev.stopPropagation();
   const n = gN(id);
   if(!n) return;
-  const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
-  const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
-  groupResize = {
-    active: true,
-    id,
-    startX: clientX,
-    startY: clientY,
-    startW: n.width,
-    startH: n.height
-  };
+  // fixed point is the opposite corner
+  let fx = n.x + n.width/2, fy = n.y + n.height/2;
+  if(corner.includes('r')) fx = n.x - n.width/2;
+  if(corner.includes('b')) fy = n.y - n.height/2;
+
+  groupResize = { active: true, id, fx, fy };
+  document.body.classList.add('is-resizing');
 }
 
 function updateGroupResize(ev){
   if(!groupResize.active) return;
   const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
   const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
-  const dx = (clientX - groupResize.startX) / zoom;
-  const dy = (clientY - groupResize.startY) / zoom;
+  const rc = wrap.getBoundingClientRect();
+  const p = s2c(clientX - rc.left, clientY - rc.top);
   const n = gN(groupResize.id);
   if(n){
-    n.width = Math.max(100, groupResize.startW + dx);
-    n.height = Math.max(50, groupResize.startH + dy);
+    n.width = Math.max(100, Math.abs(p.x - groupResize.fx));
+    n.height = Math.max(70, Math.abs(p.y - groupResize.fy));
+    n.x = (p.x + groupResize.fx) / 2;
+    n.y = (p.y + groupResize.fy) / 2;
     render();
   }
 }
@@ -72,6 +71,7 @@ function updateGroupResize(ev){
 function endGroupResize(){
   if(groupResize.active){
     groupResize.active = false;
+    document.body.classList.remove('is-resizing');
     sh();
   }
 }

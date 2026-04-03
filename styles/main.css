@@ -53,17 +53,22 @@ input, textarea {user-select:text;-webkit-user-select:text}
 /* ── GROUPS ── */
 .group-box {
   position: absolute; transform: translate(-50%, -50%);
-  border: 1.5px dashed var(--mu); border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-radius: 8px;
   display: flex; flex-direction: column;
-  z-index: 0; pointer-events: none; /* let clicks pass through to SVG edges */
+  z-index: 0; pointer-events: none;
 }
+.g-bg-box {
+  border: 1.5px dashed var(--mu);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.g-ui-box { background: transparent; }
 .group-box.selected {
   border-color: var(--sel-color, var(--ac)); box-shadow: 0 0 0 3px var(--sel-shadow, rgba(74,124,247,0.18));
 }
 .g-bg-layer {
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
   border-radius: 8px; pointer-events: none; z-index: -1;
+  background: white; opacity: 0.03;
 }
 .group-title {
   min-height: 28px; height: auto;
@@ -81,13 +86,24 @@ input, textarea {user-select:text;-webkit-user-select:text}
 }
 .group-title:active { cursor: grabbing; }
 .group-resizer {
-  position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
-  cursor: nwse-resize; pointer-events: auto;
+  position: absolute; width: 28px; height: 28px;
+  pointer-events: auto; z-index: 30;
 }
+.group-resizer.tl { top: -14px; left: -14px; cursor: nwse-resize; }
+.group-resizer.tr { top: -14px; right: -14px; cursor: nesw-resize; }
+.group-resizer.bl { bottom: -14px; left: -14px; cursor: nesw-resize; }
+.group-resizer.br { bottom: -14px; right: -14px; cursor: nwse-resize; }
+
 .group-resizer::after {
-  content: ''; position: absolute; right: 4px; bottom: 4px;
-  width: 6px; height: 6px; border-right: 2px solid var(--mu); border-bottom: 2px solid var(--mu);
+  content: ''; position: absolute; 
+  width: 8px; height: 8px; border: 2.5px solid transparent; pointer-events: none;
 }
+.group-resizer.tl::after, .group-resizer.tr::after, .group-resizer.bl::after, .group-resizer.br::after { display: none; }
+/* Hide controls during resize to prevent flickering and lag */
+body.is-resizing .group-np, body.is-resizing .group-frame-sensor, body.is-resizing .group-resizer { opacity: 0!important; pointer-events: none!important; }
+/* Keep ONLY the active group's resizer or just use pointer visibility */
+body.is-resizing { cursor: nwse-resize !important; }
+
 .group-np {
   opacity: 0; position: absolute; width: 20px; height: 20px;
   border-radius: 50%; background: var(--nb); border: 1.5px solid var(--nbr);
@@ -159,7 +175,7 @@ input, textarea {user-select:text;-webkit-user-select:text}
 .touch-plus .np.touch-l,.touch-plus .np.touch-r{opacity:1}
 
 /* note dot */
-.note-dot{position:absolute;top:-3px;left:-3px;width:9px;height:9px;background:#f5a623;border-radius:50%;border:2px solid #fff;display:none;pointer-events:none}
+.note-dot{position:absolute;top:6px;left:14px;width:9px;height:9px;background:#f5a623;border-radius:50%;border:2px solid #fff;display:none;pointer-events:none}
 .has-note .note-dot{display:block}
 
 .node-lock{position:absolute;top:-6px;right:-6px;font-size:11px;background:#fff;border:1.5px solid var(--nbr);border-radius:50%;width:20px;height:20px;display:none;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}

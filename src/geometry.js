@@ -277,7 +277,15 @@ function lineExitFrom(e){
     const ti=i/STEPS;
     const p=edgePt(e, ti);
     if (isNaN(p.x) || isNaN(p.y)) continue;
-    if(Math.abs(p.x-f.x)>hw||Math.abs(p.y-f.y)>hh){
+    
+    // Stadium shape (rounded node) check
+    const dx = Math.abs(p.x - f.x), dy = Math.abs(p.y - f.y);
+    const rad = (f.type === 'group') ? 0 : Math.min(hw, hh);
+    let isInside = false;
+    if (dx <= hw - rad || dy <= hh - rad) isInside = (dx <= hw && dy <= hh);
+    else { const cdx = dx - (hw - rad), cdy = dy - (hh - rad); isInside = (cdx * cdx + cdy * cdy <= rad * rad); }
+
+    if(!isInside){
       // Binary search refinement for sub-pixel accuracy
       let lo=(i-1)/STEPS, hi=ti;
       for(let r=0;r<8;r++){
@@ -315,7 +323,15 @@ function lineEntryTo(e){
     const ti=1-i/STEPS;
     const p=edgePt(e, ti);
     if (isNaN(p.x) || isNaN(p.y)) continue;
-    if(Math.abs(p.x-t.x)>hw||Math.abs(p.y-t.y)>hh){
+
+    // Stadium shape (rounded node) check
+    const dx = Math.abs(p.x - t.x), dy = Math.abs(p.y - t.y);
+    const rad = (t.type === 'group') ? 0 : Math.min(hw, hh);
+    let isInside = false;
+    if (dx <= hw - rad || dy <= hh - rad) isInside = (dx <= hw && dy <= hh);
+    else { const cdx = dx - (hw - rad), cdy = dy - (hh - rad); isInside = (cdx * cdx + cdy * cdy <= rad * rad); }
+
+    if(!isInside){
       // Binary search refinement for sub-pixel accuracy
       let lo=ti, hi=1-(i-1)/STEPS;
       for(let r=0;r<8;r++){
@@ -657,7 +673,6 @@ function render(){
         addExpandCircle(grp,ex,e.from,e.id);
       } else {
         const sh = e.shape || gls;
-        // Show collapse button if NOT selected OR if it's an elbow line
         if(!isSel || sh === 'elbow') {
           addCollapseBtn(grp,ex,clr,e);
         }
@@ -666,71 +681,70 @@ function render(){
     svgl.insertBefore(grp,glLink);
   });
 
-  // Groups on bottom
+  // Groups: Split into Background (behind SVG) and UI (above SVG)
   nodes.filter(n=>n.type==='group' && isVisible(n.id)).forEach(n=>{
-    const div=document.createElement('div');
-    div.className='group-box'+(n.id===selN||selNSet.has(n.id)?' selected':'');
-    div.id='nd'+n.id;
+    const isSel = n.id===selN||selNSet.has(n.id);
     
-    div.style.left=n.x+'px';div.style.top=n.y+'px';
-    div.style.width=n.width+'px';div.style.height=n.height+'px';
+    // 1. Background layer: contains color/images/border, goes behind lines
+    const divBg=document.createElement('div');
+    divBg.className='group-box g-bg-box'+(isSel?' selected':'');
+    divBg.id='gb'+n.id;
+    divBg.style.left=n.x+'px';divBg.style.top=n.y+'px';
+    divBg.style.width=n.width+'px';divBg.style.height=n.height+'px';
     
     const bgBase=document.createElement('div'); bgBase.id='g-bg-base-'+n.id; bgBase.className='g-bg-layer';
     const bgImg=document.createElement('div'); bgImg.id='g-bg-img-'+n.id; bgImg.className='g-bg-layer';
     const bgPat=document.createElement('div'); bgPat.id='g-bg-pat-'+n.id; bgPat.className='g-bg-layer';
-    div.appendChild(bgBase); div.appendChild(bgImg); div.appendChild(bgPat);
+    divBg.appendChild(bgBase); divBg.appendChild(bgImg); divBg.appendChild(bgPat);
+    canvas.prepend(divBg);
+    applyBg(n.id);
+
+    // 2. UI layer: contains title/buttons/resizers, goes above lines
+    const divUI=document.createElement('div');
+    divUI.className='group-box g-ui-box'+(isSel?' selected':'');
+    divUI.id='nd'+n.id; // Keep id nd for drag-selection logic
+    divUI.style.left=n.x+'px';divUI.style.top=n.y+'px';
+    divUI.style.width=n.width+'px';divUI.style.height=n.height+'px';
     
     const title=document.createElement('div');
     title.className='group-title';
     title.textContent=n.label;
-    title.addEventListener('mousedown',ev=>{
-      if(ev.button!==0 && ev.button!==1) return;
-      ev.stopPropagation(); onNodeMD(ev,n.id);
-    });
+    title.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); onNodeMD(ev,n.id); });
     title.addEventListener('touchstart',ev=>{ev.stopPropagation();onNdTS(ev,n.id)},{passive:false});
     title.addEventListener('touchmove',ev=>{onNdTM(ev,n.id)},{passive:false});
     title.addEventListener('touchend',ev=>{onNdTE(ev,n.id)});
     title.addEventListener('dblclick',ev=>{ev.stopPropagation();openNote(n.id,'auto')});
-    title.addEventListener('contextmenu',ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      showGroupCtx(ev.clientX,ev.clientY,n.id);
-    });
-    // Sensors for border hover (+ buttons)
+    title.addEventListener('contextmenu',ev=>{ ev.preventDefault();ev.stopPropagation(); showGroupCtx(ev.clientX,ev.clientY,n.id); });
+
+    // Sensors and interactions
     ['top','bottom','left','right'].forEach(pos => {
       const sensor = document.createElement('div');
       sensor.className = 'group-frame-sensor ' + pos;
-      sensor.addEventListener('mouseenter',()=>div.classList.add('hovered'));
-      sensor.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
-      div.appendChild(sensor);
+      sensor.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
+      sensor.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
+      divUI.appendChild(sensor);
+    });
+    title.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
+    title.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
+
+    ['tl','tr','bl','br'].forEach(pos=>{
+      const r=document.createElement('div');
+      r.className='group-resizer '+pos;
+      r.addEventListener('mousedown',ev=>{ev.stopPropagation();startGroupResize(ev,n.id,pos)});
+      r.addEventListener('touchstart',ev=>{ev.stopPropagation();startGroupResize(ev,n.id,pos)},{passive:false});
+      divUI.appendChild(r);
     });
 
-    // Show plus buttons on hover via title too
-    title.addEventListener('mouseenter',()=>div.classList.add('hovered'));
-    title.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
-    
-    const resizer=document.createElement('div');
-    resizer.className='group-resizer';
-    resizer.addEventListener('mousedown',ev=>{ev.stopPropagation();startGroupResize(ev,n.id)});
-    resizer.addEventListener('touchstart',ev=>{ev.stopPropagation();startGroupResize(ev,n.id)},{passive:false});
-    
-    div.appendChild(title);
-    div.appendChild(resizer);
-    
-    div.addEventListener('contextmenu',ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      showGroupBgCtx(ev.clientX,ev.clientY,n.id);
-    });
-    
     ['top','bottom','left','right'].forEach(pos=>{
       const np=document.createElement('div');np.className='np group-np '+pos;np.textContent='+';
-      np.addEventListener('mouseenter',()=>div.classList.add('hovered'));
-      np.addEventListener('mouseleave',()=>div.classList.remove('hovered'));
+      np.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
+      np.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
       np.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,np,pos)});
-      div.appendChild(np);
+      divUI.appendChild(np);
     });
 
-    canvas.appendChild(div);
-    applyBg(n.id);
+    divUI.appendChild(title);
+    canvas.appendChild(divUI);
   });
 
   // Nodes on top — DOM divs paint over SVG

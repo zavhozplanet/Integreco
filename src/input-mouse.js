@@ -263,6 +263,8 @@ window.addEventListener('mousemove',ev=>{
           }
           const el = document.getElementById('nd'+doff.id);
           if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
+          const elBg = document.getElementById('gb'+doff.id);
+          if(elBg){elBg.style.left=n.x+'px';elBg.style.top=n.y+'px';}
         });
         renderEdgesOnly();
         // Highlight edges for drop-target AFTER renderEdgesOnly,
