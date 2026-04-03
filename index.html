@@ -57,6 +57,46 @@
     <div class="ctx-subitem del" onclick="ctxExec('del-node')">🗑️ ⚪ (🔗)</div>
     <div class="ctx-subitem del" onclick="ctxExec('del-branch')">🗑️ 🌿</div>
   </div>
+  <!-- node settings sub -->
+  <div class="ctx-sub" id="ctx-node-settings-sub" style="padding:4px; gap:6px; max-height:60vh; overflow-y:auto; cursor:default; width:220px;" onclick="event.stopPropagation()">
+    <div class="sh-title" style="margin-top:0; padding-top:2px;">Настройки рамки узла</div>
+    
+    <div class="bg-group" id="node-frame-shape-group">
+      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ФОРМА</div>
+      <div class="bg-patterns">
+        <div class="bg-pat-btn" onclick="updateNodeStyle('shape','pill')" title="Пилюля" id="ns-shape-pill" style="border-radius:20px;">О</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('shape','round')" title="Скругленная" id="ns-shape-round" style="border-radius:8px;">О</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('shape','rect')" title="Квадратная" id="ns-shape-rect" style="border-radius:0;">П</div>
+      </div>
+    </div>
+
+    <div class="bg-group" id="node-frame-style-group">
+      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ТИП ЛИНИИ И ЦВЕТ</div>
+      <div class="bg-patterns" style="margin-bottom:6px">
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','none')" id="ns-btype-none" style="font-size:12px">None</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','solid')" id="ns-btype-solid" style="font-size:12px">—</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dashed')" id="ns-btype-dashed" style="font-size:12px">- -</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dotted')" id="ns-btype-dotted" style="font-size:12px">· ·</div>
+      </div>
+      <div class="bg-colors" id="ns-colors-list">
+        <!-- populated by JS -->
+      </div>
+      <div class="bg-colors" style="padding-top:0">
+        <div class="bg-custom-btn" onclick="document.getElementById('ns-custom-input').click()" title="🎨" style="margin-left:auto">🖌️</div>
+        <input type="color" id="ns-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateNodeStyle('borderColor', this.value, true)">
+      </div>
+    </div>
+    
+    <div class="bg-group">
+      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ПАРАМЕТРЫ</div>
+      <div class="bg-sliders">
+        <div class="slider-row" title="Толщина линии"><span>📏</span><input type="range" id="ns-width" min="0" max="10" step="0.5" oninput="updateNodeStyle('borderWidth', parseFloat(this.value), false)" onchange="updateNodeStyle('borderWidth', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Размер рамки (отступ текста)"><span>🔲</span><input type="range" id="ns-pad" min="0" max="40" step="1" oninput="updateNodeStyle('padding', parseFloat(this.value), false)" onchange="updateNodeStyle('padding', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Насыщенность фона рамки (Opacity)"><span>👻</span><input type="range" id="ns-opacity" min="0" max="1" step="0.05" oninput="updateNodeStyle('opacity', parseFloat(this.value), false)" onchange="updateNodeStyle('opacity', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Размытость (Blur)"><span>🌫️</span><input type="range" id="ns-blur" min="0" max="24" step="1" oninput="updateNodeStyle('blur', parseFloat(this.value), false)" onchange="updateNodeStyle('blur', parseFloat(this.value), true)"></div>
+      </div>
+    </div>
+  </div>
   <!-- cut sub -->
   <div class="ctx-sub" id="ctx-cut-sub">
     <div class="ctx-subitem" onclick="ctxExec('cut-node')">✂️ ⚪</div>
@@ -210,7 +250,8 @@
       <span style="font-size:16px;font-weight:600">⚙️ Настройки</span>
       <div onclick="toggleSettings()" style="cursor:pointer;font-size:20px">✕</div>
     </div>
-    <div id="slist" style="padding:20px;display:flex;flex-direction:column;gap:16px">
+    <div id="slist" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <!-- Узлы -->
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-size:20px;width:26px;text-align:center">⚪</span>
         <span style="font-size:14px;flex:1">Фиксация линий (Узлы)</span>
@@ -219,6 +260,17 @@
           <span class="slider-sw"></span>
         </label>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:38px;transition:opacity .2s" id="snap-node-adaptive-row">
+        <span style="font-size:13px;flex:1;color:var(--mu)">Адаптивная фиксация</span>
+        <label class="switch">
+          <input type="checkbox" id="snap-node-adaptive" onchange="updateSnapAdaptive('node', this.checked)">
+          <span class="slider-sw"></span>
+        </label>
+      </div>
+
+      <div style="height:1px;background:#f0ede8;margin:4px 0"></div>
+
+      <!-- Заметки -->
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-size:20px;width:26px;text-align:center">📝</span>
         <span style="font-size:14px;flex:1">Фиксация линий (Заметки)</span>
@@ -227,11 +279,29 @@
           <span class="slider-sw"></span>
         </label>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:38px;transition:opacity .2s" id="snap-note-adaptive-row">
+        <span style="font-size:13px;flex:1;color:var(--mu)">Адаптивная фиксация</span>
+        <label class="switch">
+          <input type="checkbox" id="snap-note-adaptive" onchange="updateSnapAdaptive('note', this.checked)">
+          <span class="slider-sw"></span>
+        </label>
+      </div>
+
+      <div style="height:1px;background:#f0ede8;margin:4px 0"></div>
+
+      <!-- Группы -->
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-size:20px;width:26px;text-align:center">📦</span>
         <span style="font-size:14px;flex:1">Фиксация линий (Группы)</span>
         <label class="switch">
           <input type="checkbox" id="snap-group" onchange="updateSnap('group', this.checked)">
+          <span class="slider-sw"></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:38px;transition:opacity .2s" id="snap-group-adaptive-row">
+        <span style="font-size:13px;flex:1;color:var(--mu)">Адаптивная фиксация</span>
+        <label class="switch">
+          <input type="checkbox" id="snap-group-adaptive" onchange="updateSnapAdaptive('group', this.checked)">
           <span class="slider-sw"></span>
         </label>
       </div>

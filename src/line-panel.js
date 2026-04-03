@@ -184,14 +184,34 @@ function toggleSettings() {
   const isShow = smod.style.display === 'flex';
   smod.style.display = isShow ? 'none' : 'flex';
   if (!isShow) {
-    document.getElementById('snap-node').checked = snapSettings.node;
-    document.getElementById('snap-note').checked = snapSettings.note;
-    document.getElementById('snap-group').checked = snapSettings.group;
+    ['node','note','group'].forEach(t => {
+      const main = document.getElementById(`snap-${t}`);
+      const adap = document.getElementById(`snap-${t}-adaptive`);
+      const row = document.getElementById(`snap-${t}-adaptive-row`);
+      if(main) main.checked = !!snapSettings[t];
+      if(adap) adap.checked = !!snapSettings[t + 'Adaptive'];
+      if(row) {
+        row.style.opacity = snapSettings[t] ? '1' : '0.4';
+        row.style.pointerEvents = snapSettings[t] ? 'auto' : 'none';
+      }
+    });
   }
 }
 
 function updateSnap(type, val) {
   snapSettings[type] = val;
+  const row = document.getElementById(`snap-${type}-adaptive-row`);
+  const input = document.getElementById(`snap-${type}-adaptive`);
+  if(row && input) {
+    row.style.opacity = val ? '1' : '0.4';
+    row.style.pointerEvents = val ? 'auto' : 'none';
+  }
+  render();
+  saveToLocalStorage();
+}
+
+function updateSnapAdaptive(type, val) {
+  snapSettings[type + 'Adaptive'] = val;
   render();
   saveToLocalStorage();
 }

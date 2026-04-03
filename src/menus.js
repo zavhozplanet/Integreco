@@ -148,6 +148,7 @@ function showNodeCtx(cx,cy,id){
   let rows = [];
   if(n.type === 'note') {
     rows = [
+      {icon:'⚙️',title:'Настройки рамки',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-node-settings-sub').classList.add('open'); syncNodeSettingsUI(id);}},
       {icon:'📝',title:'Открыть заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
       {icon:'🔗',title:'Связать (линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
       {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
@@ -159,6 +160,7 @@ function showNodeCtx(cx,cy,id){
   } else {
     const root=nodes.find(n=>n.type==='root');
     rows = [
+      {icon:'⚙️',title:'Настройки рамки',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-node-settings-sub').classList.add('open'); syncNodeSettingsUI(id);}},
       {icon:'📝',title:'Открыть заметку',action:()=>{
         hideCtxMenu();
         if(n.note) openNote(id, 'view');
@@ -223,6 +225,66 @@ function showGroupBgCtx(cx,cy,id){
 }
 
 function hideCtxMenu(){ctxMenu.style.display='none';document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'))}
+
+function syncNodeSettingsUI(id) {
+  const n = gN(id);
+  if(!n) return;
+  const s = n.style || {};
+  
+  // Update Shape UI
+  ['pill','round','rect'].forEach(p => {
+    const btn = document.getElementById('ns-shape-' + p);
+    if(btn) {
+      if((s.shape || 'pill') === p) btn.classList.add('on');
+      else btn.classList.remove('on');
+    }
+  });
+
+  // Update Border Type UI
+  ['none','solid','dashed','dotted'].forEach(p => {
+    const btn = document.getElementById('ns-btype-' + p);
+    if(btn) {
+      if((s.borderType || 'solid') === p) btn.classList.add('on');
+      else btn.classList.remove('on');
+    }
+  });
+
+  // Update Sliders
+  const widthEl = document.getElementById('ns-width');
+  if(widthEl) widthEl.value = s.borderWidth != null ? s.borderWidth : 1.5;
+  const padEl = document.getElementById('ns-pad');
+  if(padEl) padEl.value = s.padding != null ? s.padding : (n.type==='root'?14:10);
+  const opacityEl = document.getElementById('ns-opacity');
+  if(opacityEl) opacityEl.value = s.opacity != null ? s.opacity : 1;
+  const blurEl = document.getElementById('ns-blur');
+  if(blurEl) blurEl.value = s.blur != null ? s.blur : 0;
+
+  // Build colors list
+  const list = document.getElementById('ns-colors-list');
+  if(list) {
+    list.innerHTML = '';
+    BG_COLS.forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.className = 'bg-swatch' + ((s.borderColor||'') === c ? ' active' : '');
+      swatch.style.backgroundColor = c;
+      swatch.onclick = () => updateNodeStyle('borderColor', c, true);
+      list.appendChild(swatch);
+    });
+  }
+}
+
+function updateNodeStyle(key, val, commit=true) {
+  if(!ctxNodeId) return;
+  const n = gN(ctxNodeId);
+  if(!n) return;
+  
+  if(!n.style) n.style = {};
+  n.style[key] = val;
+  
+  if(commit) sh();
+  syncNodeSettingsUI(ctxNodeId);
+  render();
+}
 
 function ctxExec(cmd){
   hideCtxMenu();

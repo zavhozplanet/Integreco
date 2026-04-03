@@ -21,15 +21,57 @@ function groupSnapPoint(g, t) {
   };
 }
 
-function getSnapPoint(n, t) {
+function isPtInStad(px, py, nx, ny, hw, hh, isGroup, style) {
+  const dx = Math.abs(px - nx), dy = Math.abs(py - ny);
+  if (isGroup) return dx <= hw && dy <= hh;
+  const shape = style && style.shape ? style.shape : 'pill';
+  if (shape === 'rect') return dx <= hw && dy <= hh;
+  if (shape === 'round') {
+    const r = 8;
+    if (dx <= hw - r || dy <= hh - r) return dx <= hw && dy <= hh;
+    const cdx = dx - (hw - r), cdy = dy - (hh - r);
+    return (cdx * cdx + cdy * cdy <= r * r + 0.1);
+  }
+  const rad = Math.min(hw, hh);
+  if (dx <= hw - rad || dy <= hh - rad) return dx <= hw && dy <= hh;
+  const cdx = dx - (hw - rad), cdy = dy - (hh - rad);
+  return (cdx * cdx + cdy * cdy <= rad * rad + 0.1); // Small epsilon
+}
+
+function getSnapPoint(n, target, edge, side) {
   if (!n) return {x: 0, y: 0};
   const type = (n.type === 'root' || n.type === 'node') ? 'node' : n.type;
   
   if (!snapSettings[type]) {
-    if (n.type === 'group') return groupSnapPoint(n, t);
+    if (n.type === 'group') return groupSnapPoint(n, target);
     return {x: n.x, y: n.y};
   }
+
+  const isAdaptive = !!snapSettings[type + 'Adaptive'];
   
+  const getSidePoint = (s) => {
+    let hw, hh;
+    if (n.type === 'group') {
+      hw = (n.width || 300) / 2;
+      hh = (n.height || 200) / 2;
+    } else {
+      const ext = nodeHalfExtents(n.id);
+      hw = ext.hw;
+      hh = ext.hh;
+    }
+    if (s === 'l') return { x: n.x - hw, y: n.y };
+    if (s === 'r') return { x: n.x + hw, y: n.y };
+    if (s === 't') return { x: n.x, y: n.y - hh };
+    if (s === 'b') return { x: n.x, y: n.y + hh };
+    return { x: n.x, y: n.y };
+  };
+
+  // If NOT adaptive and side is already fixed in edge
+  if (!isAdaptive && edge && edge[side + 'Side']) {
+    return getSidePoint(edge[side + 'Side']);
+  }
+
+  // Calculate best side
   let hw, hh;
   if (n.type === 'group') {
     hw = (n.width || 300) / 2;
@@ -39,22 +81,28 @@ function getSnapPoint(n, t) {
     hw = ext.hw;
     hh = ext.hh;
   }
-  
-  const dx = t.x - n.x;
-  const dy = t.y - n.y;
-  
+  const dx = target.x - n.x;
+  const dy = target.y - n.y;
+  let s;
   if (Math.abs(dx / (hw || 1)) > Math.abs(dy / (hh || 1))) {
-    return { x: n.x + (dx > 0 ? hw : -hw), y: n.y };
+    s = dx > 0 ? 'r' : 'l';
   } else {
-    return { x: n.x, y: n.y + (dy > 0 ? hh : -hh) };
+    s = dy > 0 ? 'b' : 't';
   }
+
+  // If not adaptive, SAVE it for future renders
+  if (!isAdaptive && edge) {
+    edge[side + 'Side'] = s;
+  }
+  
+  return getSidePoint(s);
 }
 
 function getEdgePts(e) {
   const f=gN(e.from), t=gN(e.to);
   if(!f||!t) return {fx:0,fy:0,tx:0,ty:0};
-  const fp = getSnapPoint(f, t);
-  const tp = getSnapPoint(t, f);
+  const fp = getSnapPoint(f, t, e, 'from');
+  const tp = getSnapPoint(t, f, e, 'to');
   return {fx: fp.x, fy: fp.y, tx: tp.x, ty: tp.y};
 }
 
@@ -148,12 +196,13 @@ function nodeHalfExtents(nodeId){
   const n=gN(nodeId);if(!n)return{hw:55,hh:22};
   const isRoot=gPar(nodeId)==null;
   const fs=isRoot?15:14;
-  const pv=isRoot?14:10,ph=isRoot?26:22;
+  const pv=n.style && n.style.padding != null ? n.style.padding : (isRoot?14:10);
+  const ph=n.style && n.style.padding != null ? n.style.padding * 2.2 : (isRoot?26:22);
   const minW=isRoot?0:88,maxW=isRoot?Infinity:210;
   _mtx.font=(isRoot?'600 ':'400 ')+fs+'px Inter,sans-serif';
   const tw=_mtx.measureText(n.label||'').width;
-  const w=Math.max(minW,Math.min(maxW,tw+ph*2+3));
-  const h=fs*1.45+pv*2+3;
+  const w=Math.max(minW,Math.min(maxW,tw+ph*2));
+  const h=fs*1.45+pv*2;
   return{hw:w/2,hh:h/2};
 }
 
@@ -272,30 +321,21 @@ function lineExitFrom(e){
   }
 
   const{hw,hh}=nodeHalfExtents(e.from);
-  const STEPS=160;
+  const STEPS=120;
   for(let i=1;i<=STEPS;i++){
     const ti=i/STEPS;
     const p=edgePt(e, ti);
     if (isNaN(p.x) || isNaN(p.y)) continue;
     
-    // Stadium shape (rounded node) check
-    const dx = Math.abs(p.x - f.x), dy = Math.abs(p.y - f.y);
-    const rad = (f.type === 'group') ? 0 : Math.min(hw, hh);
-    let isInside = false;
-    if (dx <= hw - rad || dy <= hh - rad) isInside = (dx <= hw && dy <= hh);
-    else { const cdx = dx - (hw - rad), cdy = dy - (hh - rad); isInside = (cdx * cdx + cdy * cdy <= rad * rad); }
+    const inNode = isPtInStad(p.x, p.y, f.x, f.y, hw, hh, f.type==='group', f.style);
 
-    if(!isInside){
-      // Binary search refinement for sub-pixel accuracy
+    if(!inNode){
       let lo=(i-1)/STEPS, hi=ti;
-      for(let r=0;r<8;r++){
-        const mid=(lo+hi)/2;
-        const mp=edgePt(e,mid);
-        if(Math.abs(mp.x-f.x)>hw||Math.abs(mp.y-f.y)>hh) hi=mid; else lo=mid;
+      for(let r=0;r<10;r++){
+        const mid=(lo+hi)/2, mp=edgePt(e,mid);
+        if(isPtInStad(mp.x, mp.y, f.x, f.y, hw, hh, f.type==='group', f.style)) lo=mid; else hi=mid;
       }
-      const refined=edgePt(e,hi);
-      const tang=edgeTan(e, hi);
-      const len=Math.sqrt(tang.x*tang.x+tang.y*tang.y)||1;
+      const refined=edgePt(e,hi), tang=edgeTan(e, hi), len=Math.sqrt(tang.x*tang.x+tang.y*tang.y)||1;
       return{x:refined.x,y:refined.y,nx:tang.x/len,ny:tang.y/len,ti:hi};
     }
   }
@@ -317,32 +357,23 @@ function lineEntryTo(e){
     return{x:tx,y:ty,nx:tang.x/len,ny:tang.y/len};
   }
 
-  const{hw,hh}=nodeHalfExtents(e.to);
-  const STEPS=160;
-  for(let i=1;i<=STEPS;i++){
-    const ti=1-i/STEPS;
+  const {hw, hh} = nodeHalfExtents(e.to);
+  const STEPS = 120;
+  for(let i=STEPS-1; i>=0; i--){
+    const ti=i/STEPS;
     const p=edgePt(e, ti);
     if (isNaN(p.x) || isNaN(p.y)) continue;
+    
+    const inNode = isPtInStad(p.x, p.y, t.x, t.y, hw, hh, t.type==='group', t.style);
 
-    // Stadium shape (rounded node) check
-    const dx = Math.abs(p.x - t.x), dy = Math.abs(p.y - t.y);
-    const rad = (t.type === 'group') ? 0 : Math.min(hw, hh);
-    let isInside = false;
-    if (dx <= hw - rad || dy <= hh - rad) isInside = (dx <= hw && dy <= hh);
-    else { const cdx = dx - (hw - rad), cdy = dy - (hh - rad); isInside = (cdx * cdx + cdy * cdy <= rad * rad); }
-
-    if(!isInside){
-      // Binary search refinement for sub-pixel accuracy
-      let lo=ti, hi=1-(i-1)/STEPS;
-      for(let r=0;r<8;r++){
-        const mid=(lo+hi)/2;
-        const mp=edgePt(e,mid);
-        if(Math.abs(mp.x-t.x)>hw||Math.abs(mp.y-t.y)>hh) lo=mid; else hi=mid;
+    if(!inNode){
+      let lo=ti, hi=(i+1)/STEPS;
+      for(let r=0; r<10; r++){
+        const mid=(lo+hi)/2, mp=edgePt(e,mid);
+        if(isPtInStad(mp.x, mp.y, t.x, t.y, hw, hh, t.type==='group', t.style)) hi=mid; else lo=mid;
       }
-      const refined=edgePt(e,lo);
-      const tang=edgeTan(e, lo);
-      const len=Math.sqrt(tang.x*tang.x+tang.y*tang.y)||1;
-      return{x:refined.x,y:refined.y,nx:tang.x/len,ny:tang.y/len};
+      const refined=edgePt(e,hi), tang=edgeTan(e, hi), len=Math.sqrt(tang.x*tang.x+tang.y*tang.y)||1;
+      return{x:refined.x,y:refined.y,nx:tang.x/len,ny:tang.y/len,ti:hi};
     }
   }
   const dx=tx-fx,dy=ty-fy,len=Math.sqrt(dx*dx+dy*dy)||1;
@@ -757,6 +788,27 @@ function render(){
     div.setAttribute('draggable', 'false');
     div.ondragstart = () => false;
     const ni=document.createElement('div');ni.className='ni';
+    if(n.style) {
+      if(n.style.shape==='rect') ni.style.borderRadius='0px';
+      else if(n.style.shape==='round') ni.style.borderRadius='8px';
+      else if(n.style.shape==='pill') ni.style.borderRadius='50px';
+      
+      if(n.style.borderWidth!=null) ni.style.borderWidth=n.style.borderWidth+'px';
+      if(n.style.borderType) ni.style.borderStyle=n.style.borderType;
+      if(n.style.borderColor) ni.style.borderColor=n.style.borderColor;
+      if(n.style.padding!=null) ni.style.padding=`${n.style.padding}px ${n.style.padding*2.2}px`;
+      
+      if(n.style.opacity!=null) {
+        let rgb = '255,255,255';
+        if(isRoot) rgb = '61,59,56';
+        else if(isNote) rgb = '255,253,240';
+        ni.style.background=`rgba(${rgb}, ${n.style.opacity})`;
+      }
+      if(n.style.blur) {
+        ni.style.backdropFilter=`blur(${n.style.blur}px)`;
+        ni.style.webkitBackdropFilter=`blur(${n.style.blur}px)`;
+      }
+    }
     ni.setAttribute('draggable', 'false');
     ni.ondragstart = () => false;
     const ndot = document.createElement('div');

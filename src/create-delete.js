@@ -8,7 +8,7 @@ function mkEdge(fromId,toId,isLink){
   
   if(isToNote || isFromNote) {
     const branchColor = fromN ? (fromN.color || LCOLS[0]) : LCOLS[0];
-    return {id:nid(),from:fromId,to:toId,shape:'straight',dash:'dotted',width:1.5,dir:'none',color:branchColor,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+    return {id:nid(),from:fromId,to:toId,shape:'straight',dash:'dotted',width:1.5,dir:'none',color:branchColor,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null};
   }
   
   if(isLink){
@@ -18,7 +18,7 @@ function mkEdge(fromId,toId,isLink){
       width:linkDefaults.width||1,
       dir:linkDefaults.dir||'none',
       color:linkDefaults.color||LCOLS[0],
-      cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,isLink:true};
+      cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,isLink:true,fromSide:null,toSide:null};
   }
   
   return{id:nid(),from:fromId,to:toId,
@@ -27,7 +27,7 @@ function mkEdge(fromId,toId,isLink){
     color:glDefaults.color||LCOLS[0],
     width:glDefaults.width||1.5,
     dir:glDefaults.dir||'forward',
-    cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+    cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null};
 }
 
 function mkNode(x,y,label,pid,isLink,type='node'){

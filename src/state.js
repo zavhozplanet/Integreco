@@ -39,7 +39,11 @@ let branchViewId=null; // if set, only show this branch
 let noteNodeId=null;
 let trash=[];
 let mobRnNodeId=null, mobRnIsNew=false;
-let snapSettings = { node: false, note: false, group: false };
+let snapSettings = {
+  node: false, nodeAdaptive: true,
+  note: false, noteAdaptive: true,
+  group: false, groupAdaptive: true
+};
 let selNSet=new Set(); // multi-selected nodes from area selection
 let selEHandles=true;  // whether to show bezier handles for selected edge
 let edgeTapState={eid:null,t:0}; // touch double-tap detection on edges

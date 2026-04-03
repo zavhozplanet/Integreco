@@ -278,6 +278,8 @@ window.addEventListener('mousemove',ev=>{
             let bestEid = null;
             edges.forEach(e=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
+              // Ignore internal lines of group
+              if(dn.type === 'group' && dn.nodes && dn.nodes.includes(e.from) && dn.nodes.includes(e.to)) return;
               let minDist = Infinity;
               for(let t=0; t<=1; t+=0.01){
                 const p = edgePt(e, t);
@@ -339,6 +341,7 @@ window.addEventListener('mouseup',ev=>{
           if(epDrag.which==='from')e.from=targetId;
           else e.to=targetId;
           e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null; // reset CPs
+          e.fromSide=null; e.toSide=null; // reset snapping
           render();
           toast('🔗 Переподключено');
         } else {
@@ -367,9 +370,17 @@ window.addEventListener('mouseup',ev=>{
       if(dropTarget){
         const dropEid=parseInt(dropTarget.dataset.eid);
         if(dropEid&&dropNodeId){
-          pendingInsert = { nodeId: dropNodeId, edgeId: dropEid };
-          toast('Кликните по узлу для вставки в линию');
-          render(); // Persistent highlights via geometry.js
+          const dn=gN(dropNodeId); const edge=gE(dropEid);
+          let isInt = (dn && dn.type==='group' && edge && dn.nodes && dn.nodes.includes(edge.from) && dn.nodes.includes(edge.to));
+          
+          if(!isInt) {
+            pendingInsert = { nodeId: dropNodeId, edgeId: dropEid };
+            toast('Кликните по узлу для вставки в линию');
+            render(); // Persistent highlights via geometry.js
+          } else {
+            document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+            if(dnEl) dnEl.classList.remove('drop-node-target');
+          }
         } else {
           document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
           if(dnEl) dnEl.classList.remove('drop-node-target');
