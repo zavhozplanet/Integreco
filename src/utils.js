@@ -5,7 +5,12 @@ function nid(){return++idC}
 function gN(id){return nodes.find(n=>n.id===id)}
 function gE(id){return edges.find(e=>e.id===id)}
 function gCh(id){return edges.filter(e=>e.from===id).map(e=>e.to)}
-function gPar(id){const e=edges.find(e=>e.to===id);return e?e.from:null}
+function gPar(id) {
+  const n = gN(id);
+  if (n && n.type === 'root') return null;
+  const e = edges.find(e => e.to === id && e.dash !== 'link');
+  return e ? e.from : null;
+}
 function isMob(){return window.innerWidth<768||('ontouchstart' in window)}
 function s2c(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom}}
 function c2s(cx,cy){return{x:cx*zoom+panX,y:cy*zoom+panY}}

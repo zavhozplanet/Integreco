@@ -11,10 +11,12 @@ document.getElementById('btn-zout').addEventListener('touchend',ev=>{ev.preventD
    FULLSCREEN
 ================================================================ */
 function toggleFS(){
-  if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();document.getElementById('btn-fs').textContent='⛶'}
-  else{document.exitFullscreen&&document.exitFullscreen();document.getElementById('btn-fs').textContent='⛶'}
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen && document.exitFullscreen().catch(()=>{});
+  }
 }
-document.addEventListener('fullscreenchange',()=>{document.getElementById('btn-fs').textContent=document.fullscreenElement?'⛶':'⛶'});
 
 /* ================================================================
    MINIMAP

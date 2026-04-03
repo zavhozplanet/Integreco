@@ -208,10 +208,15 @@ function showUI() {
 function handleCenterClick() {
   const now = Date.now();
   if (now - lastCenterClick < 350) {
-    // double click: center on last used map root
-    if (lastUsedMapRootId) {
-      selNode(lastUsedMapRootId);
-      centerOnNode(lastUsedMapRootId);
+    // double click: center on last used map root, or any root if null
+    let targetRootId = lastUsedMapRootId;
+    if (!targetRootId) {
+      const rootNode = nodes.find(n => n.type === 'root');
+      if (rootNode) targetRootId = rootNode.id;
+    }
+    if (targetRootId) {
+      selNode(targetRootId);
+      centerOnNode(targetRootId);
     }
     lastCenterClick = 0;
   } else {
@@ -228,7 +233,7 @@ function handleCenterClick() {
           centerOnNode(rootNode.id);
         }
       }
-    }, 360);
+    }, 350);
   }
 }
 

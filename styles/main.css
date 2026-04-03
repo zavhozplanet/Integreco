@@ -32,7 +32,6 @@ input, textarea {user-select:text;-webkit-user-select:text}
 #btn-zout{bottom:calc(14px + env(safe-area-inset-bottom));left:14px}
 #btn-center{bottom:calc(14px + env(safe-area-inset-bottom));right:14px}
 #btn-mini{bottom:calc(14px + env(safe-area-inset-bottom));right:62px}
-#btn-auto{bottom:calc(14px + env(safe-area-inset-bottom));right:110px}
 #btn-menu{top:14px;right:14px}
 #btn-fs{top:14px;right:62px}
 
