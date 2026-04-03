@@ -88,7 +88,7 @@ function editEdge(eid){
   ta.id='edge-editor-active';
   ta.className='edge-edit';
   ta.value=e.label||'';
-  ta.placeholder='Название связи...';
+  ta.placeholder='';
   ta.rows=1;
   
   // Extremely visible styling for debugging/visibility

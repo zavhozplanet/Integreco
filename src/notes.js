@@ -44,7 +44,7 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     document.getElementById('n-del-btn').style.display = 'flex';
   }
   
-  const isLabelEmpty = !n.label || String(n.label).trim() === '' || n.label === '+';
+  const isLabelEmpty = !n.label || String(n.label).trim() === '' || n.label === '+' || n.label === 'Группа';
   const isNoteEmpty = !n.note || String(n.note).trim() === '';
 
   if (fromTrashIndex === null && mode === 'auto') {

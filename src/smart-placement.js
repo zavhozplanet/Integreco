@@ -55,9 +55,10 @@ function alignGroupNodes(gId) {
 
   sh();
   
-  // Title height is ~28px. We need some padding.
-  const titleH = 35;
-  const margin = 15;
+  // Get title height from DOM if possible, fallback to 35
+  const titleEl = document.getElementById('nd' + gId)?.querySelector('.group-title');
+  const titleH = titleEl ? titleEl.offsetHeight : 35;
+  const margin = 20;
 
   // Find max dimensions to avoid overflow
   let maxW = 0, maxH = 0;

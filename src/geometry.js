@@ -586,7 +586,8 @@ function render(){
     const grp=mkSVG('g');
     // child-sel: show collapse btn when child node is selected (but not when line itself is selected)
     const childSelected=selN===e.to;
-    grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(childSelected?' child-sel':''));
+    const isPending = pendingInsert && pendingInsert.edgeId === e.id;
+    grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(childSelected?' child-sel':'')+(isPending?' drop-target':''));
     grp.dataset.eid=e.id;
     if(!e.collapsed){
       // Draw line + arrowheads + handles normally
@@ -689,7 +690,7 @@ function render(){
     title.addEventListener('touchstart',ev=>{ev.stopPropagation();onNdTS(ev,n.id)},{passive:false});
     title.addEventListener('touchmove',ev=>{onNdTM(ev,n.id)},{passive:false});
     title.addEventListener('touchend',ev=>{onNdTE(ev,n.id)});
-    title.addEventListener('dblclick',ev=>{ev.stopPropagation();editNode(n.id,true)});
+    title.addEventListener('dblclick',ev=>{ev.stopPropagation();openNote(n.id,'auto')});
     title.addEventListener('contextmenu',ev=>{
       ev.preventDefault();ev.stopPropagation();
       showGroupCtx(ev.clientX,ev.clientY,n.id);
@@ -737,7 +738,7 @@ function render(){
     const isRoot=n.type==='root';
     const isNote=n.type==='note';
     const div=document.createElement('div');
-    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'');
+    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'')+(pendingInsert && pendingInsert.nodeId === n.id ? ' drop-node-target' : '');
     div.id='nd'+n.id;div.style.left=n.x+'px';div.style.top=n.y+'px';
     div.setAttribute('draggable', 'false');
     div.ondragstart = () => false;
@@ -819,7 +820,10 @@ function renderEdgesOnly(){
     if(!f||!t||!isVisible(e.from))return;
     if(!isVisible(e.to)&&!e.collapsed)return;
     const isSel=e.id===selE;const clr=isSel?'#4a7cf7':(e.color||LCOLS[0]);
-    const grp=mkSVG('g');grp.setAttribute('class','edge-group'+(isSel?' sel-group':''));grp.dataset.eid=e.id;
+    const grp=mkSVG('g');
+    const isPending = pendingInsert && pendingInsert.edgeId === e.id;
+    grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(isPending?' drop-target':''));
+    grp.dataset.eid=e.id;
     if(!e.collapsed){
       const d=mkPathD(e);
       const hit=mkSVG('path');hit.setAttribute('d',d);hit.setAttribute('class','ehit');hit.dataset.eid=e.id;grp.appendChild(hit);

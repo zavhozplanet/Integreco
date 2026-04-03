@@ -148,31 +148,31 @@ function showNodeCtx(cx,cy,id){
   let rows = [];
   if(n.type === 'note') {
     rows = [
-      {icon:'📝',title:'📝',action:()=>{hideCtxMenu();openNote(id,'edit')}},
-      {icon:'🔗',title:'🔗',action:()=>{hideCtxMenu();startLinkMode(id)}},
-      {icon:'<div class="cdm-preview group"></div>',title:'Группа',action:()=>{hideCtxMenu();addToGroup()}},
-      {icon:'✂️',title:'✂️',action:()=>{hideCtxMenu();copyNodeToClip(id,true)}},
-      {icon:'📋',title:'📋',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
+      {icon:'📝',title:'Открыть заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
+      {icon:'🔗',title:'Связать (линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
+      {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
+      {icon:'✂️',title:'Вырезать',action:()=>{hideCtxMenu();copyNodeToClip(id,true)}},
+      {icon:'📋',title:'Копировать',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
       {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
-      {icon:'🗑',title:'🗑️',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
+      {icon:'🗑',title:'Удалить',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
     ];
   } else {
     const root=nodes.find(n=>n.type==='root');
     rows = [
-      {icon:'📝',title:'📝',action:()=>{
+      {icon:'📝',title:'Открыть заметку',action:()=>{
         hideCtxMenu();
         if(n.note) openNote(id, 'view');
         else openNote(id, 'edit');
       }},
-      {icon:'➕',title:'➕',action:()=>{hideCtxMenu();addChild(id)}},
-      {icon:'🔗',title:'🔗',action:()=>{hideCtxMenu();startLinkMode(id)}},
-      {icon:'<div class="cdm-preview group"></div>',title:'Группа',action:()=>{hideCtxMenu();addToGroup()}},
-      {icon:'✂️',title:'✂️',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-cut-sub').classList.add('open')}},
-      {icon:'📋',title:'📋',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-copy-sub').classList.add('open')}},
-      {icon:'📌',title:'📌',action:()=>{hideCtxMenu();ctxExec('paste')}},
+      {icon:'➕',title:'Добавить дочерний узел',action:()=>{hideCtxMenu();addChild(id)}},
+      {icon:'🔗',title:'Связать (пунктирная линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
+      {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
+      {icon:'✂️',title:'Вырезать',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-cut-sub').classList.add('open')}},
+      {icon:'📋',title:'Копировать',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-copy-sub').classList.add('open')}},
+      {icon:'📌',title:'Вставить',action:()=>{hideCtxMenu();ctxExec('paste')}},
       {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
-      {icon:'🔭',title:'🔭',action:()=>{hideCtxMenu();enterBranchView(id)}},
-      ...(id!==root.id?[{icon:'🗑',title:'🗑️',danger:true,action:()=>{
+      {icon:'🔭',title:'Войти в режим ветки (Filter View)',action:()=>{hideCtxMenu();enterBranchView(id)}},
+      ...(id!==root.id?[{icon:'🗑',title:'Удалить',danger:true,action:()=>{
         const hasCh=gCh(id).length>0;
         if(hasCh){
           // Has children: show submenu with two options
@@ -201,15 +201,15 @@ function showGroupCtx(cx,cy,id){
   const lockIcon=g.locked?'🔓':'🔒';
   
   const rows = [
-    {icon:'📝',title:'📝',action:()=>{hideCtxMenu();editNode(id,true)}},
-    {icon:'📋',title:'📋',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
-    {icon:'📌',title:'📌',action:()=>{hideCtxMenu();ctxExec('paste')}},
-    {icon:'<div class="cdm-preview group"></div>',title:'Группа',action:()=>{hideCtxMenu();addToGroup()}},
-    {icon:'⬆️',title:'⬆️',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.push(n);render()}}},
-    {icon:'⬇️',title:'⬇️',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.unshift(n);render()}}},
-    {icon:'[ \ / ]',title:'Выровнять',action:()=>{hideCtxMenu();alignGroupNodes(id)}},
-    {icon:lockIcon,title:lockIcon,action:()=>{hideCtxMenu();sh();g.locked=!g.locked;render()}},
-    {icon:'🗑️',title:'🗑️',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
+    {icon:'📝',title:'Открыть заголовок/заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
+    {icon:'📋',title:'Копировать данные группы',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
+    {icon:'📌',title:'Вставить в группу',action:()=>{hideCtxMenu();ctxExec('paste')}},
+    {icon:'<div class="cdm-preview group"></div>',title:'Добавить в другую группу',action:()=>{hideCtxMenu();addToGroup()}},
+    {icon:'⬆️',title:'На передний план',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.push(n);render()}}},
+    {icon:'⬇️',title:'На задний план',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.unshift(n);render()}}},
+    {icon:'[ \ / ]',title:'Выровнять узлы сеткой',action:()=>{hideCtxMenu();alignGroupNodes(id)}},
+    {icon:lockIcon,title:g.locked?'Разблокировать':'Заблокировать',action:()=>{hideCtxMenu();sh();g.locked=!g.locked;render()}},
+    {icon:'🗑️',title:'Разгруппировать/Удалить группу',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
   ];
   
   buildCtxRow(rows);

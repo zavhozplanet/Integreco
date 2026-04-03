@@ -202,6 +202,9 @@ function findNodeAt(sx,sy,excludeId){
   let insideNode = null;
   let insideGroup = null;
   
+  const rc = wrap.getBoundingClientRect();
+  const elAt = document.elementFromPoint(sx + rc.left, sy + rc.top);
+  
   for(const n of nodes) {
     if(n.id === excludeId) continue;
     // skip group if dragged node is geometrically inside it
@@ -213,8 +216,14 @@ function findNodeAt(sx,sy,excludeId){
     }
     const {hw, hh} = nodeHalfExtents(n.id);
     if(Math.abs(p.x - n.x) <= hw && Math.abs(p.y - n.y) <= hh) {
-      if(n.type === 'group') insideGroup = n.id;
-      else insideNode = n.id;
+      if(n.type === 'group') {
+        // Special case: Only snap to group if mouse is over its plus buttons
+        if(elAt && elAt.closest('.group-np') && elAt.closest('#nd' + n.id)) {
+          insideGroup = n.id;
+        }
+      } else {
+        insideNode = n.id;
+      }
     }
   }
   

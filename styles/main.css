@@ -66,12 +66,18 @@ input, textarea {user-select:text;-webkit-user-select:text}
   border-radius: 8px; pointer-events: none; z-index: -1;
 }
 .group-title {
-  height: 28px; background: rgba(255,255,255,0.95);
-  border-bottom: 1.5px solid var(--nbr-dk); border-radius: 8px 8px 0 0;
+  min-height: 28px; height: auto;
+  background: rgba(255,255,255,0.95);
+  border-bottom: 2.5px solid var(--nbr-dk); border-radius: 8px 8px 0 0;
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 700; color: var(--tx);
   cursor: grab; user-select: none; pointer-events: auto;
   z-index: 11;
+  padding: 6px 14px;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  word-break: break-word; /* Ensure long words wrap */
+  text-align: center;
 }
 .group-title:active { cursor: grabbing; }
 .group-resizer {
@@ -109,7 +115,15 @@ input, textarea {user-select:text;-webkit-user-select:text}
   min-width:88px;max-width:210px;text-align:center;position:relative;
   white-space:pre-wrap;word-break:break-word;line-height:1.45;
   transition:box-shadow .15s,border-color .15s}
-.node.drop-node-target .ni{border-color:var(--ac);box-shadow:0 0 0 4px rgba(74,124,247,0.2)}
+.node.drop-node-target .ni{background:var(--ac)!important;color:#fff!important;border-color:#fff!important;box-shadow:0 8px 30px rgba(74,124,247,0.4),0 0 0 4px rgba(74,124,247,0.2);transform:scale(1.05)}
+.node.drop-node-target .ni span{color:#fff!important}
+
+.edge-group.drop-target .ep {
+  stroke-width: 3.5px!important;
+  stroke: var(--ac)!important;
+  stroke-dasharray: none!important;
+}
+
 .is-root .ni{background:var(--rb);color:#fff;border-color:transparent;
   font-weight:600;font-size:15px;padding:14px 26px;box-shadow:0 4px 20px rgba(0,0,0,.22)}
 .selected .ni{border-color:var(--sel-color, var(--ac))!important;box-shadow:0 0 0 3px var(--sel-shadow, rgba(74,124,247,.18)),var(--sh)!important}
@@ -148,7 +162,9 @@ input, textarea {user-select:text;-webkit-user-select:text}
 .note-dot{position:absolute;top:-3px;left:-3px;width:9px;height:9px;background:#f5a623;border-radius:50%;border:2px solid #fff;display:none;pointer-events:none}
 .has-note .note-dot{display:block}
 
-.node-lock{position:absolute;top:-6px;right:-6px;font-size:11px;background:#fff;border:1.5px solid var(--nbr);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.node-lock{position:absolute;top:-6px;right:-6px;font-size:11px;background:#fff;border:1.5px solid var(--nbr);border-radius:50%;width:20px;height:20px;display:none;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.selected .node-lock{display:flex}
+
 
 /* edge collapse button — shown on hover or when child node is selected, NOT on line selection */
 .edge-group .ecbtn{opacity:0;transition:opacity .18s}

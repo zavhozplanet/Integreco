@@ -14,6 +14,18 @@ function onNodeMD(ev,id){
     openNote(id, 'auto');
     return;
   }
+  
+  // Pending insertion on click
+  if(pendingInsert && pendingInsert.nodeId === id) {
+    sh(); insertNodeBetween(pendingInsert.edgeId, pendingInsert.nodeId);
+    pendingInsert = null;
+    document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
+    return;
+  }
+  if(pendingInsert) {
+    pendingInsert = null;
+    document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
+  }
   ms.lastId=id;ms.lastT=now;ms.drgd=false;
   if(linkMode){handleLinkClick(id);return}
 
@@ -122,6 +134,10 @@ wrap.addEventListener('mousedown',ev=>{
   }
   if(ev.button!==0)return;
   if(linkMode){exitLinkMode();return;}
+  if(pendingInsert) {
+    pendingInsert = null;
+    document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
+  }
 
   const now=Date.now();
   if(now-lastCanvClick<350){
@@ -342,16 +358,19 @@ window.addEventListener('mouseup',ev=>{
   if(ms.dragging&&ms.drgd){
     // Check if a single node was dropped on a highlighted edge — insert in break
     if(ms.dragOffsets&&ms.dragOffsets.length===1&&!selNSet.size){
-      const dropTarget=document.querySelector('.edge-group.drop-target');
-      document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
       const dropNodeId=ms.dragOffsets[0].id;
       const dnEl=document.getElementById('nd'+dropNodeId);
-      if(dnEl) dnEl.classList.remove('drop-node-target');
+      const dropTarget=document.querySelector('.edge-group.drop-target');
       
       if(dropTarget){
         const dropEid=parseInt(dropTarget.dataset.eid);
         if(dropEid&&dropNodeId){
-          insertNodeBetween(dropEid,dropNodeId);
+          pendingInsert = { nodeId: dropNodeId, edgeId: dropEid };
+          toast('Кликните по узлу для вставки в линию');
+          render(); // Persistent highlights via geometry.js
+        } else {
+          document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));
+          if(dnEl) dnEl.classList.remove('drop-node-target');
         }
         ms.dragging=false;ms.panning=false;ms.drgd=false;
         return;
