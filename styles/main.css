@@ -221,11 +221,10 @@ body.is-resizing { cursor: nwse-resize !important; }
 
 .edge-label-v3{width:140px;height:200px;display:flex;align-items:center;justify-content:center;
   text-align:center;pointer-events:none}
-.edge-label-v3 span{background:rgba(255,255,255,0.5);color:var(--tx);font-size:11px;font-weight:500;
-  padding:3px 8px;border-radius:6px;line-height:1.25;white-space:pre-wrap;word-break:break-word;
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);display:inline-block;max-width:140px}
-.is-dark-bg .edge-label-v3 span{background:rgba(30,28,25,0.5);color:#fff;
-  box-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.edge-label-v3 span{background:transparent;color:var(--tx);font-size:11.5px;font-weight:600;
+  padding:3px 10px;border-radius:12px;line-height:1.25;white-space:pre-wrap;word-break:break-word;
+  display:inline-block;max-width:140px}
+.is-dark-bg .edge-label-v3 span{color:#fff}
 .edge-edit{position:fixed;z-index:9999;background:#fff;border:1.5px solid var(--ac);border-radius:6px;
   font-family:'Inter',sans-serif;font-size:13px;padding:4px 8px;text-align:center;resize:none;
   box-shadow:0 4px 15px rgba(0,0,0,.18);min-width:80px;overflow:hidden;outline:none}
@@ -292,10 +291,14 @@ input:checked + .slider-sw:before{transform:translateX(14px)}
   font-size:9px;color:var(--mu);white-space:nowrap;pointer-events:none}
 /* sub-menu */
 .ctx-sub{display:none;flex-direction:column;gap:3px;padding:4px 0 2px;border-top:1px solid var(--nbr)}
+#ctxmenu.sub-only .ctx-row { display: none; }
+#ctxmenu.sub-only .ctx-sub { border-top: none; }
 .ctx-sub.open{display:flex}
 .ctx-subitem{padding:9px 14px;font-size:14px;cursor:pointer;border-radius:8px;color:var(--tx);transition:background .1s}
 .ctx-subitem:hover,.ctx-subitem:active{background:var(--bg)}
 .ctx-subitem.del{color:var(--red)}
+.piny{font-size:9px;color:var(--mu);cursor:pointer;padding:1.5px 6px;border-radius:6px;border:1.2px solid var(--nbr);transition:all .1s;user-select:none;font-weight:400;text-transform:none}
+.piny.active{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
 
 /* ── MENU ── */
 #mmenu{position:fixed;top:62px;right:14px;background:#fff;border-radius:16px;

@@ -59,41 +59,59 @@
   </div>
   <!-- node settings sub -->
   <div class="ctx-sub" id="ctx-node-settings-sub" style="padding:4px; gap:6px; max-height:60vh; overflow-y:auto; cursor:default; width:220px;" onclick="event.stopPropagation()">
-    <div class="sh-title" style="margin-top:0; padding-top:2px;">Настройки рамки узла</div>
     
     <div class="bg-group" id="node-frame-shape-group">
-      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ФОРМА</div>
-      <div class="bg-patterns">
+      <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
+        <button class="lp-pin" id="ns-pin-shape" onclick="toggleNodePin('shape')" title="📌 Форма по умолчанию">📌</button>
+      </div>
+      <div class="bg-patterns" style="padding-top:2px;">
         <div class="bg-pat-btn" onclick="updateNodeStyle('shape','pill')" title="Пилюля" id="ns-shape-pill" style="border-radius:20px;">О</div>
         <div class="bg-pat-btn" onclick="updateNodeStyle('shape','round')" title="Скругленная" id="ns-shape-round" style="border-radius:8px;">О</div>
         <div class="bg-pat-btn" onclick="updateNodeStyle('shape','rect')" title="Квадратная" id="ns-shape-rect" style="border-radius:0;">П</div>
       </div>
     </div>
 
+    <div class="bg-group">
+      <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
+        <button class="lp-pin" id="ns-pin-params" onclick="toggleNodePin('params')" title="📌 Параметры по умолчанию">📌</button>
+      </div>
+      <div class="bg-sliders" style="padding-top:2px;">
+        <div class="slider-row" title="Размер (отступ текста)"><span>🔲</span><input type="range" id="ns-pad" min="0" max="40" step="1" oninput="updateNodeStyle('padding', parseFloat(this.value), false)" onchange="updateNodeStyle('padding', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Насыщенность (Opacity)"><span>👻</span><input type="range" id="ns-opacity" min="0" max="1" step="0.05" oninput="updateNodeStyle('opacity', parseFloat(this.value), false)" onchange="updateNodeStyle('opacity', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Размытость (Blur)"><span>🌫️</span><input type="range" id="ns-blur" min="0" max="24" step="1" oninput="updateNodeStyle('blur', parseFloat(this.value), false)" onchange="updateNodeStyle('blur', parseFloat(this.value), true)"></div>
+      </div>
+    </div>
+
     <div class="bg-group" id="node-frame-style-group">
-      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ТИП ЛИНИИ И ЦВЕТ</div>
-      <div class="bg-patterns" style="margin-bottom:6px">
-        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','none')" id="ns-btype-none" style="font-size:12px">None</div>
-        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','solid')" id="ns-btype-solid" style="font-size:12px">—</div>
-        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dashed')" id="ns-btype-dashed" style="font-size:12px">- -</div>
-        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dotted')" id="ns-btype-dotted" style="font-size:12px">· ·</div>
+      <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
+        <button class="lp-pin" id="ns-pin-line" onclick="toggleNodePin('line')" title="📌 Стиль линии по умолчанию">📌</button>
+      </div>
+      <div class="bg-patterns" style="margin-bottom:6px; padding-top:2px;">
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','none')" title="Без рамки" id="ns-btype-none" style="font-size:12px">∅</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','solid')" title="Сплошная" id="ns-btype-solid" style="font-size:12px">—</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dashed')" title="Пунктир" id="ns-btype-dashed" style="font-size:12px">- -</div>
+        <div class="bg-pat-btn" onclick="updateNodeStyle('borderType','dotted')" title="Точки" id="ns-btype-dotted" style="font-size:12px">· ·</div>
+      </div>
+      <div class="bg-sliders" style="padding:0 8px 10px;">
+        <div class="slider-row" title="Толщина линии"><span>📏</span><input type="range" id="ns-width" min="0" max="10" step="0.5" oninput="updateNodeStyle('borderWidth', parseFloat(this.value), false)" onchange="updateNodeStyle('borderWidth', parseFloat(this.value), true)"></div>
+      </div>
+    </div>
+    
+    <div class="bg-group">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px 2px;">
+        <div style="display:flex; gap:4px;">
+          <div class="bg-pat-btn on" id="ns-col-target-border" onclick="setNsColorTarget('border')" title="Цвет рамки" style="width:32px;height:24px;border-radius:6px;font-size:14px">🔲</div>
+          <div class="bg-pat-btn" id="ns-col-target-bg" onclick="setNsColorTarget('bg')" title="Цвет фона" style="width:32px;height:24px;border-radius:6px;font-size:14px">🎨</div>
+        </div>
+        <button class="lp-pin" id="ns-pin-color" onclick="toggleNodePin('color')" title="📌 Цвет по умолчанию">📌</button>
       </div>
       <div class="bg-colors" id="ns-colors-list">
         <!-- populated by JS -->
       </div>
       <div class="bg-colors" style="padding-top:0">
-        <div class="bg-custom-btn" onclick="document.getElementById('ns-custom-input').click()" title="🎨" style="margin-left:auto">🖌️</div>
-        <input type="color" id="ns-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateNodeStyle('borderColor', this.value, true)">
-      </div>
-    </div>
-    
-    <div class="bg-group">
-      <div style="font-size:11px;color:var(--mu);margin-bottom:4px;font-weight:600;padding-left:4px">ПАРАМЕТРЫ</div>
-      <div class="bg-sliders">
-        <div class="slider-row" title="Толщина линии"><span>📏</span><input type="range" id="ns-width" min="0" max="10" step="0.5" oninput="updateNodeStyle('borderWidth', parseFloat(this.value), false)" onchange="updateNodeStyle('borderWidth', parseFloat(this.value), true)"></div>
-        <div class="slider-row" title="Размер рамки (отступ текста)"><span>🔲</span><input type="range" id="ns-pad" min="0" max="40" step="1" oninput="updateNodeStyle('padding', parseFloat(this.value), false)" onchange="updateNodeStyle('padding', parseFloat(this.value), true)"></div>
-        <div class="slider-row" title="Насыщенность фона рамки (Opacity)"><span>👻</span><input type="range" id="ns-opacity" min="0" max="1" step="0.05" oninput="updateNodeStyle('opacity', parseFloat(this.value), false)" onchange="updateNodeStyle('opacity', parseFloat(this.value), true)"></div>
-        <div class="slider-row" title="Размытость (Blur)"><span>🌫️</span><input type="range" id="ns-blur" min="0" max="24" step="1" oninput="updateNodeStyle('blur', parseFloat(this.value), false)" onchange="updateNodeStyle('blur', parseFloat(this.value), true)"></div>
+        <div id="ns-recent-list" style="display:flex;gap:5px"></div>
+        <div class="bg-custom-btn" onclick="document.getElementById('ns-custom-input').click()" title="Выбрать цвет из спектра" style="margin-left:auto">🖌️</div>
+        <input type="color" id="ns-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateNodeStyle(activeColorTarget === 'border' ? 'borderColor' : 'backgroundColor', this.value, true)">
       </div>
     </div>
   </div>
@@ -311,6 +329,13 @@
 
 <!-- desktop line panel -->
 <div id="lp">
+  <!-- Purpose (Main/Link) -->
+  <div class="lp-row" style="margin-bottom:4px">
+    <div class="lpr2">
+      <div class="lpb2 on" id="ep-purpose-main" onclick="setEP('purpose','main',this)" title="🔗 Основная">🔗</div>
+      <div class="lpb2" id="ep-purpose-link" onclick="setEP('purpose','link',this)" title="⛓️ Связующая">⛓️</div>
+    </div>
+  </div>
   <!-- Shape -->
   <div class="lp-row">
     <div class="lpr2">

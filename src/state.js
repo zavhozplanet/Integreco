@@ -44,6 +44,19 @@ let snapSettings = {
   note: false, noteAdaptive: true,
   group: false, groupAdaptive: true
 };
+let nodeDefaults = {
+  style: {
+    shape: 'pill',
+    borderType: 'solid',
+    borderWidth: 1.5,
+    padding: 10,
+    opacity: 1,
+    blur: 0,
+    borderColor: null,
+    backgroundColor: null
+  },
+  pins: { shape: false, params: false, line: false, color: false }
+};
 let selNSet=new Set(); // multi-selected nodes from area selection
 let selEHandles=true;  // whether to show bezier handles for selected edge
 let edgeTapState={eid:null,t:0}; // touch double-tap detection on edges

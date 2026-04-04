@@ -27,6 +27,7 @@ function posMenu(m, cx, cy) {
 
 function showMultiCtx(cx, cy) {
   hideAllMenus();
+  ctxMenu.classList.remove('sub-only');
   const allLocked = [...selNSet].every(id => gN(id)?.locked);
   const lockIcon = allLocked ? '🔓' : '🔒';
   const lockTitle = allLocked ? '🔓' : '🔒';
@@ -137,8 +138,8 @@ function addToGroup() {
 function showNodeCtx(cx,cy,id){
   hideAllMenus();
   ctxNodeId=id;selNode(id);
-  // close sub menus
   document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
+  ctxMenu.classList.remove('sub-only');
   const n=gN(id);
   if(!n)return;
   
@@ -148,7 +149,12 @@ function showNodeCtx(cx,cy,id){
   let rows = [];
   if(n.type === 'note') {
     rows = [
-      {icon:'⚙️',title:'Настройки рамки',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-node-settings-sub').classList.add('open'); syncNodeSettingsUI(id);}},
+      {icon:'⚙️',title:'Настройки рамки',action:()=>{
+        document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
+        document.getElementById('ctx-node-settings-sub').classList.add('open'); 
+        ctxMenu.classList.add('sub-only');
+        syncNodeSettingsUI(id);
+      }},
       {icon:'📝',title:'Открыть заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
       {icon:'🔗',title:'Связать (линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
       {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
@@ -160,7 +166,12 @@ function showNodeCtx(cx,cy,id){
   } else {
     const root=nodes.find(n=>n.type==='root');
     rows = [
-      {icon:'⚙️',title:'Настройки рамки',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-node-settings-sub').classList.add('open'); syncNodeSettingsUI(id);}},
+      {icon:'⚙️',title:'Настройки рамки',action:()=>{
+        document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
+        document.getElementById('ctx-node-settings-sub').classList.add('open'); 
+        ctxMenu.classList.add('sub-only');
+        syncNodeSettingsUI(id);
+      }},
       {icon:'📝',title:'Открыть заметку',action:()=>{
         hideCtxMenu();
         if(n.note) openNote(id, 'view');
@@ -224,12 +235,63 @@ function showGroupBgCtx(cx,cy,id){
   showCanvCtx(cx,cy);
 }
 
-function hideCtxMenu(){ctxMenu.style.display='none';document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'))}
+function hideCtxMenu(){
+  ctxMenu.style.display='none';
+  document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
+  ctxMenu.classList.remove('sub-only');
+}
+
+let activeColorTarget = 'border';
+
+function setNsColorTarget(target) {
+  activeColorTarget = target;
+  document.getElementById('ns-col-target-border').classList.toggle('on', target === 'border');
+  document.getElementById('ns-col-target-bg').classList.toggle('on', target === 'bg');
+  syncNodeSettingsUI(ctxNodeId);
+}
+
+function toggleNodePin(block) {
+  if(!ctxNodeId) return;
+  const n = gN(ctxNodeId);
+  const s = (n && n.style) || {};
+  
+  if(block === 'shape') nodeDefaults.style.shape = s.shape || 'pill';
+  else if(block === 'params') {
+    nodeDefaults.style.padding = s.padding != null ? s.padding : (n.type==='root'?14:10);
+    nodeDefaults.style.opacity = s.opacity != null ? s.opacity : 1;
+    nodeDefaults.style.blur = s.blur != null ? s.blur : 0;
+  } else if(block === 'line') {
+    nodeDefaults.style.borderType = s.borderType || 'solid';
+    nodeDefaults.style.borderWidth = s.borderWidth != null ? s.borderWidth : 1.5;
+  } else if(block === 'color') {
+    nodeDefaults.style.borderColor = s.borderColor;
+    nodeDefaults.style.backgroundColor = s.backgroundColor;
+  }
+  toast('Настройки сохранены как «По умолчанию»');
+  syncNodeSettingsUI(ctxNodeId);
+}
 
 function syncNodeSettingsUI(id) {
   const n = gN(id);
   if(!n) return;
   const s = n.style || {};
+  
+  // Sync Pins (Value-based check)
+  const d = nodeDefaults.style;
+  document.getElementById('ns-pin-shape')?.classList.toggle('active', (s.shape||'pill') === d.shape);
+  document.getElementById('ns-pin-params')?.classList.toggle('active', 
+    (s.padding != null ? s.padding : (n.type==='root'?14:10)) === d.padding &&
+    (s.opacity != null ? s.opacity : 1) === d.opacity &&
+    (s.blur != null ? s.blur : 0) === d.blur
+  );
+  document.getElementById('ns-pin-line')?.classList.toggle('active', 
+    (s.borderType||'solid') === d.borderType &&
+    (s.borderWidth != null ? s.borderWidth : 1.5) === d.borderWidth
+  );
+  document.getElementById('ns-pin-color')?.classList.toggle('active', 
+    s.borderColor === d.borderColor &&
+    s.backgroundColor === d.backgroundColor
+  );
   
   // Update Shape UI
   ['pill','round','rect'].forEach(p => {
@@ -261,14 +323,27 @@ function syncNodeSettingsUI(id) {
 
   // Build colors list
   const list = document.getElementById('ns-colors-list');
+  const activeColor = activeColorTarget === 'border' ? (s.borderColor||'') : (s.backgroundColor||'');
   if(list) {
     list.innerHTML = '';
     BG_COLS.forEach(c => {
       const swatch = document.createElement('div');
-      swatch.className = 'bg-swatch' + ((s.borderColor||'') === c ? ' active' : '');
+      swatch.className = 'bg-swatch' + (activeColor === c ? ' active' : '');
       swatch.style.backgroundColor = c;
-      swatch.onclick = () => updateNodeStyle('borderColor', c, true);
+      swatch.onclick = () => updateNodeStyle(activeColorTarget === 'border' ? 'borderColor' : 'backgroundColor', c, true);
       list.appendChild(swatch);
+    });
+  }
+  
+  const recList = document.getElementById('ns-recent-list');
+  if(recList) {
+    recList.innerHTML = '';
+    (nodeDefaults.recentColors || []).forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.className = 'bg-swatch' + (activeColor === c ? ' active' : '');
+      swatch.style.backgroundColor = c;
+      swatch.onclick = () => updateNodeStyle(activeColorTarget === 'border' ? 'borderColor' : 'backgroundColor', c, true);
+      recList.appendChild(swatch);
     });
   }
 }
@@ -279,8 +354,18 @@ function updateNodeStyle(key, val, commit=true) {
   if(!n) return;
   
   if(!n.style) n.style = {};
-  n.style[key] = val;
   
+  if(['borderColor', 'backgroundColor'].includes(key) && val && val.startsWith('#')) {
+    if(!nodeDefaults.recentColors) nodeDefaults.recentColors = [];
+    if(!nodeDefaults.recentColors.includes(val) && !BG_COLS.includes(val)) {
+      nodeDefaults.recentColors.unshift(val);
+      if(nodeDefaults.recentColors.length > 5) nodeDefaults.recentColors.pop();
+    }
+  }
+
+  if(val === null) delete n.style[key];
+  else n.style[key] = val;
+
   if(commit) sh();
   syncNodeSettingsUI(ctxNodeId);
   render();

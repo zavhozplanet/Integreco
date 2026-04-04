@@ -8,21 +8,28 @@ let epDrag={active:false}; // edge endpoint reconnection drag
 function onNodeMD(ev,id){
   ev.stopPropagation();hideAllMenus();hideCanvDblMenu();
   const now=Date.now();
-  // double-click on node body → open note
-  if(ms.lastId===id&&now-ms.lastT<350&&!ms.drgd){
+  
+  // Pending insertion on DOUBLE CLICK
+  const isDbl = ms.lastId===id && now-ms.lastT < 350;
+
+  if(isDbl && pendingInsert && pendingInsert.nodeId === id) {
+    sh(); insertNodeBetween(pendingInsert.edgeId, pendingInsert.nodeId);
+    pendingInsert = null;
+    document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
+    ms = {}; // clear state
+    return;
+  }
+  
+  // double-click on node body → open note (if not inserting)
+  if(isDbl && !ms.drgd){
     ms={};
     openNote(id, 'auto');
     return;
   }
   
-  // Pending insertion on click
-  if(pendingInsert && pendingInsert.nodeId === id) {
-    sh(); insertNodeBetween(pendingInsert.edgeId, pendingInsert.nodeId);
-    pendingInsert = null;
-    document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
-    return;
-  }
-  if(pendingInsert) {
+  // Clear pending if click on another node OR single click on this node might move it?
+  // Actually, we can keep pending if it's a single click on THIS node to allow further dragging.
+  if(pendingInsert && pendingInsert.nodeId !== id) {
     pendingInsert = null;
     document.querySelectorAll('.edge-group.drop-target, .node.drop-node-target').forEach(el=>el.classList.remove('drop-target', 'drop-node-target'));
   }
@@ -81,6 +88,19 @@ function onNodeMD(ev,id){
     addNodeToDrag(id);
   }
   ms.sx=ev.clientX;ms.sy=ev.clientY;
+  
+  if (ms.dragOffsets.length > 0) {
+    const draggedIds = new Set(ms.dragOffsets.map(d => d.id));
+    const otherNodes = [], draggedNodes = [];
+    nodes.forEach(n => draggedIds.has(n.id) ? draggedNodes.push(n) : otherNodes.push(n));
+    nodes = [...otherNodes, ...draggedNodes];
+    
+    const otherEdges = [], draggedEdges = [];
+    edges.forEach(e => (draggedIds.has(e.from) || draggedIds.has(e.to)) ? draggedEdges.push(e) : otherEdges.push(e));
+    edges = [...otherEdges, ...draggedEdges];
+    
+    render();
+  }
 }
 
 svgl.addEventListener('mousedown',ev=>{
@@ -375,7 +395,7 @@ window.addEventListener('mouseup',ev=>{
           
           if(!isInt) {
             pendingInsert = { nodeId: dropNodeId, edgeId: dropEid };
-            toast('Кликните по узлу для вставки в линию');
+            toast('Дважды кликните по узлу для вставки в линию');
             render(); // Persistent highlights via geometry.js
           } else {
             document.querySelectorAll('.edge-group').forEach(eg=>eg.classList.remove('drop-target'));

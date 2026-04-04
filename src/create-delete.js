@@ -30,9 +30,14 @@ function mkEdge(fromId,toId,isLink){
     cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null};
 }
 
-function mkNode(x,y,label,pid,isLink,type='node'){
+function mkNode(x,y,label,pid,isLink,type='node', customStyle=null){
   const id=nid();
   const node = {id,x,y,label:label||'+',col:false,note:'',type,locked:false};
+  if(customStyle) node.style = customStyle;
+  else if(type==='node') node.style = JSON.parse(JSON.stringify(nodeDefaults.style));
+  else if(type==='note') {
+    node.style = { shape: 'pill', backgroundColor: '#fffdf0', borderColor: '#e6e0b0', padding: 12 };
+  }
   if(type === 'group') {
     node.width = 300;
     node.height = 200;
@@ -110,18 +115,16 @@ function insertNodeOnEdge(edgeId){
   const e=gE(edgeId);if(!e)return;
   const mid=edgePt(e,0.5);
   sh();
-  const newId=++idC;
-  const node={id:newId,x:mid.x,y:mid.y,label:'+',col:false,note:'',type:'node',locked:false};
-  nodes.push(node);
+  const nodeId=mkNode(mid.x,mid.y,'+',null,false,'node');
   // New edges: keep style of original
-  const e1={...e,id:++idC,to:newId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
-  const e2={...e,id:++idC,from:newId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  const e1={...e,id:nid(),to:nodeId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
+  const e2={...e,id:nid(),from:nodeId,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
   edges=edges.filter(x=>x.id!==edgeId);
   edges.push(e1,e2);
-  selE=null;selN=newId;
+  selE=null;selN=nodeId;
   render();
-  if(isMob())showMobRename(newId,true);
-  else setTimeout(()=>editNode(newId,true),50);
+  if(isMob())showMobRename(nodeId,true);
+  else setTimeout(()=>editNode(nodeId,true),50);
 }
 
 // Insert an existing node between the two endpoints of an edge (drag-to-line)

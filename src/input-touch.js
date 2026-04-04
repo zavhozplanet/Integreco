@@ -48,6 +48,19 @@ function onNdTS(ev,id){
     addNodeToDrag(id);
   }
 
+  if (dragOffsets.length > 0) {
+    const draggedIds = new Set(dragOffsets.map(d => d.id));
+    const otherNodes = [], draggedNodes = [];
+    nodes.forEach(n => draggedIds.has(n.id) ? draggedNodes.push(n) : otherNodes.push(n));
+    nodes = [...otherNodes, ...draggedNodes];
+    
+    const otherEdges = [], draggedEdges = [];
+    edges.forEach(e => (draggedIds.has(e.from) || draggedIds.has(e.to)) ? draggedEdges.push(e) : otherEdges.push(e));
+    edges = [...otherEdges, ...draggedEdges];
+    
+    render();
+  }
+
   ntd={id,sx:t.clientX,sy:t.clientY,ox:p.x-n.x,oy:p.y-n.y,moved:false,dragging:false,lastId:id,lastT:now,dragOffsets};
 
   if(isDblTap){

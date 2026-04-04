@@ -644,7 +644,18 @@ function render(){
       const ep=mkSVG('path');ep.setAttribute('d',d);
       ep.setAttribute('class','ep '+(e.dash==='link'?'link':(e.dash||'solid'))+(isSel?' sel-e':''));
       ep.setAttribute('stroke',clr);ep.setAttribute('stroke-width',isSel?Math.max(e.width||1.5,2):(e.width||1.5));
-      ep.setAttribute('fill','none');grp.appendChild(ep);
+      ep.setAttribute('fill','none');
+      if(e.label){
+        const mid=edgePt(e,0.5);
+        const m = mkSVG('mask'); m.id='m-e-'+e.id;
+        const r1=mkSVG('rect'); r1.setAttribute('x',0); r1.setAttribute('y',0); r1.setAttribute('width',CS); r1.setAttribute('height',CS); r1.setAttribute('fill','white');
+        const r2=mkSVG('rect'); 
+        const gw=Math.max(24, e.label.length*7.5+10), gh=18;
+        r2.setAttribute('x',mid.x-gw/2); r2.setAttribute('y',mid.y-gh/2); r2.setAttribute('width',gw); r2.setAttribute('height',gh); r2.setAttribute('fill','black');
+        m.appendChild(r1); m.appendChild(r2); grp.appendChild(m);
+        ep.setAttribute('mask',`url(#${m.id})`);
+      }
+      grp.appendChild(ep);
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
       if(e.label){
         const mid=edgePt(e,0.5);
@@ -798,11 +809,17 @@ function render(){
       if(n.style.borderColor) ni.style.borderColor=n.style.borderColor;
       if(n.style.padding!=null) ni.style.padding=`${n.style.padding}px ${n.style.padding*2.2}px`;
       
-      if(n.style.opacity!=null) {
-        let rgb = '255,255,255';
-        if(isRoot) rgb = '61,59,56';
-        else if(isNote) rgb = '255,253,240';
-        ni.style.background=`rgba(${rgb}, ${n.style.opacity})`;
+      let rgbStr = isRoot ? '61,59,56' : (isNote ? '255,253,240' : '255,255,255');
+      if(n.style.backgroundColor && n.style.backgroundColor.startsWith('#')) {
+        const h = n.style.backgroundColor;
+        const r = parseInt(h.slice(1,3), 16), g = parseInt(h.slice(3,5), 16), b = parseInt(h.slice(5,7), 16);
+        rgbStr = `${r},${g},${b}`;
+      } else if (n.style.backgroundColor) {
+        ni.style.backgroundColor = n.style.backgroundColor;
+      }
+      if(n.style.opacity!=null || n.style.backgroundColor) {
+        const op = n.style.opacity != null ? n.style.opacity : 1;
+        if(rgbStr) ni.style.background=`rgba(${rgbStr}, ${op})`;
       }
       if(n.style.blur) {
         ni.style.backdropFilter=`blur(${n.style.blur}px)`;
@@ -831,6 +848,15 @@ function render(){
     if(!n.label)sp.style.color='var(--mu)';
     if(!isMob()){sp.style.cursor='text';sp.addEventListener('click',ev=>{ev.stopPropagation();editNode(n.id)})}
     ni.appendChild(sp);
+    
+    // Adaptive text color for contrast
+    if(n.style && n.style.backgroundColor) {
+      sp.style.color = getContrastColor(n.style.backgroundColor);
+    } else if (isRoot) {
+      sp.style.color = '#ffffff';
+    } else if (isNote) {
+      sp.style.color = '#2c2a27';
+    }
     // Cardinal plus buttons on node edges, shown on hover
     ['e','w','n','s'].forEach(dir=>{
       const np=document.createElement('div');np.className='np '+dir+' smart-side';

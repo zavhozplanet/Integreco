@@ -84,3 +84,11 @@ function pruneGroupEdges() {
     if (selE && toRemove.includes(selE)) selE = null;
   }
 }
+function getContrastColor(hex) {
+  if (!hex || !hex.startsWith('#')) return '#2c2a27';
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  const lum = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+  return lum < 0.5 ? '#ffffff' : '#2c2a27';
+}
