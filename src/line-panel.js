@@ -36,7 +36,6 @@ function syncLP(e){
 }
 function syncPinBtns(){
   const e=gE(selE);
-  document.getElementById('pin-shape')?.classList.toggle('active',e&&(e.shape||gls)===glDefaults.shape);
   const d=e&&(e.isLink?linkDefaults:glDefaults);
   document.getElementById('pin-shape')?.classList.toggle('active',e&&(e.shape||(e.isLink?linkDefaults:glDefaults).shape)===d.shape);
   document.getElementById('pin-dash')?.classList.toggle('active',e&&(e.dash||(e.isLink?linkDefaults:glDefaults).dash)===d.dash);

@@ -647,6 +647,7 @@ function render(){
       ep.setAttribute('fill','none');
       if(e.label){
         const mid=edgePt(e,0.5);
+        // SVG mask: creates visual "break" in the line under the label text
         const m = mkSVG('mask'); m.id='m-e-'+e.id;
         const r1=mkSVG('rect'); r1.setAttribute('x',0); r1.setAttribute('y',0); r1.setAttribute('width',CS); r1.setAttribute('height',CS); r1.setAttribute('fill','white');
         const r2=mkSVG('rect'); 
@@ -654,11 +655,7 @@ function render(){
         r2.setAttribute('x',mid.x-gw/2); r2.setAttribute('y',mid.y-gh/2); r2.setAttribute('width',gw); r2.setAttribute('height',gh); r2.setAttribute('fill','black');
         m.appendChild(r1); m.appendChild(r2); grp.appendChild(m);
         ep.setAttribute('mask',`url(#${m.id})`);
-      }
-      grp.appendChild(ep);
-      if(e.dash!=='link') drawArrowheads(grp,e,clr);
-      if(e.label){
-        const mid=edgePt(e,0.5);
+        // Label text overlay
         const fo=mkSVG('foreignObject');
         fo.setAttribute('x',mid.x-70);fo.setAttribute('y',mid.y-100);
         fo.setAttribute('width',140);fo.setAttribute('height',200);
@@ -668,6 +665,8 @@ function render(){
         const span=document.createElement('span');span.textContent=e.label;
         div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
       }
+      grp.appendChild(ep);
+      if(e.dash!=='link') drawArrowheads(grp,e,clr);
       if(isSel&&selEHandles){
         const sh = e.shape || gls;
         if (sh === 'bezier' || sh === 'straight') {
@@ -921,7 +920,18 @@ function renderEdgesOnly(){
       const hit=mkSVG('path');hit.setAttribute('d',d);hit.setAttribute('class','ehit');hit.dataset.eid=e.id;grp.appendChild(hit);
       const ep=mkSVG('path');ep.setAttribute('d',d);
       ep.setAttribute('class','ep '+(e.dash==='link'?'link':(e.dash||'solid'))+(isSel?' sel-e':''));
-      ep.setAttribute('stroke',clr);ep.setAttribute('stroke-width',isSel?Math.max(e.width||1.5,2):(e.width||1.5));ep.setAttribute('fill','none');grp.appendChild(ep);
+      ep.setAttribute('stroke',clr);ep.setAttribute('stroke-width',isSel?Math.max(e.width||1.5,2):(e.width||1.5));ep.setAttribute('fill','none');
+      if(e.label){
+        const mid=edgePt(e,0.5);
+        const m = mkSVG('mask'); m.id='m-eo-'+e.id;
+        const r1=mkSVG('rect'); r1.setAttribute('x',0); r1.setAttribute('y',0); r1.setAttribute('width',CS); r1.setAttribute('height',CS); r1.setAttribute('fill','white');
+        const r2=mkSVG('rect');
+        const gw=Math.max(24, e.label.length*7.5+10), gh=18;
+        r2.setAttribute('x',mid.x-gw/2); r2.setAttribute('y',mid.y-gh/2); r2.setAttribute('width',gw); r2.setAttribute('height',gh); r2.setAttribute('fill','black');
+        m.appendChild(r1); m.appendChild(r2); grp.appendChild(m);
+        ep.setAttribute('mask',`url(#${m.id})`);
+      }
+      grp.appendChild(ep);
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
       if(e.label){
         const mid=edgePt(e,0.5);

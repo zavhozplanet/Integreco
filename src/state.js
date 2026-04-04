@@ -55,7 +55,7 @@ let nodeDefaults = {
     borderColor: null,
     backgroundColor: null
   },
-  pins: { shape: false, params: false, line: false, color: false }
+  recentColors: []
 };
 let selNSet=new Set(); // multi-selected nodes from area selection
 let selEHandles=true;  // whether to show bezier handles for selected edge

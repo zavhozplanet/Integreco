@@ -70,6 +70,7 @@ function saveToLocalStorage() {
     snapSettings,
     glDefaults,
     linkDefaults,
+    nodeDefaults,
     lastUsedMapRootId,
     idC
   };
@@ -92,6 +93,10 @@ function loadFromLocalStorage() {
         if (parsed.snapSettings) snapSettings = parsed.snapSettings;
         if (parsed.glDefaults) glDefaults = parsed.glDefaults;
         if (parsed.linkDefaults) linkDefaults = parsed.linkDefaults;
+        if (parsed.nodeDefaults) {
+          nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
+          if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;
+        }
         if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
         idC = parsed.idC;
         render();
