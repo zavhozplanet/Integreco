@@ -299,8 +299,8 @@ function syncNodeSettingsUI(id) {
     if(btn) {
       if((s.shape || 'pill') === p) btn.classList.add('on');
       else btn.classList.remove('on');
-      // Hide round for multi-nodes
-      if(n.type === 'multi' && p === 'round') btn.style.display = 'none';
+      // Hide pill (round ends) for multi-nodes, keep round (rounded corners) and rect
+      if(n.type === 'multi' && p === 'pill') btn.style.display = 'none';
       else btn.style.display = '';
     }
   });
