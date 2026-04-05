@@ -352,16 +352,26 @@ window.addEventListener('mouseup',ev=>{
     const e=gE(epDrag.eid);
     if(e){
       // findNodeAt expects screen-relative coords, not canvas coords
-      const targetId=findNodeAt(ev.clientX-rc.left,ev.clientY-rc.top, epDrag.which==='from'?e.from:e.to);
-      if(targetId && targetId!==e.from && targetId!==e.to){
-        // Prevent duplicate edges
-        const dupExists=edges.some(x=>x.id!==e.id&&((x.from===e.from&&x.to===targetId)||(x.from===targetId&&x.to===e.from)));
-        if(!dupExists){
+      const targetId = findNodeAt(ev.clientX - rc.left, ev.clientY - rc.top);
+      if (targetId) {
+        const dupExists = edges.some(x => x.id !== e.id && ((x.from === (epDrag.which === 'from' ? targetId : e.from) && x.to === (epDrag.which === 'to' ? targetId : e.to)) || (x.from === (epDrag.which === 'to' ? targetId : e.to) && x.to === (epDrag.which === 'from' ? targetId : e.from))));
+        if (!dupExists) {
           sh();
-          if(epDrag.which==='from')e.from=targetId;
-          else e.to=targetId;
-          e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null; // reset CPs
-          e.fromSide=null; e.toSide=null; // reset snapping
+          if (epDrag.which === 'from') e.from = targetId;
+          else e.to = targetId;
+          e.cp1x = null; e.cp1y = null; e.cp2x = null; e.cp2y = null;
+          
+          const tN = gN(targetId);
+          const p = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
+          if (tN.type === 'multi') {
+            // Force re-calculation of side and offset for the moved end
+            e[epDrag.which + 'Side'] = null;
+            e[epDrag.which + 'Offset'] = null;
+            getSnapPoint(tN, p, e, epDrag.which);
+          } else {
+            e[epDrag.which + 'Side'] = null;
+            e[epDrag.which + 'Offset'] = null;
+          }
           render();
           toast('🔗 Переподключено');
         } else {
