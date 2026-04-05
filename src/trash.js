@@ -171,6 +171,7 @@ function addFromDbl(type){
   else if(type==='node') id=mkNode(p.x,p.y,'+',null,false,'node');
   else if(type==='note') id=mkNode(p.x,p.y,'+',null,false,'note');
   else if(type==='group') id=mkNode(p.x,p.y,'Новая группа',null,false,'group');
+  else if(type==='multi') id=mkNode(p.x,p.y,'+',null,false,'multi');
   render();selNode(id);
   if(type==='group'){
     if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);

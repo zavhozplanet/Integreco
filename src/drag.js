@@ -18,8 +18,8 @@ function updatePlusDrag(ev){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
     
     let sx = n.x, sy = n.y;
-    if(n.type === 'group') {
-      const snap = groupSnapPoint(n, {x: p.x, y: p.y});
+    if(n.type === 'group' || n.type === 'multi') {
+      const snap = getSnapPoint(n, {x: p.x, y: p.y}, null, 'from');
       sx = snap.x; sy = snap.y;
     }
     glLink.style.display='block';
@@ -30,8 +30,8 @@ function updatePlusDrag(ev){
     let ex = p.x, ey = p.y;
     if(tgtId) {
       const tgtN = gN(tgtId);
-      if(tgtN.type === 'group') {
-        const snap = groupSnapPoint(tgtN, {x: sx, y: sy});
+      if(tgtN.type === 'group' || tgtN.type === 'multi') {
+        const snap = getSnapPoint(tgtN, {x: sx, y: sy}, null, 'to');
         ex = snap.x; ey = snap.y;
       } else {
         ex = tgtN.x; ey = tgtN.y;
@@ -72,16 +72,31 @@ function endPlusDrag(ev){
         const branchColor = fromN ? (fromN.color || LCOLS[0]) : LCOLS[0];
         e = {id:nid(),from:fromId,to:tgt,shape:'straight',dash:'dotted',width:1.5,dir:'none',color:branchColor,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false};
         edges.push(e);
-        render();
       } else {
         e = mkEdge(fromId,tgt,true);
         edges.push(e);
-        render();
-        // Just select the edge visually, don't open the context menu automatically
-        selE=e.id; selEHandles=true; selN=null; selNSet.clear(); render();
+        selE=e.id; selEHandles=true; selN=null; selNSet.clear();
       }
+      // Save dynamic side offsets for multi nodes based on current drag release positions
+      let sx = fromN.x, sy = fromN.y;
+      if (fromN.type === 'multi') {
+        const snap = getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from');
+        sx = snap.x; sy = snap.y;
+      } else {
+        getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from'); 
+      }
+      if (toN.type === 'multi') {
+        getSnapPoint(toN, {x: sx, y: sy}, e, 'to');
+      } else {
+        getSnapPoint(toN, {x: sx, y: sy}, e, 'to');
+      }
+      render();
     } else {
-      sh();const id=mkNode(p.x,p.y,'+',fromId,false);if(autoMode)autoLayout();render();selNode(id);
+      sh();const id=mkNode(p.x,p.y,'+',fromId,false);
+      const e = edges[edges.length - 1]; // mkNode pushes edge connecting parent and child
+      const fromN = gN(fromId);
+      if (fromN.type === 'multi') getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from');
+      if(autoMode)autoLayout();render();selNode(id);
       if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);
     }
   }

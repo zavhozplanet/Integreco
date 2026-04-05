@@ -53,6 +53,12 @@ function mkNode(x,y,label,pid,isLink,type='node', customStyle=null){
       imgOpacity: 1,
       imgBlur: 0
     };
+  } else if (type === 'multi') {
+    // Estimate size for "1.5x longer than usual node"
+    // Usually node size depends on text. Let's set a fixed starting width that's visibly wider.
+    node.width = 240; // Default text node might be around ~100-150px
+    node.height = 50;
+    if(!customStyle) node.style = JSON.parse(JSON.stringify(nodeDefaults.style));
   }
   nodes.push(node);
   if(pid!=null) edges.push(mkEdge(pid,id,isLink));

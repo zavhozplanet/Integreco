@@ -44,9 +44,12 @@ function startGroupResize(ev, id, corner){
   const n = gN(id);
   if(!n) return;
   // fixed point is the opposite corner
-  let fx = n.x + n.width/2, fy = n.y + n.height/2;
-  if(corner.includes('r')) fx = n.x - n.width/2;
-  if(corner.includes('b')) fy = n.y - n.height/2;
+  const ext = nodeHalfExtents(id);
+  const w = ext.hw * 2;
+  const h = ext.hh * 2;
+  let fx = n.x + w/2, fy = n.y + h/2;
+  if(corner.includes('r')) fx = n.x - w/2;
+  if(corner.includes('b')) fy = n.y - h/2;
 
   groupResize = { active: true, id, fx, fy };
   document.body.classList.add('is-resizing');
@@ -57,13 +60,66 @@ function updateGroupResize(ev){
   const clientX = ev.touches ? ev.touches[0].clientX : ev.clientX;
   const clientY = ev.touches ? ev.touches[0].clientY : ev.clientY;
   const rc = wrap.getBoundingClientRect();
-  const p = s2c(clientX - rc.left, clientY - rc.top);
+  let p = s2c(clientX - rc.left, clientY - rc.top);
   const n = gN(groupResize.id);
   if(n){
-    n.width = Math.max(100, Math.abs(p.x - groupResize.fx));
-    n.height = Math.max(70, Math.abs(p.y - groupResize.fy));
+    let minAllowedX = null, maxAllowedX = null;
+    let minAllowedY = null, maxAllowedY = null;
+    if (n.type === 'multi') {
+      const margin = 16; // some UI padding space
+      edges.forEach(e => {
+        if (e.from === n.id || e.to === n.id) {
+          const side = e.from === n.id ? 'from' : 'to';
+          if (e[side + 'Side'] && e[side + 'Offset'] != null) {
+            const isH = e[side + 'Side'] === 't' || e[side + 'Side'] === 'b';
+            const offset = e[side + 'Offset'];
+            if (isH) {
+              const absX = n.x + offset;
+              if (minAllowedX == null || absX < minAllowedX) minAllowedX = absX;
+              if (maxAllowedX == null || absX > maxAllowedX) maxAllowedX = absX;
+            } else {
+              const absY = n.y + offset;
+              if (minAllowedY == null || absY < minAllowedY) minAllowedY = absY;
+              if (maxAllowedY == null || absY > maxAllowedY) maxAllowedY = absY;
+            }
+          }
+        }
+      });
+      if (minAllowedX != null) {
+        if (p.x > groupResize.fx) p.x = Math.max(p.x, maxAllowedX + margin);
+        else p.x = Math.min(p.x, minAllowedX - margin);
+      }
+      if (minAllowedY != null) {
+        if (p.y > groupResize.fy) p.y = Math.max(p.y, maxAllowedY + margin);
+        else p.y = Math.min(p.y, minAllowedY - margin);
+      }
+    }
+
+    const oldX = n.x, oldY = n.y;
+    const minW = n.type === 'multi' ? 40 : 100;
+    const minH = n.type === 'multi' ? 40 : 70;
+    n.width = Math.max(minW, Math.abs(p.x - groupResize.fx));
+    n.height = Math.max(minH, Math.abs(p.y - groupResize.fy));
     n.x = (p.x + groupResize.fx) / 2;
     n.y = (p.y + groupResize.fy) / 2;
+    
+    // adjust offsets for multi so lines stay stationary
+    if (n.type === 'multi') {
+      const shiftX = n.x - oldX;
+      const shiftY = n.y - oldY;
+      if (shiftX !== 0 || shiftY !== 0) {
+        edges.forEach(e => {
+          if (e.from === n.id || e.to === n.id) {
+            const side = e.from === n.id ? 'from' : 'to';
+            if (e[side + 'Side'] && e[side + 'Offset'] != null) {
+              const isH = e[side + 'Side'] === 't' || e[side + 'Side'] === 'b';
+              if (isH && shiftX !== 0) e[side + 'Offset'] -= shiftX;
+              else if (!isH && shiftY !== 0) e[side + 'Offset'] -= shiftY;
+            }
+          }
+        });
+      }
+    }
     render();
   }
 }

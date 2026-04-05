@@ -42,7 +42,8 @@ let mobRnNodeId=null, mobRnIsNew=false;
 let snapSettings = {
   node: false, nodeAdaptive: true,
   note: false, noteAdaptive: true,
-  group: false, groupAdaptive: true
+  group: false, groupAdaptive: true,
+  multi: false, multiAdaptive: true
 };
 let nodeDefaults = {
   style: {

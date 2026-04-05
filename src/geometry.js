@@ -42,12 +42,13 @@ function getSnapPoint(n, target, edge, side) {
   if (!n) return {x: 0, y: 0};
   const type = (n.type === 'root' || n.type === 'node') ? 'node' : n.type;
   
-  if (!snapSettings[type]) {
+  if (!snapSettings[type] && n.type !== 'multi') {
     if (n.type === 'group') return groupSnapPoint(n, target);
     return {x: n.x, y: n.y};
   }
 
-  const isAdaptive = !!snapSettings[type + 'Adaptive'];
+  // multi nodes stick to dragged offset if not adaptive
+  const isAdaptive = n.type === 'multi' ? !!snapSettings.multiAdaptive : !!snapSettings[type + 'Adaptive'];
   
   const getSidePoint = (s) => {
     let hw, hh;
@@ -59,10 +60,24 @@ function getSnapPoint(n, target, edge, side) {
       hw = ext.hw;
       hh = ext.hh;
     }
-    if (s === 'l') return { x: n.x - hw, y: n.y };
-    if (s === 'r') return { x: n.x + hw, y: n.y };
-    if (s === 't') return { x: n.x, y: n.y - hh };
-    if (s === 'b') return { x: n.x, y: n.y + hh };
+    let ox = 0, oy = 0;
+    if (n.type === 'multi') {
+      const isH = s === 't' || s === 'b';
+      const maxO = (isH ? hw : hh) - 8; // 8px corner margin
+      if (edge && edge[side + 'Offset'] != null) {
+        if (isH) ox = edge[side + 'Offset'];
+        else oy = edge[side + 'Offset'];
+      } else {
+        // Project target onto edge
+        if (isH) ox = Math.max(-maxO, Math.min(maxO, target.x - n.x));
+        else oy = Math.max(-maxO, Math.min(maxO, target.y - n.y));
+        if (!isAdaptive && edge) edge[side + 'Offset'] = isH ? ox : oy;
+      }
+    }
+    if (s === 'l') return { x: n.x - hw, y: n.y + oy };
+    if (s === 'r') return { x: n.x + hw, y: n.y + oy };
+    if (s === 't') return { x: n.x + ox, y: n.y - hh };
+    if (s === 'b') return { x: n.x + ox, y: n.y + hh };
     return { x: n.x, y: n.y };
   };
 
@@ -194,6 +209,7 @@ const _mtx=(()=>{const c=document.createElement('canvas');return c.getContext('2
 
 function nodeHalfExtents(nodeId){
   const n=gN(nodeId);if(!n)return{hw:55,hh:22};
+  if(n.type === 'multi') return {hw: (n.width||240)/2, hh: (n.height||50)/2};
   const isRoot=gPar(nodeId)==null;
   const fs=isRoot?15:14;
   const pv=n.style && n.style.padding != null ? n.style.padding : (isRoot?14:10);
@@ -616,6 +632,7 @@ function render(){
   if(isRendering) return;
   isRendering = true;
   try {
+    document.body.classList.toggle('edge-selected', !!selE);
     canvas.querySelectorAll('.node').forEach(el=>el.remove());
     canvas.querySelectorAll('.group-box').forEach(el=>el.remove());
     Array.from(svgl.children).forEach(el=>{if(el.id!=='ghost-ln'&&el.id!=='ghost-hd')el.remove()});
@@ -792,11 +809,37 @@ function render(){
   nodes.filter(n=>n.type!=='group' && isVisible(n.id)).forEach(n=>{
     const isRoot=n.type==='root';
     const isNote=n.type==='note';
+    const isMulti=n.type==='multi';
     const div=document.createElement('div');
-    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'')+(pendingInsert && pendingInsert.nodeId === n.id ? ' drop-node-target' : '');
+    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'')+(isMulti?' type-multi':'')+(pendingInsert && pendingInsert.nodeId === n.id ? ' drop-node-target' : '');
     div.id='nd'+n.id;div.style.left=n.x+'px';div.style.top=n.y+'px';
     div.setAttribute('draggable', 'false');
     div.ondragstart = () => false;
+
+    if(isMulti) {
+      const ext = nodeHalfExtents(n.id);
+      div.style.width = (ext.hw * 2 + 6) + 'px'; 
+      div.style.height = (ext.hh * 2 + 6) + 'px';
+      
+      // Resizer handles
+      ['tl','tr','bl','br'].forEach(pos=>{
+        const r=document.createElement('div');
+        r.className='multi-resizer '+pos;
+        r.addEventListener('mousedown',ev=>{ev.stopPropagation();startGroupResize(ev,n.id,pos)});
+        r.addEventListener('touchstart',ev=>{ev.stopPropagation();startGroupResize(ev,n.id,pos)},{passive:false});
+        div.appendChild(r);
+      });
+      // Side sensors for highlight and drag connection
+      ['n','s','e','w'].forEach(pos=>{
+        const sensor=document.createElement('div');
+        sensor.className='multi-side-sensor '+pos;
+        // Mousedown explicitly initiates drag
+        sensor.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,sensor,pos)});
+        // We do NOT add touchstart here because touch already has its own logic in mobile-specific +. If needed, we can.
+        div.appendChild(sensor);
+      });
+    }
+
     const ni=document.createElement('div');ni.className='ni';
     if(n.style) {
       if(n.style.shape==='rect') ni.style.borderRadius='0px';

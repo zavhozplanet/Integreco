@@ -493,3 +493,36 @@ input:checked + .slider-sw:before{transform:translateX(14px)}
 }
 .cdm-preview.group::before { top: 3px; left: 4px; }
 .cdm-preview.group::after { bottom: 3px; right: 4px; }
+
+/* Multi Node Styles */
+.node.type-multi .ni {
+  width: 100%; height: 100%; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  max-width: none; min-width: auto;
+  overflow-y: auto; overflow-x: hidden;
+}
+.node.type-multi .ni::-webkit-scrollbar { width: 6px; }
+.node.type-multi .ni::-webkit-scrollbar-track { background: transparent; }
+.node.type-multi .ni::-webkit-scrollbar-thumb { background: rgba(120, 120, 120, 0.3); border-radius: 10px; }
+.node.type-multi .ni::-webkit-scrollbar-thumb:hover { background: rgba(120, 120, 120, 0.6); }
+.multi-resizer {
+  position: absolute; width: 16px; height: 16px; z-index: 10;
+  background: transparent; border: none; box-sizing: border-box;
+}
+.multi-resizer.tl { top: -8px; left: -8px; cursor: nwse-resize; }
+.multi-resizer.tr { top: -8px; right: -8px; cursor: nesw-resize; }
+.multi-resizer.bl { bottom: -8px; left: -8px; cursor: nesw-resize; }
+.multi-resizer.br { bottom: -8px; right: -8px; cursor: nwse-resize; }
+
+.cdm-preview.multi {
+  width: 48px; border-radius: 12px;
+}
+
+/* Multi Side Sensors */
+.multi-side-sensor { position: absolute; z-index: 5; background: transparent; transition: background 0.1s; border-radius: 4px; pointer-events: auto; }
+body.edge-selected .multi-side-sensor { pointer-events: none!important; display: none!important; }
+.multi-side-sensor.n { top: 2px; left: 16px; right: 16px; height: 6px; }
+.multi-side-sensor.s { bottom: 2px; left: 16px; right: 16px; height: 6px; }
+.multi-side-sensor.w { left: 2px; top: 16px; bottom: 16px; width: 6px; }
+.multi-side-sensor.e { right: 2px; top: 16px; bottom: 16px; width: 6px; }
+.node.type-multi:hover .multi-side-sensor:hover { background: rgba(56, 114, 224, 0.3); }
