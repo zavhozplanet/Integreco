@@ -18,9 +18,67 @@ function init(){
   zoom=1;panX=wrap.clientWidth/2-CS/2;panY=wrap.clientHeight/2-CS/2;applyT();
 }
 
-if (!loadFromLocalStorage()) {
-  init();
+async function bootApp() {
+  if (window.storageAPI) await window.storageAPI.init();
+  
+  let loaded = false;
+  
+  if (window.storageAPI && window.storageAPI.dirHandle) {
+    const permOpts = { mode: 'readwrite' };
+    const perm = await window.storageAPI.dirHandle.queryPermission(permOpts);
+    if (perm === 'granted') {
+       const dataStr = await window.storageAPI.loadData();
+       if (dataStr) loaded = applyData(dataStr);
+    } else {
+       showReconnectOverlay();
+       return; 
+    }
+  }
+
+  if (!loaded) {
+    loaded = loadFromLocalStorage();
+  }
+
+  if (!loaded) {
+    init();
+  }
 }
+
+function showReconnectOverlay() {
+  const div = document.createElement('div');
+  div.style.position = 'fixed';
+  div.style.top = 0; div.style.left = 0; div.style.right = 0; div.style.bottom = 0;
+  div.style.background = 'rgba(0,0,0,0.85)';
+  div.style.color = '#fff';
+  div.style.display = 'flex';
+  div.style.flexDirection = 'column';
+  div.style.alignItems = 'center';
+  div.style.justifyContent = 'center';
+  div.style.zIndex = 9999;
+  div.innerHTML = `
+    <h2>Восстановление связи (Syncthing)</h2>
+    <p style="margin-bottom:20px;text-align:center;max-width:400px;line-height:1.4">Браузер требует подтверждения для восстановления защищённого доступа к вашей рабочей локальной папке.</p>
+    <button id="recon-btn" style="padding:12px 24px;border-radius:12px;border:none;background:#2ed573;color:#fff;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(46,213,115,0.4)">Разрешить доступ</button>
+  `;
+  document.body.appendChild(div);
+  document.getElementById('recon-btn').onclick = async () => {
+    const permOpts = { mode: 'readwrite' };
+    try {
+      await window.storageAPI.dirHandle.requestPermission(permOpts);
+      const dataStr = await window.storageAPI.loadData();
+      if (dataStr) applyData(dataStr);
+      else if (!loadFromLocalStorage()) init();
+    } catch(e) {
+      console.warn("Permission denied, fallback to local storage");
+      if (!loadFromLocalStorage()) init();
+    }
+    div.style.opacity = 0;
+    setTimeout(() => div.remove(), 300);
+  };
+}
+
+bootApp();
+
 function exportData() {
   const data = {
     version: '1.0',
@@ -43,24 +101,11 @@ function importData(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.version !== '1.0') {
-        alert('Unsupported version');
-        return;
-      }
-      nodes = data.nodes;
-      edges = data.edges;
-      bgSettings = data.bgSettings;
-      idC = data.idC;
-      render();
-      applyBg();
-    } catch (err) {
-      alert('Invalid file');
-    }
+    applyData(e.target.result);
   };
   reader.readAsText(file);
 }
+
 function saveToLocalStorage() {
   const data = {
     version: '1.0',
@@ -74,49 +119,59 @@ function saveToLocalStorage() {
     lastUsedMapRootId,
     idC
   };
+  const str = JSON.stringify(data);
   try {
-    localStorage.setItem('mindmap-data', JSON.stringify(data));
+    localStorage.setItem('mindmap-data', str);
   } catch (e) {
     console.error('Failed to save to local storage', e);
+  }
+  
+  if (window.storageAPI && window.storageAPI.dirHandle) {
+    window.storageAPI.saveData(str).catch(e => console.error("FS Save Error", e));
   }
 }
 
 function loadFromLocalStorage() {
   const data = localStorage.getItem('mindmap-data');
-  if (data) {
-    try {
-      const parsed = JSON.parse(data);
-      if (parsed.version === '1.0') {
-        nodes = parsed.nodes;
-        edges = parsed.edges;
-        bgSettings = parsed.bgSettings;
-        if (parsed.snapSettings) snapSettings = parsed.snapSettings;
-        if (parsed.glDefaults) glDefaults = parsed.glDefaults;
-        if (parsed.linkDefaults) linkDefaults = parsed.linkDefaults;
-        if (parsed.nodeDefaults) {
-          nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
-          if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;
-        }
-        if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
-        idC = parsed.idC;
-        render();
-        applyBg();
-        
-        // Auto-center on root
-        requestAnimationFrame(()=>{
-          const root = gN(lastUsedMapRootId) || nodes.find(n => n.type === 'root');
-          if (root) {
-            zoom = 1;
-            panX = window.innerWidth / 2 - root.x;
-            panY = window.innerHeight / 2 - root.y;
-            applyT();
-          }
-        });
-        return true;
+  if (data) return applyData(data);
+  return false;
+}
+
+function applyData(data) {
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    if (parsed.version === '1.0') {
+      nodes = parsed.nodes;
+      edges = parsed.edges;
+      bgSettings = parsed.bgSettings;
+      if (parsed.snapSettings) snapSettings = parsed.snapSettings;
+      if (parsed.glDefaults) glDefaults = parsed.glDefaults;
+      if (parsed.linkDefaults) linkDefaults = parsed.linkDefaults;
+      if (parsed.nodeDefaults) {
+        nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
+        if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;
       }
-    } catch (err) {
-      console.error('Failed to load from local storage', err);
+      if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
+      idC = parsed.idC;
+      render();
+      applyBg();
+      
+      requestAnimationFrame(()=>{
+        const root = (typeof gN !== 'undefined' ? gN(lastUsedMapRootId) : null) || nodes.find(n => n.type === 'root');
+        if (root && typeof applyT !== 'undefined') {
+          zoom = 1;
+          panX = window.innerWidth / 2 - root.x;
+          panY = window.innerHeight / 2 - root.y;
+          applyT();
+        }
+      });
+      return true;
+    } else {
+      alert("Unsupported map format version.");
     }
+  } catch (err) {
+    console.error('Failed to process data', err);
+    alert('Invalid map file data.');
   }
   return false;
 }

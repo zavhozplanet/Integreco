@@ -183,7 +183,8 @@
   <div class="mi" id="mi-share"><span class="mic">🔗</span></div>
   <div class="mi" id="mi-dl" onclick="toggleExportSub(event)"><span class="mic">⬇</span></div>
   <div id="export-sub">
-    <div class="esi" onclick="exportData()">💾 Сохранить в память</div>
+    <div class="esi" onclick="selectWorkspaceFolder()">📁 Выбрать рабочую папку</div>
+    <div class="esi" onclick="exportData()">💾 Сохранить в память (бэкап)</div>
     <div class="esi" onclick="exportFmt('jsonld')">👁️🧠 JSON-LD</div>
     <div class="esi" onclick="exportFmt('md')">📄 MD</div>
     <div class="esi" onclick="exportFmt('png')">🖼️ PNG</div>
@@ -511,6 +512,7 @@
 <!-- ================================================================
      JavaScript — loaded in dependency order
 ================================================================ -->
+<script src="src/storage.js"></script>
 <script src="src/state.js"></script>
 <script src="src/utils.js"></script>
 <script src="src/create-delete.js"></script>
@@ -532,6 +534,23 @@
 <script src="src/ui.js"></script>
 <script src="src/menu.js"></script>
 <script src="src/init.js"></script>
+
+<script>
+async function selectWorkspaceFolder() {
+  const ok = await window.storageAPI.selectFolder();
+  if (ok) {
+    const dataStr = await window.storageAPI.loadData();
+    if (dataStr) {
+      if (applyData(dataStr)) {
+        toast('Карта загружена из папки ' + window.storageAPI.dirHandle.name);
+      }
+    } else {
+      saveToLocalStorage();
+      toast('Папка привязана! Текущая карта сохранена.');
+    }
+  }
+}
+</script>
 
 </body>
 </html>
