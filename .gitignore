@@ -1,8 +1,17 @@
+# Временные файлы ИИ
+temp_save/
+*.cjs
+save_backend.js
+save_backend.cjs
+
+# Логи и кэш
 node_modules/
-build/
-dist/
-coverage/
 .DS_Store
 *.log
-.env*
-!.env.example
+
+# Файлы окружения
+.env
+.antigravity/
+
+# Скрипты деплоя (опционально, но лучше оставить в репозитории для удобства)
+# deploy.sh
