@@ -30,6 +30,8 @@ function syncLP(e){
   const bbtn=document.getElementById('lp-branch-btn');
   if(bbtn) bbtn.style.display=(e.dash==='link'||e.isLink)?'none':'flex';
 
+  // Sync fixation buttons
+  syncFixBtns(e);
   syncPinBtns();
   // Reset branch button when switching to a different edge
   updateBranchBtn(null);
@@ -79,6 +81,56 @@ function deleteSelectedEdge(){
   // Update branch button state
   updateBranchBtn(null);
   render();
+}
+
+// ── Fixation helpers ─────────────────────────────────────────────
+function syncFixBtns(e) {
+  if (!e) return;
+  const fN = gN(e.from), tN = gN(e.to);
+  const fromBtn = document.getElementById('ep-fix-from');
+  const toBtn   = document.getElementById('ep-fix-to');
+
+  // Determine which endpoints support fixation (not group crossing-through lines)
+  const fromOk = fN && fN.type !== 'multi'; // multi already has native offset; no extra UI
+  const toOk   = tN && tN.type !== 'multi';
+
+  if (fromBtn) {
+    fromBtn.style.display = fromOk ? '' : 'none';
+    fromBtn.classList.toggle('on', !!e.fromFixed);
+    fromBtn.title = e.fromFixed ? 'Открепить от «' + (fN?.label||'?') + '»' : 'Зафиксировать у «' + (fN?.label||'?') + '»';
+  }
+  if (toBtn) {
+    toBtn.style.display = toOk ? '' : 'none';
+    toBtn.classList.toggle('on', !!e.toFixed);
+    toBtn.title = e.toFixed ? 'Открепить от «' + (tN?.label||'?') + '»' : 'Зафиксировать у «' + (tN?.label||'?') + '»';
+  }
+}
+
+function toggleFixedEndpoint(which) {
+  const e = gE(selE); if (!e) return;
+  sh();
+  const key = which + 'Fixed';
+  const wasFixed = !!e[key];
+  e[key] = !wasFixed;
+  if (wasFixed) {
+    // Unfix: clear stored side/offset so it snaps freely again
+    e[which + 'Side'] = null;
+    e[which + 'Offset'] = null;
+  } else {
+    // Fix now: compute and save current snap point immediately
+    const n = which === 'from' ? gN(e.from) : gN(e.to);
+    const other = which === 'from' ? gN(e.to) : gN(e.from);
+    if (n && other) {
+      // Clear old stored side to force recompute
+      e[which + 'Side'] = null;
+      e[which + 'Offset'] = null;
+      // Trigger computation through getSnapPoint
+      getSnapPoint(n, other, e, which);
+    }
+  }
+  render();
+  syncFixBtns(e);
+  toast(e[key] ? '📌 Зафиксировано' : '📌 Откреплено');
 }
 function updateBranchBtn(clr){
   const btn=document.getElementById('lp-branch-btn');if(!btn)return;

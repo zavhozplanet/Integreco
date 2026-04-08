@@ -404,17 +404,19 @@ window.addEventListener('mouseup',ev=>{
           if (epDrag.which === 'from') e.from = targetId;
           else e.to = targetId;
           e.cp1x = null; e.cp1y = null; e.cp2x = null; e.cp2y = null;
+          // Always clear old side/offset so the reconnection point is freshly computed
+          e[epDrag.which + 'Side'] = null;
+          e[epDrag.which + 'Offset'] = null;
           
           const tN = gN(targetId);
           const p = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
-          if (tN.type === 'multi') {
-            // Force re-calculation of side and offset for the moved end
-            e[epDrag.which + 'Side'] = null;
-            e[epDrag.which + 'Offset'] = null;
+          if (tN.type === 'multi' || (tN.type === 'group' && e[epDrag.which + 'Fixed'])) {
+            // Force side+offset computation for multi OR fixed group endpoint
             getSnapPoint(tN, p, e, epDrag.which);
-          } else {
-            e[epDrag.which + 'Side'] = null;
-            e[epDrag.which + 'Offset'] = null;
+          } else if (tN.type === 'group') {
+            // Non-fixed group: compute cardinal side only, no offset
+            const otherN = gN(epDrag.which === 'from' ? e.to : e.from);
+            if (otherN) getSnapPoint(tN, otherN, e, epDrag.which);
           }
           render();
           toast('🔗 Переподключено');

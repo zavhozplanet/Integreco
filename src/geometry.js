@@ -41,63 +41,93 @@ function isPtInStad(px, py, nx, ny, hw, hh, isGroup, style) {
 function getSnapPoint(n, target, edge, side) {
   if (!n) return {x: 0, y: 0};
   const type = (n.type === 'root' || n.type === 'node') ? 'node' : n.type;
-  
-  if (!snapSettings[type] && n.type !== 'multi') {
-    if (n.type === 'group') return groupSnapPoint(n, target);
-    return {x: n.x, y: n.y};
+
+  // ── FIXED endpoint: lock to stored side/offset ───────────────
+  if (edge && edge[side + 'Fixed']) {
+    // If side is already stored, return exactly that point without re-computing
+    if (edge[side + 'Side']) {
+      return _getSidePoint(n, edge, side, edge[side + 'Side']);
+    }
+    // First time: compute and store current position as fixed
+    const computed = _computeBestSide(n, target, edge, side);
+    edge[side + 'Side'] = computed.s;
+    if (computed.offset != null) edge[side + 'Offset'] = computed.offset;
+    return computed.pt;
   }
 
-  // multi nodes stick to dragged offset if not adaptive
-  const isAdaptive = n.type === 'multi' ? !!snapSettings.multiAdaptive : !!snapSettings[type + 'Adaptive'];
-  
-  const getSidePoint = (s) => {
-    let hw, hh;
-    if (n.type === 'group') {
-      hw = (n.width || 300) / 2;
-      hh = (n.height || 200) / 2;
-    } else {
-      const ext = nodeHalfExtents(n.id);
-      hw = ext.hw;
-      hh = ext.hh;
+  // ── MULTI nodes always use side+offset anchoring ─────────────
+  if (n.type === 'multi') {
+    if (!snapSettings[type] && !snapSettings.multiAdaptive) {
+      // no snap at all for multi → still use side/offset path below
     }
-    let ox = 0, oy = 0;
-    if (n.type === 'multi') {
-      const isH = s === 't' || s === 'b';
-      const maxO = (isH ? hw : hh) - 8; // 8px corner margin
-      if (edge && edge[side + 'Offset'] != null) {
-        if (isH) ox = edge[side + 'Offset'];
-        else oy = edge[side + 'Offset'];
-      } else {
-        // Project target onto edge
-        if (isH) ox = Math.max(-maxO, Math.min(maxO, target.x - n.x));
-        else oy = Math.max(-maxO, Math.min(maxO, target.y - n.y));
-        if (!isAdaptive && edge) edge[side + 'Offset'] = isH ? ox : oy;
-      }
+    const isAdaptive = !!snapSettings.multiAdaptive;
+    if (!isAdaptive && edge && edge[side + 'Side']) {
+      return _getSidePoint(n, edge, side, edge[side + 'Side']);
     }
-    if (s === 'l') return { x: n.x - hw, y: n.y + oy };
-    if (s === 'r') return { x: n.x + hw, y: n.y + oy };
-    if (s === 't') return { x: n.x + ox, y: n.y - hh };
-    if (s === 'b') return { x: n.x + ox, y: n.y + hh };
-    return { x: n.x, y: n.y };
-  };
-
-  // If NOT adaptive and side is already fixed in edge
-  if (!isAdaptive && edge && edge[side + 'Side']) {
-    return getSidePoint(edge[side + 'Side']);
+    const computed = _computeBestSide(n, target, edge, side);
+    edge[side + 'Side'] = computed.s;
+    if (computed.offset != null) edge[side + 'Offset'] = computed.offset;
+    return computed.pt;
   }
 
-  // Calculate best side
-  let hw, hh;
+  // ── Groups without fixation: use cardinal snap ────────────────
   if (n.type === 'group') {
+    if (!snapSettings.group) return groupSnapPoint(n, target);
+    const isAdaptive = !!snapSettings.groupAdaptive;
+    if (!isAdaptive && edge && edge[side + 'Side']) {
+      return _getSidePoint(n, edge, side, edge[side + 'Side']);
+    }
+    const computed = _computeBestSide(n, target, edge, side);
+    if (!isAdaptive && edge) { edge[side + 'Side'] = computed.s; }
+    return computed.pt;
+  }
+
+  // ── Regular nodes (node/root/note) ────────────────────────────
+  if (!snapSettings[type]) return {x: n.x, y: n.y};
+  const isAdaptive = !!snapSettings[type + 'Adaptive'];
+  if (!isAdaptive && edge && edge[side + 'Side']) {
+    return _getSidePoint(n, edge, side, edge[side + 'Side']);
+  }
+  const computed = _computeBestSide(n, target, edge, side);
+  if (!isAdaptive && edge) edge[side + 'Side'] = computed.s;
+  return computed.pt;
+}
+
+// Helper: get the point on node side, respecting offset for multi/group-fixed
+function _getSidePoint(n, edge, side, s) {
+  let hw, hh;
+  if (n.type === 'group' || n.type === 'multi') {
     hw = (n.width || 300) / 2;
     hh = (n.height || 200) / 2;
   } else {
     const ext = nodeHalfExtents(n.id);
-    hw = ext.hw;
-    hh = ext.hh;
+    hw = ext.hw; hh = ext.hh;
   }
-  const dx = target.x - n.x;
-  const dy = target.y - n.y;
+  // offset only used for multi and group-fixed
+  let ox = 0, oy = 0;
+  if (edge && edge[side + 'Offset'] != null) {
+    const isH = s === 't' || s === 'b';
+    if (isH) ox = edge[side + 'Offset'];
+    else     oy = edge[side + 'Offset'];
+  }
+  if (s === 'l') return { x: n.x - hw, y: n.y + oy };
+  if (s === 'r') return { x: n.x + hw, y: n.y + oy };
+  if (s === 't') return { x: n.x + ox, y: n.y - hh };
+  if (s === 'b') return { x: n.x + ox, y: n.y + hh };
+  return { x: n.x, y: n.y };
+}
+
+// Helper: compute the best side (and offset for multi/group) from target direction
+function _computeBestSide(n, target, edge, side) {
+  let hw, hh;
+  if (n.type === 'group' || n.type === 'multi') {
+    hw = (n.width || 300) / 2;
+    hh = (n.height || 200) / 2;
+  } else {
+    const ext = nodeHalfExtents(n.id);
+    hw = ext.hw; hh = ext.hh;
+  }
+  const dx = target.x - n.x, dy = target.y - n.y;
   let s;
   if (Math.abs(dx / (hw || 1)) > Math.abs(dy / (hh || 1))) {
     s = dx > 0 ? 'r' : 'l';
@@ -105,12 +135,21 @@ function getSnapPoint(n, target, edge, side) {
     s = dy > 0 ? 'b' : 't';
   }
 
-  // If not adaptive, SAVE it for future renders
-  if (!isAdaptive && edge) {
-    edge[side + 'Side'] = s;
+  // For multi AND group-fixed: compute exact offset within the side
+  let offset = null;
+  if (n.type === 'multi' || (n.type === 'group' && edge && edge[side + 'Fixed'])) {
+    const isH = s === 't' || s === 'b';
+    const maxO = (isH ? hw : hh) - 8;
+    if (isH) offset = Math.max(-maxO, Math.min(maxO, dx));
+    else     offset = Math.max(-maxO, Math.min(maxO, dy));
+    // For multi: save into edge if non-adaptive (done by caller for multi, here do it for group-fixed)
+    if (n.type === 'group' && edge && edge[side + 'Fixed']) {
+      edge[side + 'Offset'] = offset;
+    }
   }
-  
-  return getSidePoint(s);
+
+  const pt = _getSidePoint(n, edge && { ...edge, [side + 'Offset']: offset }, side, s);
+  return { s, offset, pt };
 }
 
 function getEdgePts(e) {
