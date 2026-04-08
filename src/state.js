@@ -58,6 +58,23 @@ let nodeDefaults = {
   },
   recentColors: []
 };
+let groupDefaults = {
+  bg: {
+    color: '#ffffff',
+    recentColors: [],
+    pattern: 'none',
+    patScale: 1,
+    patOpacity: 0.1,
+    patBlur: 0,
+    titleColor: '#2c2a27',
+    titleOpacity: 0.95,
+    opacity: 0.1,
+
+    imgEnabled: false,
+    imgOpacity: 1,
+    imgBlur: 0
+  }
+};
 let selNSet=new Set(); // multi-selected nodes from area selection
 let selEHandles=true;  // whether to show bezier handles for selected edge
 let edgeTapState={eid:null,t:0}; // touch double-tap detection on edges

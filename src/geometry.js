@@ -482,7 +482,7 @@ function branchNum(edgeId){
 
 // Expand circle: positioned same as collapse button would be.
 // Shows a stub line to parent. On hover, previews the full collapsed branch.
-function addExpandCircle(grp,ex,fromId,eid){
+function addExpandCircle(grp,ex,fromId,eid, isGroupCollapseOverride){
   const e=gE(eid);if(!e)return;
   const f=gN(fromId);if(!f)return;
   const clr=e.color||LCOLS[0];
@@ -515,7 +515,25 @@ function addExpandCircle(grp,ex,fromId,eid){
   txt.setAttribute('fill','#fff');txt.setAttribute('pointer-events','none');
   txt.textContent=String(num);
 
-  const tog=ev=>{ev.stopPropagation();ev.preventDefault();e.collapsed=false;sh();render()};
+  const tog=ev=>{
+    ev.stopPropagation();ev.preventDefault();
+    if (isGroupCollapseOverride) {
+       const tN = gN(e.to); 
+       if (tN && tN.type === 'group') {
+           const btn = document.getElementById('ghide-' + tN.id);
+           if (btn) {
+              btn.style.setProperty('color', '#ffb03a', 'important');
+              btn.style.transform = 'scale(1.2)';
+              setTimeout(() => {
+                 btn.style.color = '';
+                 btn.style.transform = '';
+              }, 2000);
+           }
+       }
+    } else {
+       e.collapsed=false;sh();render();
+    }
+  };
   hitA.addEventListener('mousedown',ev=>ev.stopPropagation());
   hitA.addEventListener('click',tog);hitA.addEventListener('touchend',tog);
 
@@ -523,13 +541,30 @@ function addExpandCircle(grp,ex,fromId,eid){
   let previewGrp=null;
   hitA.addEventListener('mouseenter',()=>{
     previewGrp=mkSVG('g');previewGrp.style.opacity='0.35';previewGrp.style.pointerEvents='none';
-    e.collapsed=false;
-    renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
-    e.collapsed=true;
+    if (isGroupCollapseOverride) {
+        renderGroupConnectionsPreview(e.to, previewGrp, e.id);
+        const tN = gN(e.to);
+        if (tN) {
+           const sketch = document.getElementById('gsketch-' + tN.id);
+           if (sketch) sketch.classList.add('active');
+        }
+    } else {
+        const origCol = e.collapsed;
+        e.collapsed=false;
+        renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
+        e.collapsed=origCol;
+    }
     svgl.insertBefore(previewGrp,glLink);
   });
   hitA.addEventListener('mouseleave',()=>{
     if(previewGrp){previewGrp.remove();previewGrp=null;}
+    if (isGroupCollapseOverride) {
+        const tN = gN(e.to);
+        if (tN) {
+           const sketch = document.getElementById('gsketch-' + tN.id);
+           if (sketch) sketch.classList.remove('active');
+        }
+    }
   });
 
   grp.appendChild(hitA);grp.appendChild(circ);grp.appendChild(txt);
@@ -619,10 +654,37 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
     }
   });
 
-  // Order: Groups -> Lines -> Nodes
   groupElems.forEach(el=>g.appendChild(el));
   lineElems.forEach(el=>g.appendChild(el));
   nodeElems.forEach(el=>g.appendChild(el));
+}
+
+function renderGroupConnectionsPreview(groupId, g, highlightedEdgeId) {
+  edges.forEach(pe => {
+    if (pe.from === groupId || pe.to === groupId) {
+      const f = gN(pe.from);
+      const t = gN(pe.to);
+      if (!f || !t) return;
+      
+      const d = mkPathD(pe);
+      const line = mkSVG('path');
+      line.setAttribute('d', d);
+      line.setAttribute('fill', 'none');
+      line.setAttribute('stroke', (pe.id === highlightedEdgeId ? '#ffb03a' : (pe.color || LCOLS[0])));
+      line.setAttribute('stroke-width', '2');
+      if (pe.dash === 'link') line.setAttribute('stroke-dasharray', '8,4');
+      line.style.pointerEvents = 'none';
+      g.appendChild(line);
+      
+      // If edge is OUTGOING from the group and branch is collapsed, preview the branch too!
+      if (pe.from === groupId && pe.collapsed) {
+        const origCol = pe.collapsed;
+        pe.collapsed = false;
+        renderBranchPreview(pe.to, g, lineExitFrom(pe), pe);
+        pe.collapsed = origCol;
+      }
+    }
+  });
 }
 
 function mkSVG(tag){return document.createElementNS('http://www.w3.org/2000/svg',tag)}
@@ -638,22 +700,46 @@ function render(){
     Array.from(svgl.children).forEach(el=>{if(el.id!=='ghost-ln'&&el.id!=='ghost-hd')el.remove()});
     svgl.setAttribute('viewBox',`0 0 ${CS} ${CS}`);svgl.setAttribute('width',CS);svgl.setAttribute('height',CS);
 
+    const defs = mkSVG('defs');
+    svgl.appendChild(defs);
+    const visibleGroups = nodes.filter(n => n.type === 'group' && isVisible(n.id));
+    visibleGroups.forEach(g => {
+      const cp = mkSVG('clipPath'); cp.id = 'clip-g-' + g.id;
+      const rect = mkSVG('rect');
+      const hw = (g.width || 300) / 2, hh = (g.height || 200) / 2;
+      rect.setAttribute('x', g.x - hw); rect.setAttribute('y', g.y - hh);
+      rect.setAttribute('width', hw * 2); rect.setAttribute('height', hh * 2);
+      cp.appendChild(rect); defs.appendChild(cp);
+    });
+
   // Edges first — SVG renders behind node divs
+
   edges.forEach(e=>{
     const f=gN(e.from),t=gN(e.to);
     if(!f||!t||!isVisible(e.from))return;
+    
+    // Outgoing from a hidden group -> entirely invisible
+    if (f.type === 'group' && f.collapsed) return;
+    
+    // Incoming to a hidden group -> effectively collapsed
+    const effGroupCollapsed = (t.type === 'group' && t.collapsed);
+    const effCollapsed = e.collapsed || effGroupCollapsed;
+    
     // Skip edges whose TO node is invisible due to an ancestor being collapsed
-    // (but NOT if this specific edge is the collapsed one — we still need it for the expand circle)
-    if(!isVisible(e.to)&&!e.collapsed)return;
+    // (but NOT if this specific edge is effectively collapsed — we still need it for the expand circle)
+    if(!isVisible(e.to) && !effCollapsed && !effGroupCollapsed) return;
+    
     const isSel=e.id===selE;
-    const clr=isSel?'#4a7cf7':(e.color||LCOLS[0]);
+    let clr=isSel?'#4a7cf7':(e.color||LCOLS[0]);
+
     const grp=mkSVG('g');
     // child-sel: show collapse btn when child node is selected (but not when line itself is selected)
     const childSelected=selN===e.to;
     const isPending = pendingInsert && pendingInsert.edgeId === e.id;
     grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(childSelected?' child-sel':'')+(isPending?' drop-target':''));
     grp.dataset.eid=e.id;
-    if(!e.collapsed){
+    
+    if(!effCollapsed){
       // Draw line + arrowheads + handles normally
       const d=mkPathD(e);
       const hit=mkSVG('path');hit.setAttribute('d',d);hit.setAttribute('class','ehit');
@@ -684,6 +770,39 @@ function render(){
       }
       grp.appendChild(ep);
       if(e.dash!=='link') drawArrowheads(grp,e,clr);
+      
+      // Draw adapted clipped line segments for any group this edge crosses
+      if (!isSel) {
+        const {fx, fy, tx, ty} = getEdgePts(e);
+        const minX = Math.min(fx, tx) - 50, maxX = Math.max(fx, tx) + 50;
+        const minY = Math.min(fy, ty) - 50, maxY = Math.max(fy, ty) + 50;
+        
+        visibleGroups.forEach(g => {
+          const hw = (g.width || 300) / 2, hh = (g.height || 200) / 2;
+          const gxMin = g.x - hw, gxMax = g.x + hw;
+          const gyMin = g.y - hh, gyMax = g.y + hh;
+          // Simple AABB collision check
+          if (minX <= gxMax && maxX >= gxMin && minY <= gyMax && maxY >= gyMin) {
+            const cg = mkSVG('g');
+            cg.setAttribute('clip-path', `url(#clip-g-${g.id})`);
+            
+            const effBg = blendColors(bgSettings.color || '#f0ede8', g.bg?.color || '#ffffff', g.bg?.opacity ?? 0.1);
+            const adjClr = adjustColorForContrast(clr, effBg);
+            if (adjClr !== clr) {
+              const cep = mkSVG('path'); cep.setAttribute('d',d);
+              cep.setAttribute('class','ep '+(e.dash==='link'?'link':(e.dash||'solid')));
+              cep.setAttribute('stroke',adjClr); cep.setAttribute('stroke-width',(e.width||1.5));
+              cep.setAttribute('fill','none');
+              if (e.label) cep.setAttribute('mask',`url(#m-e-${e.id})`);
+              cg.appendChild(cep);
+              if (e.dash !== 'link') drawArrowheads(cg, e, adjClr);
+              
+              grp.appendChild(cg);
+            }
+          }
+        });
+      }
+
       if(isSel&&selEHandles){
         const sh = e.shape || gls;
         if (sh === 'bezier' || sh === 'straight') {
@@ -721,14 +840,13 @@ function render(){
           epc.dataset.eid = e.id; epc.dataset.which = which;
           epc.addEventListener('mouseenter', showH);
           epc.addEventListener('mouseleave', hideH);
-          grp.appendChild(epc);
         });
       }
     }
     if(true){
       const ex=lineExitFrom(e);
-      if(e.collapsed){
-        addExpandCircle(grp,ex,e.from,e.id);
+      if(effCollapsed){
+        addExpandCircle(grp,ex,e.from,e.id, effGroupCollapsed);
       } else {
         const sh = e.shape || gls;
         if(!isSel || sh === 'elbow') {
@@ -746,6 +864,7 @@ function render(){
     // 1. Background layer: contains color/images/border, goes behind lines
     const divBg=document.createElement('div');
     divBg.className='group-box g-bg-box'+(isSel?' selected':'');
+
     divBg.id='gb'+n.id;
     divBg.style.left=n.x+'px';divBg.style.top=n.y+'px';
     divBg.style.width=n.width+'px';divBg.style.height=n.height+'px';
@@ -756,23 +875,137 @@ function render(){
     divBg.appendChild(bgBase); divBg.appendChild(bgImg); divBg.appendChild(bgPat);
     canvas.prepend(divBg);
     applyBg(n.id);
+    
+    // Background interaction is here so it doesn't block SVG lines above it
+    divBg.addEventListener('contextmenu',ev=>{ ev.preventDefault();ev.stopPropagation(); showGroupBgCtx(ev.clientX,ev.clientY,n.id); });
 
     // 2. UI layer: contains title/buttons/resizers, goes above lines
     const divUI=document.createElement('div');
-    divUI.className='group-box g-ui-box'+(isSel?' selected':'');
+    divUI.className='node group-box g-ui-box'+(isSel?' selected':'');
     divUI.id='nd'+n.id; // Keep id nd for drag-selection logic
     divUI.style.left=n.x+'px';divUI.style.top=n.y+'px';
     divUI.style.width=n.width+'px';divUI.style.height=n.height+'px';
     
+    const isCollapsed = n.bg && n.bg.titleCollapsed;
+    const isGroupHidden = !!n.collapsed;
+    
+    // Effective background calculator for adaptive contrast
+    const canvBg = bgSettings.color || '#f0ede8';
+    const groupBg = n.bg?.color || '#ffffff';
+    const groupOp = n.bg?.opacity ?? 0.1;
+    const effGroupBg = blendColors(canvBg, groupBg, groupOp);
+    
+    const titleBg = n.bg?.titleColor || '#ffffff';
+    const titleOp = n.bg?.titleOpacity ?? 0.95;
+    const effTitleBg = blendColors(effGroupBg, titleBg, titleOp);
+    
+    if (isGroupHidden) {
+      divBg.style.opacity = '0';
+      divBg.style.pointerEvents = 'none';
+      divUI.classList.add('is-hidden');
+    }
+    
     const title=document.createElement('div');
     title.className='group-title';
     title.textContent=n.label;
+    if(n.bg && n.bg.titleColor) {
+      title.style.backgroundColor = hexToRgba(n.bg.titleColor, n.bg.titleOpacity ?? 0.95);
+      title.style.color = getContrastColor(n.bg.titleColor);
+      title.style.borderBottomColor = 'rgba(0,0,0,0.15)';
+    } else {
+      title.style.color = '#2c2a27';
+      title.style.backgroundColor = `rgba(255,255,255,${n.bg.titleOpacity ?? 0.95})`;
+    }
+    if (isCollapsed || isGroupHidden) title.style.display = 'none';
+
     title.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); onNodeMD(ev,n.id); });
     title.addEventListener('touchstart',ev=>{ev.stopPropagation();onNdTS(ev,n.id)},{passive:false});
+
     title.addEventListener('touchmove',ev=>{onNdTM(ev,n.id)},{passive:false});
     title.addEventListener('touchend',ev=>{onNdTE(ev,n.id)});
     title.addEventListener('dblclick',ev=>{ev.stopPropagation();openNote(n.id,'auto')});
     title.addEventListener('contextmenu',ev=>{ ev.preventDefault();ev.stopPropagation(); showGroupCtx(ev.clientX,ev.clientY,n.id); });
+
+    // Collapse title button (top-right)
+    const collBtn = document.createElement('div');
+    collBtn.className = 'group-collapse-btn' + (isCollapsed ? ' clps' : '');
+    collBtn.textContent = '⛶';
+    // Logic: if not collapsed and group not hidden -> it's over title bar. Otherwise over group background.
+    const effCollBg = (!isCollapsed && !isGroupHidden) ? effTitleBg : effGroupBg;
+    collBtn.style.color = getContrastColor(effCollBg);
+    if (isGroupHidden) collBtn.style.display = 'none';
+    
+    collBtn.addEventListener('mousedown', ev => {
+      if(ev.button!==0 && ev.button!==1) return;
+      ev.stopPropagation();
+      const sx = ev.clientX, sy = ev.clientY;
+
+      const onUp = (upEv) => {
+        window.removeEventListener('mouseup', onUp);
+        const dist = Math.hypot(upEv.clientX - sx, upEv.clientY - sy);
+        if (dist < 5) { 
+          if (!n.bg) n.bg = {};
+          n.bg.titleCollapsed = !n.bg.titleCollapsed;
+          sh(); render();
+        }
+      };
+      window.addEventListener('mouseup', onUp);
+      onNodeMD(ev, n.id);
+    });
+
+    divUI.appendChild(collBtn);
+    
+    // Hide Group object button (top-left)
+    const hideBtn = document.createElement('div');
+    hideBtn.className = 'group-hide-btn' + (isGroupHidden ? ' hdn' : '');
+    hideBtn.textContent = '👁'; 
+    // Logic: if group hidden -> over canvas. Else if title expanded -> over title. Else -> over group bg.
+    let effHideBg = canvBg;
+    if (!isGroupHidden) {
+      effHideBg = (!isCollapsed) ? effTitleBg : effGroupBg;
+    }
+    hideBtn.style.color = getContrastColor(effHideBg);
+    hideBtn.id = 'ghide-' + n.id;
+    hideBtn.addEventListener('mousedown', ev => {
+      if(ev.button!==0 && ev.button!==1) return;
+
+      ev.stopPropagation();
+      const sx = ev.clientX, sy = ev.clientY;
+      const onUp = (upEv) => {
+        window.removeEventListener('mouseup', onUp);
+        if (Math.hypot(upEv.clientX - sx, upEv.clientY - sy) < 5) {
+          n.collapsed = !n.collapsed;
+          sh(); render();
+        }
+      };
+      window.addEventListener('mouseup', onUp);
+      onNodeMD(ev, n.id);
+    });
+    divUI.appendChild(hideBtn);
+
+    if (isGroupHidden) {
+      const sketch = document.createElement('div');
+      sketch.className = 'group-sketch';
+      sketch.id = 'gsketch-' + n.id;
+      // Size identically to background
+      sketch.style.width = '100%';
+      sketch.style.height = '100%';
+      
+      let previewSVG = null;
+      hideBtn.addEventListener('mouseenter', () => {
+         sketch.classList.add('active');
+         previewSVG = mkSVG('g'); previewSVG.style.opacity = '0.5'; previewSVG.style.pointerEvents = 'none';
+         renderGroupConnectionsPreview(n.id, previewSVG, null);
+         svgl.insertBefore(previewSVG, glLink);
+      });
+      hideBtn.addEventListener('mouseleave', () => {
+         sketch.classList.remove('active');
+         if (previewSVG) { previewSVG.remove(); previewSVG=null; }
+      });
+      divUI.appendChild(sketch);
+    }
+
+
 
     // Sensors and interactions
     ['top','bottom','left','right'].forEach(pos => {

@@ -232,10 +232,7 @@ function findNodeAt(sx,sy,excludeId){
     const {hw, hh} = nodeHalfExtents(n.id);
     if(Math.abs(p.x - n.x) <= hw && Math.abs(p.y - n.y) <= hh) {
       if(n.type === 'group') {
-        // Special case: Only snap to group if mouse is over its plus buttons
-        if(elAt && elAt.closest('.group-np') && elAt.closest('#nd' + n.id)) {
-          insideGroup = n.id;
-        }
+        insideGroup = n.id;
       } else {
         insideNode = n.id;
       }

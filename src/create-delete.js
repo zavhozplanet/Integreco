@@ -41,18 +41,7 @@ function mkNode(x,y,label,pid,isLink,type='node', customStyle=null){
   if(type === 'group') {
     node.width = 300;
     node.height = 200;
-    node.bg = {
-      color: 'rgba(255, 255, 255, 0.1)',
-      recentColors: [],
-      pattern: 'none',
-      patScale: 1,
-      patOpacity: 0.15,
-      patBlur: 0,
-      image: null,
-      imgEnabled: false,
-      imgOpacity: 1,
-      imgBlur: 0
-    };
+    node.bg = JSON.parse(JSON.stringify(groupDefaults.bg));
   } else if (type === 'multi') {
     // Estimate size for "1.5x longer than usual node"
     // Usually node size depends on text. Let's set a fixed starting width that's visibly wider.
@@ -71,6 +60,7 @@ function mkNode(x,y,label,pid,isLink,type='node', customStyle=null){
 function delNode(id, reattach=true, skipTrash=false){
   sh();
   const n=gN(id);if(!n)return;
+  const isRoot = n.type === 'root';
   if(!skipTrash) {
     if(n.type === 'note') {
       if(n.note || (n.label && n.label !== '+')) {
@@ -92,12 +82,15 @@ function delNode(id, reattach=true, skipTrash=false){
       edges.push(mkEdge(pid,cid,false));
     });
   }
+  if(isRoot) ensureOneRootExists();
   if(selN===id)selN=null;
   render();
 }
 
 function delBranch(id, skipTrash=false){
   sh();
+  const targetNode = gN(id);
+  const isRoot = targetNode && targetNode.type === 'root';
   function dr(i){
     const n=gN(i);
     if(n && !skipTrash) {
@@ -112,8 +105,25 @@ function delBranch(id, skipTrash=false){
     edges=edges.filter(e=>e.from!==i&&e.to!==i);
   }
   dr(id);
+  if(isRoot) ensureOneRootExists();
   if(!skipTrash) updateTrashBadge();
   selN=null;render();
+}
+
+function ensureOneRootExists() {
+  const root = nodes.find(n => n.type === 'root');
+  if(!root && nodes.length > 0) {
+    // Try to find a node that has no parent as a candidate for new root
+    let cand = nodes.find(n => n.type !== 'group' && n.type !== 'note' && gPar(n.id) === null);
+    if(!cand) cand = nodes.find(n => n.type !== 'group' && n.type !== 'note');
+    if(!cand) cand = nodes.find(n => n.type !== 'group');
+    if(!cand) cand = nodes[0];
+    
+    if(cand) {
+      cand.type = 'root';
+      lastUsedMapRootId = cand.id;
+    }
+  }
 }
 
 // Insert a new node at the midpoint of an edge (via LP button)

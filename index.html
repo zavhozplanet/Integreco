@@ -138,16 +138,29 @@
   box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid var(--nbr);display:none;min-width:220px">
   
   <div class="bg-group" id="bg-col-group">
-    <div class="bg-colors" id="bg-colors-list"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px 0;">
+      <div id="bg-target-row" style="display:flex; gap:4px; margin-right:auto;">
+        <div class="bg-pat-btn on" id="bg-col-target-bg" onclick="setBgColorTarget('bg')" title="Цвет фона" style="width:32px;height:24px;border-radius:6px;font-size:14px">🎨</div>
+        <div class="bg-pat-btn" id="bg-col-target-title" onclick="setBgColorTarget('title')" title="Цвет заголовка" style="width:32px;height:24px;border-radius:6px;font-size:14px">📝</div>
+      </div>
+      <button class="lp-pin" id="bg-pin-color" onclick="toggleBgPin('color')" title="📌 Цвет по умолчанию" style="margin-left:auto">📌</button>
+    </div>
+    <div class="bg-colors" id="bg-colors-list" style="padding-top:4px"></div>
     <div class="bg-colors" style="padding-top:0">
       <div id="bg-recent-list" style="display:flex;gap:5px"></div>
       <div class="bg-custom-btn" onclick="document.getElementById('bg-custom-input').click()" title="🎨" style="margin-left:auto">🖌️</div>
-      <input type="color" id="bg-custom-input" onchange="updateBgColorManual(this.value)">
+      <input type="color" id="bg-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateBgColorManual(this.value)">
+    </div>
+    <div class="bg-sliders" id="bg-opacity-row" style="padding: 4px 8px 10px;">
+      <div class="slider-row" title="Прозрачность (Opacity)"><span>👻</span><input type="range" id="bg-opacity" min="0" max="1" step="0.05" oninput="updateBg('opacity', parseFloat(this.value), false)" onchange="updateBg('opacity', parseFloat(this.value), true)"></div>
     </div>
   </div>
 
-  <div class="bg-group">
-    <div class="bg-patterns">
+  <div class="bg-group" id="bg-pat-group">
+    <div style="display:flex; justify-content:flex-end; padding:4px 4px 0;">
+      <button class="lp-pin" id="bg-pin-pattern" onclick="toggleBgPin('pattern')" title="📌 Узор по умолчанию">📌</button>
+    </div>
+    <div class="bg-patterns" style="padding-top:2px;">
       <div class="bg-pat-btn" id="bg-pat-none" onclick="updateBg('pattern','none')" title="∅">∅</div>
       <div class="bg-pat-btn" id="bg-pat-dots" onclick="updateBg('pattern','dots')" title="·">·</div>
       <div class="bg-pat-btn" id="bg-pat-grid" onclick="updateBg('pattern','grid')" title="#">#</div>
@@ -162,7 +175,10 @@
   </div>
 
   <div class="bg-group" id="bg-img-group">
-    <div class="bg-toggle-row">
+    <div style="display:flex; justify-content:flex-end; padding:4px 4px 0;">
+      <button class="lp-pin" id="bg-pin-image" onclick="toggleBgPin('image')" title="📌 Изображение по умолчанию">📌</button>
+    </div>
+    <div class="bg-toggle-row" style="padding-top:2px;">
       <span>🖼️</span>
       <div class="bg-custom-btn" onclick="document.getElementById('bg-file').click()" title="📂" style="margin-left:8px">📂</div>
       <label class="switch">

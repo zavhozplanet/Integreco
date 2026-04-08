@@ -36,7 +36,7 @@ function onNodeMD(ev,id){
   ms.lastId=id;ms.lastT=now;ms.drgd=false;
   if(linkMode){handleLinkClick(id);return}
 
-  if(ev.ctrlKey || ev.metaKey || ev.button === 1) {
+  if(ev.ctrlKey || ev.metaKey) {
     if(selNSet.has(id)) {
       selNSet.delete(id);
       if(selNSet.size===1) { selN=[...selNSet][0]; selNSet.clear(); }
@@ -55,13 +55,28 @@ function onNodeMD(ev,id){
   ms.dragging=true;
   ms.dragId=id;
   ms.dragButton = ev.button; // Capture if it's middle-click or something else
+  
+  // Track collapsed groups for visibility highlight logic
+  const dnRef = gN(id);
+  ms.startGroups = [];
+  if (dnRef && dnRef.type !== 'group') {
+    nodes.filter(g => g.type === 'group' && g.collapsed).forEach(g => {
+      const hw = (g.width || 300)/2, hh = (g.height || 200)/2;
+      if (dnRef.x >= g.x - hw && dnRef.x <= g.x + hw && dnRef.y >= g.y - hh && dnRef.y <= g.y + hh) {
+        ms.startGroups.push(g.id);
+      }
+    });
+  }
+
   const rc=wrap.getBoundingClientRect();
   const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
+
   
   ms.dragOffsets = [];
   
-  // Independent group dragging: if it's middle-click or Ctrl-click, only move the box
-  const moveOnlyFrame = (ev.button === 1) || (ev.ctrlKey && !selNSet.has(id));
+  // Group drag logic: LMB (0) moves frame only. MMB (1) moves frame + children.
+  const moveOnlyFrame = (ev.button === 0);
+
 
   const addNodeToDrag = (nid) => {
     if(!ms.dragOffsets.find(d=>d.id===nid)) {
@@ -318,6 +333,35 @@ window.addEventListener('mousemove',ev=>{
             }
           }
         }
+        
+        // Group visibility toggle highlight logic
+        if (ms.startGroups && ms.startGroups.length > 0) {
+          const dn = gN(ms.dragOffsets[0].id);
+          if (dn) {
+            const nhw = (dn.width || 120)/2, nhh = (dn.height || 40)/2;
+            ms.startGroups.forEach(gid => {
+              const g = gN(gid);
+              const btn = document.getElementById('ghide-' + gid);
+              const sketch = document.getElementById('gsketch-' + gid);
+              if (!g || !btn || !sketch) return;
+              
+              const hw = (g.width || 300)/2, hh = (g.height || 200)/2;
+              const intersects = !(dn.x + nhw < g.x - hw || dn.x - nhw > g.x + hw || dn.y + nhh < g.y - hh || dn.y - nhh > g.y + hh);
+              const fullyInside = (dn.x - nhw >= g.x - hw && dn.x + nhw <= g.x + hw && dn.y - nhh >= g.y - hh && dn.y + nhh <= g.y + hh);
+              
+              btn.classList.remove('drag-in', 'drag-out');
+              if (fullyInside) {
+                btn.classList.add('drag-in');
+                sketch.classList.add('active');
+              } else if (intersects) {
+                btn.classList.add('drag-out');
+                sketch.classList.add('active');
+              } else {
+                sketch.classList.remove('active');
+              }
+            });
+          }
+        }
       }
     }
     return;
@@ -390,6 +434,16 @@ window.addEventListener('mouseup',ev=>{
     }
     bzDrag={active:false};return;
   }
+  
+  if (ms.startGroups) {
+    ms.startGroups.forEach(gid => {
+      const btn = document.getElementById('ghide-' + gid);
+      const sketch = document.getElementById('gsketch-' + gid);
+      if (btn) btn.classList.remove('drag-in', 'drag-out');
+      if (sketch) sketch.classList.remove('active');
+    });
+  }
+
   if(ms.dragging&&ms.drgd){
     // Check if a single node was dropped on a highlighted edge — insert in break
     if(ms.dragOffsets&&ms.dragOffsets.length===1&&!selNSet.size){
@@ -477,7 +531,10 @@ window.addEventListener('contextmenu',ev=>{
 
 window.addEventListener('keydown',ev=>{
   if(['INPUT','TEXTAREA'].includes(document.activeElement.tagName))return;
-  if((ev.key==='Delete'||ev.key==='Backspace')&&selN){const root=nodes.find(n=>n.type==='root');if(selN!==root.id)delBranch(selN)}
+  if((ev.key==='Delete'||ev.key==='Backspace')){
+    if(selN){const root=nodes.find(n=>n.type==='root');if(selN!==root.id)delBranch(selN)}
+    else if(selNSet.size>0){ctxExecMulti('delete')}
+  }
   if(ev.key==='Tab'&&selN){ev.preventDefault();addChild(selN)}
   if(ev.key==='F2'&&selN)editNode(selN);
   if((ev.ctrlKey||ev.metaKey)&&ev.key==='z'){ev.preventDefault();undo()}

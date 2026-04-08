@@ -116,6 +116,7 @@ function saveToLocalStorage() {
     glDefaults,
     linkDefaults,
     nodeDefaults,
+    groupDefaults,
     lastUsedMapRootId,
     idC
   };
@@ -150,6 +151,9 @@ function applyData(data) {
       if (parsed.nodeDefaults) {
         nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
         if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;
+      }
+      if (parsed.groupDefaults) {
+        groupDefaults.bg = {...groupDefaults.bg, ...parsed.groupDefaults.bg};
       }
       if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
       idC = parsed.idC;

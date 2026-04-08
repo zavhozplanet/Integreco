@@ -7,9 +7,9 @@ let activeBgGroupId=null;
 function buildCtxRow(items){
   const row=document.getElementById('ctx-row1');row.innerHTML='';
   items.forEach(it=>{
-    const d=document.createElement('div');d.className='cxi'+(it.danger?' del':'');
+    const d=document.createElement('div');d.className='cxi'+(it.danger?' del':'')+(it.disabled?' disabled':'');
     d.innerHTML=it.icon;d.title=it.title||'';
-    if(it.action)d.onclick=it.action;
+    if(it.action && !it.disabled)d.onclick=it.action;
     row.appendChild(d);
   });
 }
@@ -56,7 +56,9 @@ function getSelectionData() {
 function ctxExecMulti(cmd) {
   if(cmd==='delete') {
     sh();
+    const root = nodes.find(n => n.type === 'root');
     const toDelete = new Set(selNSet);
+    if(root) toDelete.delete(root.id);
     nodes = nodes.filter(n => !toDelete.has(n.id));
     edges = edges.filter(e => !toDelete.has(e.from) && !toDelete.has(e.to));
     selNSet.clear();
@@ -185,17 +187,20 @@ function showNodeCtx(cx,cy,id){
       {icon:'📌',title:'Вставить',action:()=>{hideCtxMenu();ctxExec('paste')}},
       {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
       {icon:'🔭',title:'Войти в режим ветки (Filter View)',action:()=>{hideCtxMenu();enterBranchView(id)}},
-      ...(id!==root.id?[{icon:'🗑',title:'Удалить',danger:true,action:()=>{
-        const hasCh=gCh(id).length>0;
+      {icon:'🗑',title:'Удалить',danger:true,action:()=>{
+        const isRoot = n.type === 'root';
+        const hasCh = gCh(id).length > 0;
+        if (isRoot && hasCh) return; // Should be handled by disabled state, but for safety
+        
         if(hasCh){
           // Has children: show submenu with two options
           document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
           document.getElementById('ctx-del-sub').classList.add('open');
         } else {
-          // Leaf node: delete immediately without submenu
+          // Leaf node (or root with no children): delete immediately
           hideCtxMenu();ctxNodeId=id;ctxExec('del-branch');
         }
-      }}]:[]),
+      }, disabled: (n.type === 'root' && gCh(id).length > 0)},
     ];
   }
   
@@ -231,8 +236,9 @@ function showGroupCtx(cx,cy,id){
 }
 
 function showGroupBgCtx(cx,cy,id){
-  activeBgGroupId = id;
   showCanvCtx(cx,cy);
+  activeBgGroupId = id;
+  renderCanvCtx();
 }
 
 function hideCtxMenu(){
@@ -242,6 +248,39 @@ function hideCtxMenu(){
 }
 
 let activeColorTarget = 'border';
+let activeGroupColorTarget = 'bg';
+
+function setBgColorTarget(t){
+  activeGroupColorTarget = t;
+  document.getElementById('bg-col-target-bg').classList.toggle('on', t === 'bg');
+  document.getElementById('bg-col-target-title').classList.toggle('on', t === 'title');
+  renderCanvCtx();
+}
+
+function toggleBgPin(block){
+  if(!activeBgGroupId) return;
+  const g = gN(activeBgGroupId); if(!g) return;
+  const target = g.bg;
+  sh();
+  if(block === 'color') {
+    groupDefaults.bg.color = target.color;
+    groupDefaults.bg.titleColor = target.titleColor || '#2c2a27';
+    groupDefaults.bg.titleOpacity = target.titleOpacity != null ? target.titleOpacity : 0.95;
+    groupDefaults.bg.opacity = target.opacity != null ? target.opacity : 0.1;
+  } else if(block === 'pattern') {
+    groupDefaults.bg.pattern = target.pattern;
+    groupDefaults.bg.patScale = target.patScale;
+    groupDefaults.bg.patOpacity = target.patOpacity;
+    groupDefaults.bg.patBlur = target.patBlur;
+  } else if(block === 'image') {
+    groupDefaults.bg.imgEnabled = target.imgEnabled;
+    groupDefaults.bg.imgOpacity = target.imgOpacity;
+    groupDefaults.bg.imgBlur = target.imgBlur;
+    groupDefaults.bg.image = target.image; // Pin the image content
+  }
+  toast(`Настройка «${block}» сохранена для новых групп`);
+  renderCanvCtx();
+}
 
 function setNsColorTarget(target) {
   activeColorTarget = target;
@@ -378,7 +417,9 @@ function ctxExec(cmd){
   hideCtxMenu();
   const id=ctxNodeId;const n=gN(id);if(!n)return;
   if(cmd==='del-node'){delNode(id,true)}
-  else if(cmd==='del-branch'){if(id!==nodes.find(n=>n.type==='root').id)delBranch(id)}
+  else if(cmd==='del-branch'){
+    if(n.type !== 'root' || gCh(id).length === 0) delBranch(id);
+  }
   else if(cmd==='cut-node'){clipboard={type:'node',data:JSON.parse(JSON.stringify(n))};delNode(id,true);toast('Узел вырезан')}
   else if(cmd==='cut-branch'){clipboard={type:'branch',data:cloneBranch(id)};delBranch(id);toast('Ветка вырезана')}
   else if(cmd==='copy-node'){clipboard={type:'node',data:JSON.parse(JSON.stringify(n))};toast('Узел скопирован')}
@@ -448,9 +489,14 @@ function getLuminance(hex){
 }
 
 function applyBg(groupId=null){
-  const node = groupId ? gN(groupId) : null;
-  if(groupId && !node) return;
-  const bg = groupId ? node.bg : bgSettings;
+  let bg;
+  if(groupId) {
+    const g = gN(groupId);
+    if(g && !g.bg) g.bg = JSON.parse(JSON.stringify(groupDefaults.bg));
+    bg = g ? g.bg : bgSettings;
+  } else {
+    bg = bgSettings;
+  }
   if(!bg) return;
   const base = groupId ? document.getElementById('g-bg-base-'+groupId) : document.getElementById('bg-base');
   const img = groupId ? document.getElementById('g-bg-img-'+groupId) : document.getElementById('bg-img');
@@ -471,6 +517,10 @@ function applyBg(groupId=null){
   } else {
     base.style.backgroundColor = bg.color;
     base.style.backgroundImage = 'none';
+  }
+  
+  if(groupId) {
+    base.style.opacity = bg.opacity != null ? bg.opacity : 1;
   }
 
   if(!groupId){
@@ -523,10 +573,12 @@ function applyBg(groupId=null){
   }
 }
 
-function updateBg(key,val,save=true){
-  if(save)sh();
+function updateBg(key, val, commit=true){
   const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
-  target[key]=val;
+  let k = key;
+  if(key === 'opacity' && activeBgGroupId && activeGroupColorTarget === 'title') k = 'titleOpacity';
+  if(target[k] === val) return;
+  target[k] = val;
   if(key==='pattern'){
     if(val==='paper' || val==='rough'){
       if(val==='paper') target.lastColor = target.color;
@@ -534,14 +586,18 @@ function updateBg(key,val,save=true){
     }
   }
   if(activeBgGroupId) render(); else applyBg();
-  renderCanvCtx();
+  if(commit) { sh(); renderCanvCtx(); }
 }
 
 function updateBgColor(c){
   sh();
   const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
-  if(target.pattern !== 'paper') target.lastColor = c;
-  target.color = c;
+  if(activeBgGroupId && activeGroupColorTarget === 'title') {
+    target.titleColor = c;
+  } else {
+    if(target.pattern !== 'paper') target.lastColor = c;
+    target.color = c;
+  }
   if(activeBgGroupId) render(); else applyBg();
   renderCanvCtx();
 }
@@ -552,8 +608,12 @@ function updateBgColorManual(c){
   if(target.color !== c){
     target.recentColors = [c, ...(target.recentColors||[]).filter(x=>x!==c)].slice(0,5);
   }
-  if(target.pattern !== 'paper') target.lastColor = c;
-  target.color = c;
+  if(activeBgGroupId && activeGroupColorTarget === 'title') {
+    target.titleColor = c;
+  } else {
+    if(target.pattern !== 'paper') target.lastColor = c;
+    target.color = c;
+  }
   if(activeBgGroupId) render(); else applyBg();
   renderCanvCtx();
 }
@@ -602,10 +662,31 @@ function handleBgFile(input){
 }
 
 function renderCanvCtx(){
-  const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
+  let target;
+  if(activeBgGroupId) {
+    const g = gN(activeBgGroupId);
+    if(g && !g.bg) g.bg = JSON.parse(JSON.stringify(groupDefaults.bg));
+    target = g ? g.bg : bgSettings;
+  } else {
+    target = bgSettings;
+  }
+
   const isPaper = target.pattern === 'paper';
   const isRough = target.pattern === 'rough';
   const isSpecial = isPaper || isRough;
+
+  // Group vs Canvas UI
+  const isGroup = !!activeBgGroupId;
+  document.getElementById('bg-target-row').style.display = isGroup ? 'flex' : 'none';
+  document.getElementById('bg-pin-color').style.display = isGroup ? 'flex' : 'none';
+  document.getElementById('bg-pin-pattern').style.display = isGroup ? 'flex' : 'none';
+  document.getElementById('bg-pin-image').style.display = isGroup ? 'flex' : 'none';
+  document.getElementById('bg-opacity-row').style.display = isGroup ? 'flex' : 'none';
+  document.getElementById('bg-pat-group').style.display = isGroup ? 'none' : 'block';
+
+  
+  document.getElementById('bg-pat-rough').style.display = isGroup ? 'none' : 'flex';
+  document.getElementById('bg-pat-paper').style.display = isGroup ? 'none' : 'flex';
 
   // Colors
   const colGroup = document.getElementById('bg-col-group');
@@ -613,7 +694,8 @@ function renderCanvCtx(){
   
   const list=document.getElementById('bg-colors-list');list.innerHTML='';
   BG_COLS.forEach(c=>{
-    const s=document.createElement('div');s.className='bg-swatch' + (target.color===c?' active':'');
+    const currentColor = (isGroup && activeGroupColorTarget === 'title') ? (target.titleColor || '#2c2a27') : target.color;
+    const s=document.createElement('div');s.className='bg-swatch' + (currentColor===c?' active':'');
     s.style.backgroundColor=c;
     s.onclick=()=>updateBgColor(c);list.appendChild(s);
   });
@@ -623,6 +705,21 @@ function renderCanvCtx(){
     const s=document.createElement('div');s.className='bg-swatch';s.style.backgroundColor=c;
     s.onclick=()=>updateBgColorManual(c);rec.appendChild(s);
   });
+
+  // Sliders for group
+  if(isGroup) {
+    const val = activeGroupColorTarget === 'title' ? (target.titleOpacity ?? 0.95) : (target.opacity ?? 0.1);
+    document.getElementById('bg-opacity').value = val;
+  }
+
+
+  // Pins sync (optional: could highlight active pin if they match defaults)
+  const d = groupDefaults.bg;
+  if(isGroup) {
+    document.getElementById('bg-pin-color').classList.toggle('active', target.color === d.color && (target.titleColor||'#2c2a27') === d.titleColor);
+    document.getElementById('bg-pin-pattern').classList.toggle('active', target.pattern === d.pattern && target.patScale === d.patScale);
+    document.getElementById('bg-pin-image').classList.toggle('active', target.imgEnabled === d.imgEnabled);
+  }
 
   // Patterns
   ['none','dots','grid','rough','paper'].forEach(p=>{

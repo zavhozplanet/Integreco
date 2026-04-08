@@ -257,8 +257,10 @@ function handleCenterClick() {
           centerOnNode(lastActiveNodeId);
         } else if (nodes.length > 0) {
           const rootNode = nodes.find(n=>n.type==='root');
-          selNode(rootNode.id);
-          centerOnNode(rootNode.id);
+          if (rootNode) {
+            selNode(rootNode.id);
+            centerOnNode(rootNode.id);
+          }
         }
       }
     }, 350);
