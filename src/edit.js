@@ -29,6 +29,10 @@ function editNode(id, isNew=false){
       if(!isNew) sh();
       n.label = val;
       saveToLocalStorage(); // ensure label persists even if render is skipped
+      // Auto-name the map file when first title is set for a root node on a new map
+      if(n.type === 'root' && typeof autoNameMapFile === 'function') {
+        autoNameMapFile(val);
+      }
     }
     if(!isRendering) render();
   };

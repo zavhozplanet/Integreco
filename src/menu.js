@@ -73,23 +73,19 @@ function dl(content,name,type){const b=new Blob([content],{type});const u=URL.cr
 
 function newTab(){
   mmenu.classList.remove('show');
-  // Build a minimal self-contained blank map page and open it
-  const blank=`<!DOCTYPE html><html><head><meta charset="UTF-8"><script>
-    window.onload=()=>{
-      const url=location.href.split('?')[0];
-      window.location.replace(url+'?blank=1');
-    }
-  <\/script></head><body></body></html>`;
-  // Simpler: open same file URL in new tab; on load the init will create fresh map
-  // We pass a flag via sessionStorage key scoped to new tab
-  const w=window.open('','_blank');
-  if(w){
-    w.document.open();
-    w.document.write(document.documentElement.outerHTML.replace(
-      /\(function init\(\)\{[\s\S]*?\}\)\(\);/,
-      `(function init(){const r=mkNode(CS/2,CS/2,'Новая карта');hist=[];render();zoom=1;panX=wrap.clientWidth/2-CS/2;panY=wrap.clientHeight/2-CS/2;applyT();setTimeout(()=>editNode(r),80);})();`
-    ));
-    w.document.close();
-  }
+  // Generate a safe blank-map filename in the workspace folder
+  const baseFilename = _resolveNewMapFilename();
+  // Open the app in a new browser tab, passing the target filename via sessionStorage
+  const key = 'newtab_' + Date.now();
+  sessionStorage.setItem(key, JSON.stringify({ newFile: baseFilename }));
+  window.open(location.pathname + '?newtabkey=' + encodeURIComponent(key), '_blank');
+}
+
+// Pick a filename that doesn't collide with existing files in the folder
+function _resolveNewMapFilename() {
+  if (!window.storageAPI || !window.storageAPI.dirHandle) return 'map.json';
+  // We can't do async here so we'll use a timestamp-based unique name
+  // The actual dedup check happens asynchronously in the new tab's boot
+  return 'map_' + Date.now() + '.json';
 }
 

@@ -208,6 +208,7 @@
   <div class="mi" id="mi-import" onclick="document.getElementById('import-file').click()"><span class="mic">📂</span></div>
   <input type="file" id="import-file" style="display:none" onchange="importData(this)">
   <div class="mi" id="mi-newtab" onclick="newTab()"><span class="mic">➕</span></div>
+  <div class="mi" id="mi-catalog" onclick="openCatalog()"><span class="mic">🗂️</span><span style="flex:1">Каталог карт</span></div>
   <div class="mi" id="mi-trash" onclick="openTrash()">
     <span class="mic">🗑️</span>
     <div id="trash-badge" class="trash-badge"></div>
@@ -221,6 +222,26 @@
       <input type="checkbox" id="stealth-switch" onchange="toggleStealth()">
       <span class="slider-sw"></span>
     </label>
+  </div>
+</div>
+
+<!-- canvas double click menu -->
+
+<!-- ================================================================
+     CATALOG OVERLAY
+================================================================ -->
+<div id="catalog-overlay" style="display:none;"
+     onclick="if(event.target===this)closeCatalog()">
+  <div id="catalog-box">
+    <div id="catalog-hdr">
+      <div id="catalog-title">📂 Каталог карт</div>
+      <div id="catalog-view-toggle">
+        <button id="cat-view-cards" class="cat-view-btn active" onclick="setCatalogView('cards')" title="Карточки">☰</button>
+        <button id="cat-view-tiles" class="cat-view-btn" onclick="setCatalogView('tiles')" title="Плитки">⊞</button>
+      </div>
+      <button id="catalog-close" onclick="closeCatalog()" title="Закрыть">✕</button>
+    </div>
+    <div id="catalog-grid"></div>
   </div>
 </div>
 
@@ -548,6 +569,7 @@
 <script src="src/trash.js"></script>
 <script src="src/line-panel.js"></script>
 <script src="src/ui.js"></script>
+<script src="src/catalog.js"></script>
 <script src="src/menu.js"></script>
 <script src="src/init.js"></script>
 

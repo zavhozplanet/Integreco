@@ -8,6 +8,8 @@ class StorageManager {
   constructor() {
     this.dirHandle = null;
     this.db = null;
+    // Tracks the active filename within the workspace folder (default 'map.json')
+    this._currentFilename = 'map.json';
   }
 
   async init() {
@@ -106,6 +108,22 @@ class StorageManager {
       // File not found or read error
       return null;
     }
+  }
+
+  // List all .json files in the folder (returns array of {name, handle})
+  async listFiles() {
+    if (!this.dirHandle) return [];
+    const result = [];
+    try {
+      for await (const [name, handle] of this.dirHandle.entries()) {
+        if (handle.kind === 'file' && name.endsWith('.json')) {
+          result.push({ name, handle });
+        }
+      }
+    } catch (e) {
+      console.warn('listFiles error', e);
+    }
+    return result;
   }
 }
 

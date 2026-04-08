@@ -20,18 +20,52 @@ function init(){
 
 async function bootApp() {
   if (window.storageAPI) await window.storageAPI.init();
-  
+
+  // ── Handle catalog open in new tab ───────────────────────────
+  if (window._pendingCatOpen) {
+    const { filename, data } = window._pendingCatOpen;
+    window._pendingCatOpen = null;
+    applyData(data);
+    window.storageAPI._currentFilename = filename;
+    return;
+  }
+
+  // ── Handle new tab from "+" button (newtabkey) ───────────────
+  const params = new URLSearchParams(location.search);
+  const newtabKey = params.get('newtabkey');
+  if (newtabKey) {
+    history.replaceState({}, '', location.pathname);
+    const raw = sessionStorage.getItem(newtabKey);
+    if (raw) {
+      sessionStorage.removeItem(newtabKey);
+      try {
+        const { newFile } = JSON.parse(raw);
+        if (window.storageAPI && window.storageAPI.dirHandle) {
+          // Try to inherit folder access from storageAPI (persisted in IndexedDB)
+          const perm = await window.storageAPI.dirHandle.queryPermission({ mode: 'readwrite' });
+          if (perm === 'granted') {
+            window.storageAPI._currentFilename = newFile;
+          }
+        }
+      } catch(e) {}
+    }
+    _initBlankMap();
+    return;
+  }
+
+  // ── Normal startup ────────────────────────────────────────────
   let loaded = false;
-  
+
   if (window.storageAPI && window.storageAPI.dirHandle) {
     const permOpts = { mode: 'readwrite' };
     const perm = await window.storageAPI.dirHandle.queryPermission(permOpts);
     if (perm === 'granted') {
-       const dataStr = await window.storageAPI.loadData();
+       const filename = window.storageAPI._currentFilename || 'map.json';
+       const dataStr = await window.storageAPI.loadData(filename);
        if (dataStr) loaded = applyData(dataStr);
     } else {
        showReconnectOverlay();
-       return; 
+       return;
     }
   }
 
@@ -42,6 +76,22 @@ async function bootApp() {
   if (!loaded) {
     init();
   }
+}
+
+function _initBlankMap() {
+  // Create a fresh empty canvas with a center "+" placeholder — user will type the first title
+  nodes = []; edges = []; idC = 0; hist = []; fut = [];
+  // Create a root node that immediately enters edit mode so user types the title
+  const r = mkNode(CS/2, CS/2, '', null, false, 'root');
+  hist = [];
+  render();
+  zoom = 1;
+  panX = wrap.clientWidth / 2 - CS / 2;
+  panY = wrap.clientHeight / 2 - CS / 2;
+  applyT();
+  // Show the empty-canvas "+" prompt, then focus for typing
+  setTimeout(() => editNode(r, true), 80);
+  saveToLocalStorage();
 }
 
 function showReconnectOverlay() {
@@ -128,7 +178,8 @@ function saveToLocalStorage() {
   }
   
   if (window.storageAPI && window.storageAPI.dirHandle) {
-    window.storageAPI.saveData(str).catch(e => console.error("FS Save Error", e));
+    const fn = window.storageAPI._currentFilename || 'map.json';
+    window.storageAPI.saveData(str, fn).catch(e => console.error("FS Save Error", e));
   }
 }
 
