@@ -87,13 +87,14 @@ input, textarea {user-select:text;-webkit-user-select:text}
 }
 .group-title:active { cursor: grabbing; }
 .group-resizer {
-  position: absolute; width: 28px; height: 28px;
+  position: absolute; width: 14px; height: 14px;
   pointer-events: auto; z-index: 30;
 }
-.group-resizer.tl { top: -14px; left: -14px; cursor: nwse-resize; }
-.group-resizer.tr { top: -14px; right: -14px; cursor: nesw-resize; }
-.group-resizer.bl { bottom: -14px; left: -14px; cursor: nesw-resize; }
-.group-resizer.br { bottom: -14px; right: -14px; cursor: nwse-resize; }
+.group-resizer.tl { top: -4px; left: -4px; cursor: nwse-resize; }
+.group-resizer.tr { top: -4px; right: -4px; cursor: nesw-resize; }
+.group-resizer.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.group-resizer.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
+
 
 .group-resizer::after {
   content: ''; position: absolute; 

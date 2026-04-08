@@ -211,14 +211,23 @@ function endDragCreate(sx,sy){
 }
 
 function findNodeAt(sx,sy,excludeId){
+  const rc = wrap.getBoundingClientRect();
+  const elAt = document.elementFromPoint(sx + rc.left, sy + rc.top);
+  
+  if (elAt && elAt.classList.contains('np')) {
+    const isGroup = elAt.classList.contains('group-np');
+    const par = isGroup ? elAt.closest('.group-box.g-ui-box') : elAt.closest('.node');
+    if (par && par.id && par.id.startsWith('nd')) {
+      const tid = parseInt(par.id.replace('nd',''));
+      if (tid !== excludeId) return tid;
+    }
+  }
+
   const p=s2c(sx,sy);
   let found=null, bestD=Infinity;
   
   let insideNode = null;
   let insideGroup = null;
-  
-  const rc = wrap.getBoundingClientRect();
-  const elAt = document.elementFromPoint(sx + rc.left, sy + rc.top);
   
   for(const n of nodes) {
     if(n.id === excludeId) continue;

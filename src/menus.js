@@ -223,8 +223,6 @@ function showGroupCtx(cx,cy,id){
     {icon:'📋',title:'Копировать данные группы',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
     {icon:'📌',title:'Вставить в группу',action:()=>{hideCtxMenu();ctxExec('paste')}},
     {icon:'<div class="cdm-preview group"></div>',title:'Добавить в другую группу',action:()=>{hideCtxMenu();addToGroup()}},
-    {icon:'⬆️',title:'На передний план',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.push(n);render()}}},
-    {icon:'⬇️',title:'На задний план',action:()=>{hideCtxMenu();sh();const idx=nodes.findIndex(n=>n.id===id);if(idx>-1){const [n]=nodes.splice(idx,1);nodes.unshift(n);render()}}},
     {icon:'[ \ / ]',title:'Выровнять узлы сеткой',action:()=>{hideCtxMenu();alignGroupNodes(id)}},
     {icon:lockIcon,title:g.locked?'Разблокировать':'Заблокировать',action:()=>{hideCtxMenu();sh();g.locked=!g.locked;render()}},
     {icon:'🗑️',title:'Разгруппировать/Удалить группу',danger:true,action:()=>{hideCtxMenu();delNode(id)}}

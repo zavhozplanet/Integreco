@@ -209,7 +209,8 @@ const _mtx=(()=>{const c=document.createElement('canvas');return c.getContext('2
 
 function nodeHalfExtents(nodeId){
   const n=gN(nodeId);if(!n)return{hw:55,hh:22};
-  if(n.type === 'multi') return {hw: (n.width||240)/2, hh: (n.height||50)/2};
+  if(n.type === 'group' || n.type === 'multi') return {hw: (n.width||300)/2, hh: (n.height||200)/2};
+
   const isRoot=gPar(nodeId)==null;
   const fs=isRoot?15:14;
   const pv=n.style && n.style.padding != null ? n.style.padding : (isRoot?14:10);
@@ -769,7 +770,7 @@ function render(){
         div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
       }
       grp.appendChild(ep);
-      if(e.dash!=='link') drawArrowheads(grp,e,clr);
+      drawArrowheads(grp,e,clr);
       
       // Draw adapted clipped line segments for any group this edge crosses
       if (!isSel) {
@@ -795,7 +796,7 @@ function render(){
               cep.setAttribute('fill','none');
               if (e.label) cep.setAttribute('mask',`url(#m-e-${e.id})`);
               cg.appendChild(cep);
-              if (e.dash !== 'link') drawArrowheads(cg, e, adjClr);
+              drawArrowheads(cg, e, adjClr);
               
               grp.appendChild(cg);
             }
