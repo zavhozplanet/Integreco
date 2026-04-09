@@ -790,7 +790,8 @@ function render(){
     if(!isVisible(e.to) && !effCollapsed && !effGroupCollapsed) return;
     
     const isSel=e.id===selE;
-    let clr=isSel?'#4a7cf7':(e.color||LCOLS[0]);
+    let baseClr = e.color || LCOLS[0];
+    let clr = isSel ? '#4a7cf7' : adjustColorForContrast(baseClr, bgSettings.color || '#f0ede8');
 
     const grp=mkSVG('g');
     // child-sel: show collapse btn when child node is selected (but not when line itself is selected)
@@ -847,7 +848,7 @@ function render(){
             cg.setAttribute('clip-path', `url(#clip-g-${g.id})`);
             
             const effBg = blendColors(bgSettings.color || '#f0ede8', g.bg?.color || '#ffffff', g.bg?.opacity ?? 0.1);
-            const adjClr = adjustColorForContrast(clr, effBg);
+            const adjClr = adjustColorForContrast(baseClr, effBg);
             if (adjClr !== clr) {
               const cep = mkSVG('path'); cep.setAttribute('d',d);
               cep.setAttribute('class','ep '+(e.dash==='link'?'link':(e.dash||'solid')));
@@ -1223,7 +1224,7 @@ function render(){
     div.addEventListener('contextmenu',ev=>{
       ev.preventDefault();ev.stopPropagation();
       if(selNSet.has(n.id) && selNSet.size > 1) {
-        showMultiCtx(ev.clientX, ev.clientY);
+        showMultiCtx(ev.clientX, ev.clientY, n.id);
       } else {
         showNodeCtx(ev.clientX,ev.clientY,n.id);
       }

@@ -36,7 +36,7 @@ function onNodeMD(ev,id){
   ms.lastId=id;ms.lastT=now;ms.drgd=false;
   if(linkMode){handleLinkClick(id);return}
 
-  if(ev.ctrlKey || ev.metaKey) {
+  if(ev.ctrlKey || ev.metaKey || ev.button === 1) {
     if(selNSet.has(id)) {
       selNSet.delete(id);
       if(selNSet.size===1) { selN=[...selNSet][0]; selNSet.clear(); }

@@ -339,7 +339,9 @@ body.is-resizing { cursor: nwse-resize !important; }
 #ctxmenu{position:fixed;z-index:700;background:#fff;border-radius:16px;
   --sel-color: var(--ac);
   padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid var(--nbr);
-  display:none;min-width:52px;gap:6px;flex-direction:column}
+  display:none;min-width:52px;gap:6px;flex-direction:column;
+  max-height: 95vh; overflow-y: auto; scrollbar-width: thin;
+}
 #ctxmenu.show{display:flex}
 .ctx-sep{height:1px;background:var(--nbr);margin:4px 0}
 .ctx-label{font-size:14px;font-weight:700;color:var(--tx);padding:4px 8px;display:flex;align-items:center;gap:8px}
@@ -353,7 +355,15 @@ body.is-resizing { cursor: nwse-resize !important; }
 .bg-patterns{display:flex;gap:6px;padding:4px 8px}
 .bg-pat-btn{flex:1;height:36px;border-radius:10px;border:1.5px solid var(--nbr-dk);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .1s;background:#fff}
 .bg-pat-btn.on{background:var(--sel-color, var(--ac));color:#fff;border-color:var(--sel-color, var(--ac))}
-.bg-pat-btn.disabled{opacity:0.3;pointer-events:none}
+.bg-pat-btn.disabled, .bg-pat-btn:disabled {opacity:0.5; pointer-events:none; filter: grayscale(1) contrast(0.8);}
+.bg-pat-btn:not(:disabled) { font-weight: 600; color: var(--tx); }
+.apply-btn-flash {
+  background-color: #4a7cf7 !important;
+  color: #fff !important;
+  border-color: #4a7cf7 !important;
+  transition: background-color 0s !important;
+}
+.apply-btn-flash * { color: #fff !important; }
 .bg-sliders{padding:6px 8px 10px;display:flex;flex-direction:column;gap:12px}
 .slider-row{display:flex;align-items:center;gap:10px}
 .slider-row span{font-size:16px;min-width:24px;display:flex;justify-content:center}

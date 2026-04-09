@@ -15,28 +15,53 @@ function buildCtxRow(items){
 }
 
 function posMenu(m, cx, cy) {
+  // Ensure we measure the element correctly
+  const wasHidden = m.style.display === 'none';
+  if(wasHidden) m.style.visibility = 'hidden', m.style.display = 'flex';
+  
   const mw = m.offsetWidth || 220;
   const mh = m.offsetHeight || 300;
-  let x = cx, y = cy;
+  
+  if(wasHidden) m.style.display = 'none', m.style.visibility = 'visible';
+
+  let x = cx;
   if (x + mw > window.innerWidth) x = window.innerWidth - mw - 10;
-  if (x < 0) x = 10;
+  if (x < 10) x = 10;
   m.style.left = x + 'px';
   
-  // Adaptive vertical positioning to support expandable submenus
-  if (cy > window.innerHeight * 0.6) {
-    let b = window.innerHeight - cy;
-    if (b < 10) b = 10;
-    m.style.bottom = (b + 10) + 'px'; // +10 to avoid tight cursor overlap
-    m.style.top = 'auto';
-  } else {
-    if (y + mh > window.innerHeight) y = Math.max(10, window.innerHeight - mh - 10);
-    m.style.top = y + 'px';
-    m.style.bottom = 'auto';
+  let y = cy;
+  // If it doesn't fit below, try to place it above
+  if (y + mh > window.innerHeight) {
+    if (cy - mh > 10) {
+      y = cy - mh;
+    } else {
+      // If it doesn't fit either side perfectly, clamp to bottom but stay inside
+      y = Math.max(10, window.innerHeight - mh - 10);
+    }
+  }
+  
+  m.style.top = y + 'px';
+  m.style.bottom = 'auto'; // Reset bottom in case it was set by old code
+}
+
+function openSubmenu(subId) {
+  document.querySelectorAll('.ctx-sub').forEach(s => s.classList.remove('open'));
+  const sub = document.getElementById(subId);
+  if (sub) {
+    if (subId === 'ctx-node-settings-sub') ctxMenu.classList.add('sub-only');
+    sub.classList.add('open');
+    if (ctxMenu._cx != null && ctxMenu.style.display !== 'none') {
+       posMenu(ctxMenu, ctxMenu._cx, ctxMenu._cy);
+    }
   }
 }
 
-function showMultiCtx(cx, cy) {
+function showMultiCtx(cx, cy, id = null) {
   hideAllMenus();
+  if(id) ctxNodeId = id;
+  else if(selNSet.size > 0) ctxNodeId = [...selNSet][0];
+
+  ctxMenu._cx = cx; ctxMenu._cy = cy; // Save for submenus
   ctxMenu.classList.remove('sub-only');
   const allLocked = [...selNSet].every(id => gN(id)?.locked);
   const lockIcon = allLocked ? '🔓' : '🔒';
@@ -45,11 +70,12 @@ function showMultiCtx(cx, cy) {
   buildCtxRow([
     {icon:'📋',title:'📋',action:()=>{hideCtxMenu();ctxExecMulti('copy')}},
     {icon:'<div class="cdm-preview group"></div>',title:'Группа',action:()=>{hideCtxMenu();addToGroup()}},
-    {icon:'⬇️',title:'⬇️',action:()=>{
-      document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
-      document.getElementById('ctx-multi-dl-sub').classList.add('open');
-    }},
+    {icon:'⬇️',title:'⬇️',action:()=>{ openSubmenu('ctx-multi-dl-sub'); }},
     {icon:'🔗',title:'🔗',action:()=>{hideCtxMenu();ctxExecMulti('share')}},
+    {icon:'⚙️',title:'⚙️ Настройки',action:()=>{
+      openSubmenu('ctx-node-settings-sub');
+      if(ctxNodeId) syncNodeSettingsUI(ctxNodeId);
+    }},
     {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();ctxExecMulti('lock')}},
     {icon:'🗑',title:'🗑️',danger:true,action:()=>{hideCtxMenu();ctxExecMulti('delete')}}
   ]);
@@ -150,11 +176,11 @@ function addToGroup() {
 function showNodeCtx(cx,cy,id){
   hideAllMenus();
   ctxNodeId=id;selNode(id);
-  document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
-  ctxMenu.classList.remove('sub-only');
+  ctxMenu._cx = cx; ctxMenu._cy = cy; // Save for submenus
   const n=gN(id);
   if(!n)return;
   
+  ctxMenu.classList.remove('sub-only');
   const lockIcon=n.locked?'🔓':'🔒';
   const lockTitle=n.locked?'🔓':'🔒';
   
@@ -162,9 +188,7 @@ function showNodeCtx(cx,cy,id){
   if(n.type === 'note') {
     rows = [
       {icon:'⚙️',title:'Настройки рамки',action:()=>{
-        document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
-        document.getElementById('ctx-node-settings-sub').classList.add('open'); 
-        ctxMenu.classList.add('sub-only');
+        openSubmenu('ctx-node-settings-sub');
         syncNodeSettingsUI(id);
       }},
       {icon:'📝',title:'Открыть заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
@@ -176,12 +200,9 @@ function showNodeCtx(cx,cy,id){
       {icon:'🗑',title:'Удалить',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
     ];
   } else {
-    const root=nodes.find(n=>n.type==='root');
     rows = [
-      {icon:'⚙️',title:'Настройки рамки',action:()=>{
-        document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
-        document.getElementById('ctx-node-settings-sub').classList.add('open'); 
-        ctxMenu.classList.add('sub-only');
+      {icon:'⚙️',title:'⚙️ Настройки',action:()=>{
+        openSubmenu('ctx-node-settings-sub');
         syncNodeSettingsUI(id);
       }},
       {icon:'📝',title:'Открыть заметку',action:()=>{
@@ -192,24 +213,17 @@ function showNodeCtx(cx,cy,id){
       {icon:'➕',title:'Добавить дочерний узел',action:()=>{hideCtxMenu();addChild(id)}},
       {icon:'🔗',title:'Связать (пунктирная линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
       {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
-      {icon:'✂️',title:'Вырезать',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-cut-sub').classList.add('open')}},
-      {icon:'📋',title:'Копировать',action:()=>{document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));document.getElementById('ctx-copy-sub').classList.add('open')}},
+      {icon:'✂️',title:'Вырезать',action:()=>{ openSubmenu('ctx-cut-sub'); }},
+      {icon:'📋',title:'Копировать',action:()=>{ openSubmenu('ctx-copy-sub'); }},
       {icon:'📌',title:'Вставить',action:()=>{hideCtxMenu();ctxExec('paste')}},
       {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
       {icon:'🔭',title:'Войти в режим ветки (Filter View)',action:()=>{hideCtxMenu();enterBranchView(id)}},
       {icon:'🗑',title:'Удалить',danger:true,action:()=>{
         const isRoot = n.type === 'root';
         const hasCh = gCh(id).length > 0;
-        if (isRoot && hasCh) return; // Should be handled by disabled state, but for safety
-        
-        if(hasCh){
-          // Has children: show submenu with two options
-          document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
-          document.getElementById('ctx-del-sub').classList.add('open');
-        } else {
-          // Leaf node (or root with no children): delete immediately
-          hideCtxMenu();ctxNodeId=id;ctxExec('del-branch');
-        }
+        if (isRoot && hasCh) return;
+        if(hasCh) openSubmenu('ctx-del-sub');
+        else { hideCtxMenu(); ctxNodeId=id; ctxExec('del-branch'); }
       }, disabled: (n.type === 'root' && gCh(id).length > 0)},
     ];
   }
@@ -222,6 +236,7 @@ function showNodeCtx(cx,cy,id){
 function showGroupCtx(cx,cy,id){
   hideAllMenus();
   ctxNodeId=id;selNode(id);
+  ctxMenu._cx = cx; ctxMenu._cy = cy; // Save for submenus
   document.querySelectorAll('.ctx-sub').forEach(s=>s.classList.remove('open'));
   const g=gN(id);
   if(!g)return;
@@ -244,8 +259,11 @@ function showGroupCtx(cx,cy,id){
 }
 
 function showGroupBgCtx(cx,cy,id){
-  showCanvCtx(cx,cy);
+  hideAllMenus();
+  canvCtx._cx = cx; canvCtx._cy = cy; // Save for submenus
   activeBgGroupId = id;
+  canvCtx.style.display='block';
+  posMenu(canvCtx, cx, cy);
   renderCanvCtx();
 }
 
@@ -396,15 +414,59 @@ function syncNodeSettingsUI(id) {
       recList.appendChild(swatch);
     });
   }
+
+  // Apply to Selected button state
+  const btn = document.getElementById('ns-apply-all-btn');
+  if(btn) {
+    const isSelected = selNSet.has(ctxNodeId);
+    const sameTypeCount = isSelected ? [...selNSet].filter(oid => oid !== ctxNodeId && gN(oid)?.type === n.type).length : 0;
+    btn.disabled = sameTypeCount === 0;
+  }
+}
+
+function applyNodeStyleToSelection() {
+  const isSelected = selNSet.has(ctxNodeId);
+  const primaryId = ctxNodeId || (selNSet.size > 0 ? [...selNSet][0] : null);
+  if(!primaryId) return;
+  const primaryNode = gN(primaryId);
+  if(!primaryNode) return;
+  
+  const targets = (isSelected ? [...selNSet] : [primaryId])
+    .filter(id => id !== primaryId)
+    .map(id => gN(id))
+    .filter(n => n && n.type === primaryNode.type);
+    
+  if(targets.length === 0) return;
+  sh();
+  
+  // Visual feedback
+  const btn = document.getElementById('ns-apply-all-btn');
+  if(btn) {
+    btn.classList.add('apply-btn-flash');
+    setTimeout(() => btn.classList.remove('apply-btn-flash'), 700);
+  }
+
+  targets.forEach(n => {
+    n.style = JSON.parse(JSON.stringify(primaryNode.style || {}));
+  });
+  render();
+  toast('Стили применены к ' + targets.length + ' объектам');
 }
 
 function updateNodeStyle(key, val, commit=true) {
-  if(!ctxNodeId) return;
-  const n = gN(ctxNodeId);
-  if(!n) return;
+  const isSelected = selNSet.has(ctxNodeId);
+  const primaryId = ctxNodeId || (selNSet.size > 0 ? [...selNSet][0] : null);
+  if(!primaryId) return;
+  const primaryNode = gN(primaryId);
+  if(!primaryNode) return;
   
-  if(!n.style) n.style = {};
+  const targets = isSelected 
+    ? [...selNSet].map(id => gN(id)).filter(n => n && n.type === primaryNode.type) 
+    : [primaryNode];
+
+  if(commit) sh();
   
+  // Update recent colors only once
   if(['borderColor', 'backgroundColor'].includes(key) && val && val.startsWith('#')) {
     if(!nodeDefaults.recentColors) nodeDefaults.recentColors = [];
     if(!nodeDefaults.recentColors.includes(val) && !BG_COLS.includes(val)) {
@@ -413,11 +475,13 @@ function updateNodeStyle(key, val, commit=true) {
     }
   }
 
-  if(val === null) delete n.style[key];
-  else n.style[key] = val;
+  targets.forEach(n => {
+    if(!n.style) n.style = {};
+    if(val === null) delete n.style[key];
+    else n.style[key] = val;
+  });
 
-  if(commit) sh();
-  syncNodeSettingsUI(ctxNodeId);
+  syncNodeSettingsUI(primaryId);
   render();
 }
 
@@ -582,47 +646,79 @@ function applyBg(groupId=null){
 }
 
 function updateBg(key, val, commit=true){
-  const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
-  let k = key;
-  if(key === 'opacity' && activeBgGroupId && activeGroupColorTarget === 'title') k = 'titleOpacity';
-  if(target[k] === val) return;
-  target[k] = val;
-  if(key==='pattern'){
-    if(val==='paper' || val==='rough'){
-      if(val==='paper') target.lastColor = target.color;
-      target.imgEnabled = false;
+  const primaryId = activeBgGroupId;
+  const isGroup = !!primaryId;
+  const isSelected = isGroup && selNSet.has(primaryId);
+  
+  const targets = isSelected
+    ? [...selNSet].map(id => gN(id)).filter(n => n && n.type === 'group').map(n => n.bg)
+    : [isGroup ? gN(primaryId).bg : bgSettings];
+
+  targets.forEach(target => {
+    let k = key;
+    if(key === 'opacity' && isGroup && activeGroupColorTarget === 'title') k = 'titleOpacity';
+    if(target[k] === val) return;
+    target[k] = val;
+    if(key==='pattern'){
+      if(val==='paper' || val==='rough'){
+        if(val==='paper') target.lastColor = target.color;
+        target.imgEnabled = false;
+      }
     }
-  }
-  if(activeBgGroupId) render(); else applyBg();
+  });
+
+  if(isGroup) render(); else applyBg();
   if(commit) { sh(); renderCanvCtx(); }
 }
 
-function updateBgColor(c){
-  sh();
-  const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
-  if(activeBgGroupId && activeGroupColorTarget === 'title') {
-    target.titleColor = c;
-  } else {
-    if(target.pattern !== 'paper') target.lastColor = c;
-    target.color = c;
-  }
-  if(activeBgGroupId) render(); else applyBg();
+function updateBgColor(c, commit=true){
+  const primaryId = activeBgGroupId;
+  const isGroup = !!primaryId;
+  const isSelected = isGroup && selNSet.has(primaryId);
+
+  const targets = isSelected
+    ? [...selNSet].map(id => gN(id)).filter(n => n && n.type === 'group').map(n => n.bg)
+    : [isGroup ? gN(primaryId).bg : bgSettings];
+
+  if(commit) sh();
+  
+  targets.forEach(target => {
+    if(isGroup && activeGroupColorTarget === 'title') {
+      target.titleColor = c;
+    } else {
+      if(target.pattern !== 'paper') target.lastColor = c;
+      target.color = c;
+    }
+  });
+
+  if(isGroup) render(); else applyBg();
   renderCanvCtx();
 }
 
 function updateBgColorManual(c){
+  const primaryId = activeBgGroupId;
+  const isGroup = !!primaryId;
+  const isSelected = isGroup && selNSet.has(primaryId);
+
+  const targets = isSelected
+    ? [...selNSet].map(id => gN(id)).filter(n => n && n.type === 'group').map(n => n.bg)
+    : [isGroup ? gN(primaryId).bg : bgSettings];
+
   sh();
-  const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
-  if(target.color !== c){
-    target.recentColors = [c, ...(target.recentColors||[]).filter(x=>x!==c)].slice(0,5);
-  }
-  if(activeBgGroupId && activeGroupColorTarget === 'title') {
-    target.titleColor = c;
-  } else {
-    if(target.pattern !== 'paper') target.lastColor = c;
-    target.color = c;
-  }
-  if(activeBgGroupId) render(); else applyBg();
+  
+  targets.forEach(target => {
+    if(target.color !== c){
+      target.recentColors = [c, ...(target.recentColors||[]).filter(x=>x!==c)].slice(0,5);
+    }
+    if(isGroup && activeGroupColorTarget === 'title') {
+      target.titleColor = c;
+    } else {
+      if(target.pattern !== 'paper') target.lastColor = c;
+      target.color = c;
+    }
+  });
+
+  if(isGroup) render(); else applyBg();
   renderCanvCtx();
 }
 
@@ -752,6 +848,48 @@ function renderCanvCtx(){
 
   document.getElementById('bg-img-opacity').value=target.imgOpacity;
   document.getElementById('bg-img-blur').value=target.imgBlur;
+
+  // Apply to Selected button row visibility and button state
+  const bgApplyRow = document.getElementById('bg-apply-all-row');
+  if(bgApplyRow) {
+    const isGroupCtx = !!activeBgGroupId;
+    bgApplyRow.style.display = isGroupCtx ? 'block' : 'none';
+    if(isGroupCtx) {
+      const btn = document.getElementById('bg-apply-all-btn');
+      if(btn) {
+        const isSelected = selNSet.has(activeBgGroupId);
+        const sameTypeCount = isSelected ? [...selNSet].filter(oid => oid !== activeBgGroupId && gN(oid)?.type === 'group').length : 0;
+        btn.disabled = sameTypeCount === 0;
+      }
+    }
+  }
+}
+
+function applyBgStyleToSelection() {
+  const primaryId = activeBgGroupId;
+  if(!primaryId) return;
+  const primaryNode = gN(primaryId);
+  if(!primaryNode) return;
+  
+  const targets = [...selNSet].filter(id => id !== primaryId)
+                             .map(id => gN(id))
+                             .filter(n => n && n.type === 'group');
+                             
+  if(targets.length === 0) return;
+  sh();
+  
+  // Visual feedback
+  const btn = document.getElementById('bg-apply-all-btn');
+  if(btn) {
+    btn.classList.add('apply-btn-flash');
+    setTimeout(() => btn.classList.remove('apply-btn-flash'), 700);
+  }
+
+  targets.forEach(n => {
+    n.bg = JSON.parse(JSON.stringify(primaryNode.bg || groupDefaults.bg));
+  });
+  render();
+  toast('Стили фона применены к ' + targets.length + ' группам');
 }
 
 function showCanvCtx(cx,cy){

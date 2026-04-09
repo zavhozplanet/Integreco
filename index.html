@@ -58,7 +58,7 @@
     <div class="ctx-subitem del" onclick="ctxExec('del-branch')">🗑️ 🌿</div>
   </div>
   <!-- node settings sub -->
-  <div class="ctx-sub" id="ctx-node-settings-sub" style="padding:4px; gap:6px; max-height:60vh; overflow-y:auto; cursor:default; width:220px;" onclick="event.stopPropagation()">
+  <div class="ctx-sub" id="ctx-node-settings-sub" style="padding:4px; gap:6px; cursor:default; width:220px;" onclick="event.stopPropagation()">
     
     <div class="bg-group" id="node-frame-shape-group">
       <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
@@ -71,16 +71,7 @@
       </div>
     </div>
 
-    <div class="bg-group">
-      <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
-        <button class="lp-pin" id="ns-pin-params" onclick="toggleNodePin('params')" title="📌 Параметры по умолчанию">📌</button>
-      </div>
-      <div class="bg-sliders" style="padding-top:2px;">
-        <div class="slider-row" title="Размер (отступ текста)"><span>🔲</span><input type="range" id="ns-pad" min="0" max="40" step="1" oninput="updateNodeStyle('padding', parseFloat(this.value), false)" onchange="updateNodeStyle('padding', parseFloat(this.value), true)"></div>
-        <div class="slider-row" title="Насыщенность (Opacity)"><span>👻</span><input type="range" id="ns-opacity" min="0" max="1" step="0.05" oninput="updateNodeStyle('opacity', parseFloat(this.value), false)" onchange="updateNodeStyle('opacity', parseFloat(this.value), true)"></div>
-        <div class="slider-row" title="Размытость (Blur)"><span>🌫️</span><input type="range" id="ns-blur" min="0" max="24" step="1" oninput="updateNodeStyle('blur', parseFloat(this.value), false)" onchange="updateNodeStyle('blur', parseFloat(this.value), true)"></div>
-      </div>
-    </div>
+
 
     <div class="bg-group" id="node-frame-style-group">
       <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
@@ -114,6 +105,28 @@
         <input type="color" id="ns-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateNodeStyle(activeColorTarget === 'border' ? 'borderColor' : 'backgroundColor', this.value, true)">
       </div>
     </div>
+
+    <div class="bg-group">
+      <div style="display:flex;justify-content:flex-end;padding:4px 4px 0;">
+        <button class="lp-pin" id="ns-pin-params" onclick="toggleNodePin('params')" title="📌 Параметры по умолчанию">📌</button>
+      </div>
+      <div class="bg-sliders" style="padding-top:2px;">
+        <div class="slider-row" title="Размер (отступ текста)"><span>🔲</span><input type="range" id="ns-pad" min="0" max="40" step="1" oninput="updateNodeStyle('padding', parseFloat(this.value), false)" onchange="updateNodeStyle('padding', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Насыщенность (Opacity)"><span>👻</span><input type="range" id="ns-opacity" min="0" max="1" step="0.05" oninput="updateNodeStyle('opacity', parseFloat(this.value), false)" onchange="updateNodeStyle('opacity', parseFloat(this.value), true)"></div>
+        <div class="slider-row" title="Размытость (Blur)"><span>🌫️</span><input type="range" id="ns-blur" min="0" max="24" step="1" oninput="updateNodeStyle('blur', parseFloat(this.value), false)" onchange="updateNodeStyle('blur', parseFloat(this.value), true)"></div>
+      </div>
+    </div>
+     <div id="ns-apply-all-row" style="padding: 4px 0; border-top: 1px solid var(--nbr, #f0ede8); margin-top: 6px; display: block;">
+      <button class="bg-pat-btn" id="ns-apply-all-btn" style="width: 100%; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="applyNodeStyleToSelection()" title="Применить текущие стили ко всем выделенным объектам того же типа">
+        <span style="font-size:20px; color: #888;">●</span>
+        <span style="font-size:16px; color: #aaa;">➔</span>
+        <div style="position:relative; width:26px; height:20px;">
+          <span style="position:absolute; left:0; top:4px; font-size:18px; color: #888;">●</span>
+          <span style="position:absolute; left:5px; top:2px; font-size:18px; color: #888;">●</span>
+          <span style="position:absolute; left:10px; top:0; font-size:18px; color: #888;">●</span>
+        </div>
+      </button>
+    </div>
   </div>
   <!-- cut sub -->
   <div class="ctx-sub" id="ctx-cut-sub">
@@ -136,7 +149,7 @@
 <!-- canvas context menu -->
 <div id="canvctx" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()" style="position:fixed;z-index:700;background:#fff;border-radius:16px;padding:8px;
   --sel-color: var(--ac);
-  box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid var(--nbr);display:none;min-width:220px">
+  box-shadow:0 8px 32px rgba(0,0,0,.18);border:1px solid var(--nbr);display:none;min-width:220px;">
   
   <div class="bg-group" id="bg-col-group">
     <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 8px 0;">
@@ -192,6 +205,16 @@
       <div class="slider-row"><span>💧</span><input type="range" id="bg-img-opacity" min="0" max="1" step="0.05" oninput="updateBg('imgOpacity', parseFloat(this.value), false)" onchange="updateBg('imgOpacity', parseFloat(this.value), true)"></div>
       <div class="slider-row"><span>🌫️</span><input type="range" id="bg-img-blur" min="0" max="20" step="1" oninput="updateBg('imgBlur', parseFloat(this.value), false)" onchange="updateBg('imgBlur', parseFloat(this.value), true)"></div>
     </div>
+  <div id="bg-apply-all-row" style="padding: 4px 0; border-top: 1px solid var(--nbr, #f0ede8); margin-top: 6px; display: none;">
+    <button class="bg-pat-btn" id="bg-apply-all-btn" style="width: 100%; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="applyBgStyleToSelection()" title="Применить текущий стиль фона ко всем выделенным группам">
+      <span style="font-size:20px; color: #888;">📦</span>
+      <span style="font-size:16px; color: #aaa;">➔</span>
+      <div style="position:relative; width:26px; height:20px;">
+        <span style="position:absolute; left:0; top:4px; font-size:18px; color: #888;">📦</span>
+        <span style="position:absolute; left:5px; top:2px; font-size:18px; color: #888;">📦</span>
+        <span style="position:absolute; left:10px; top:0; font-size:18px; color: #888;">📦</span>
+      </div>
+    </button>
   </div>
 </div>
 

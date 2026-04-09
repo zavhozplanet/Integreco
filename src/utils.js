@@ -121,7 +121,11 @@ function rgbToHex(r, g, b) {
 
 function getLuminance(hex) {
   const {r, g, b} = hexToRgb(hex);
-  return (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+  const linearize = (c) => {
+    c = c / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
 }
 
 function blendColors(c1, c2, alpha) {
@@ -132,43 +136,82 @@ function blendColors(c1, c2, alpha) {
   return rgbToHex(r, g, b);
 }
 
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h, s, l };
+}
+
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) };
+}
+
 function adjustColorForContrast(colorHex, bgHex) {
   const lumB = getLuminance(bgHex);
   const rgbC = hexToRgb(colorHex);
-  let {r, g, b} = rgbC;
+  const lumC = getLuminance(colorHex);
   
-  const lumC = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-  const diff = Math.abs(lumC - lumB);
-  const MIN_CONTRAST = 0.35;
+  const getContrastRatio = (l1, l2) => {
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+  };
+
+  const currentCR = getContrastRatio(lumC, lumB);
+  const MIN_CONTRAST = 6.0; // Higher Target WCAG ratio for thin UI lines (4.0 is too faint visually)
   
-  if (diff < MIN_CONTRAST) {
+  if (currentCR < MIN_CONTRAST) {
     let toLight;
-    if (lumB < 0.45) {
-      toLight = true;
-    } else if (lumB > 0.55) {
-      toLight = false;
-    } else {
-      toLight = lumC >= 0.5;
-    }
+    // WCAG recommends lighter text if background is very dark, else pick direction that affords more contrast range
+    if (lumB < 0.175) toLight = true;
+    else if (lumB > 0.5) toLight = false;
+    else toLight = lumC >= 0.175;
+
+    const { h, s, l } = rgbToHsl(rgbC.r, rgbC.g, rgbC.b);
     
-    // Iteratively mix towards pure white or pure black until we just pass the threshold
     for (let factor = 0.05; factor <= 1.0; factor += 0.05) {
-      let tr, tg, tb;
-      if (toLight) {
-        tr = Math.round(r + (255 - r) * factor);
-        tg = Math.round(g + (255 - g) * factor);
-        tb = Math.round(b + (255 - b) * factor);
-      } else {
-        tr = Math.round(r * (1 - factor));
-        tg = Math.round(g * (1 - factor));
-        tb = Math.round(b * (1 - factor));
-      }
+      // faster lightness shift curve to ensure we reach solid white/black if needed
+      const newL = toLight ? Math.min(1, l + factor * 1.5 * (1.0 - l)) : Math.max(0, l - factor * 1.5 * l);
+      const newRgb = hslToRgb(h, s, newL);
+      const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+      const newLum = getLuminance(newHex);
       
-      const tl = (tr * 0.299 + tg * 0.587 + tb * 0.114) / 255;
-      if (Math.abs(tl - lumB) >= MIN_CONTRAST) {
-        return rgbToHex(tr, tg, tb);
+      if (getContrastRatio(newLum, lumB) >= MIN_CONTRAST) {
+        return newHex;
       }
     }
+    // Fallback if mathematically unreachable without blowing up HSL (rare for 4.0)
     return toLight ? "#ffffff" : "#2c2a27";
   }
   return colorHex;
