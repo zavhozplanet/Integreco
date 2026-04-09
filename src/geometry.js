@@ -60,7 +60,7 @@ function getSnapPoint(n, target, edge, side) {
   if (isForceUnfixed) {
     // Make sure we evaluate multi correctly (it has its own native offset logic, but normally we just return cardinal center if unfixed here)
     if (n.type === 'group') return groupSnapPoint(n, target);
-    if (n.type === 'multi') return {x: n.x, y: n.y}; 
+    if (n.type === 'multi') return _computeBestSide(n, target, edge, side).pt;
     return {x: n.x, y: n.y};
   }
 
@@ -121,10 +121,10 @@ function _getSidePoint(n, edge, side, s) {
     if (isH) ox = edge[side + 'Offset'];
     else     oy = edge[side + 'Offset'];
   }
-  if (s === 'l') return { x: n.x - hw, y: n.y + oy };
-  if (s === 'r') return { x: n.x + hw, y: n.y + oy };
-  if (s === 't') return { x: n.x + ox, y: n.y - hh };
-  if (s === 'b') return { x: n.x + ox, y: n.y + hh };
+  if (s === 'l') return { x: n.x - hw - 1, y: n.y + oy };
+  if (s === 'r') return { x: n.x + hw + 1, y: n.y + oy };
+  if (s === 't') return { x: n.x + ox, y: n.y - hh - 1 };
+  if (s === 'b') return { x: n.x + ox, y: n.y + hh + 1 };
   return { x: n.x, y: n.y };
 }
 
@@ -601,9 +601,12 @@ function addExpandCircle(grp,ex,fromId,eid, isGroupCollapseOverride){
         }
     } else {
         const origCol = e.collapsed;
-        e.collapsed=false;
-        renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
-        e.collapsed=origCol;
+        try {
+          e.collapsed=false;
+          renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
+        } finally {
+          e.collapsed=origCol;
+        }
     }
     svgl.insertBefore(previewGrp,glLink);
   });
@@ -657,7 +660,10 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
     nodeElems.push(rect,label);
   }
 
+  const visited = new Set();
   function collectNode(id){
+    if(visited.has(id)) return;
+    visited.add(id);
     gCh(id).forEach(cid=>{
       const par=gN(id),chi=gN(cid);if(!par||!chi)return;
       previewNodeIds.add(cid);
@@ -730,9 +736,12 @@ function renderGroupConnectionsPreview(groupId, g, highlightedEdgeId) {
       // If edge is OUTGOING from the group and branch is collapsed, preview the branch too!
       if (pe.from === groupId && pe.collapsed) {
         const origCol = pe.collapsed;
-        pe.collapsed = false;
-        renderBranchPreview(pe.to, g, lineExitFrom(pe), pe);
-        pe.collapsed = origCol;
+        try {
+          pe.collapsed = false;
+          renderBranchPreview(pe.to, g, lineExitFrom(pe), pe);
+        } finally {
+          pe.collapsed = origCol;
+        }
       }
     }
   });
@@ -1065,10 +1074,11 @@ function render(){
       sensor.className = 'group-frame-sensor ' + pos;
       sensor.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
       sensor.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
+      sensor.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); startPlusDrag(ev,n.id,pos,sensor,pos); });
       divUI.appendChild(sensor);
     });
-    title.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
-    title.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
+    // title.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
+    // title.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
 
     ['tl','tr','bl','br'].forEach(pos=>{
       const r=document.createElement('div');
@@ -1114,18 +1124,19 @@ function render(){
         r.addEventListener('touchstart',ev=>{ev.stopPropagation();startGroupResize(ev,n.id,pos)},{passive:false});
         div.appendChild(r);
       });
-      // Side sensors for highlight and drag connection
-      ['n','s','e','w'].forEach(pos=>{
-        const sensor=document.createElement('div');
-        sensor.className='multi-side-sensor '+pos;
-        // Mousedown explicitly initiates drag
-        sensor.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,sensor,pos)});
-        // We do NOT add touchstart here because touch already has its own logic in mobile-specific +. If needed, we can.
-        div.appendChild(sensor);
-      });
     }
 
     const ni=document.createElement('div');ni.className='ni';
+    
+    if(isMulti) {
+      // Side sensors for highlight and drag connection MUST be inside .ni to share stacking context with .np buttons
+      ['n','s','e','w'].forEach(pos=>{
+        const sensor=document.createElement('div');
+        sensor.className='multi-side-sensor '+pos;
+        sensor.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,sensor,pos)});
+        ni.appendChild(sensor);
+      });
+    }
     if(n.style) {
       if(n.style.shape==='rect') ni.style.borderRadius='0px';
       else if(n.style.shape==='round') ni.style.borderRadius='8px';

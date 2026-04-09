@@ -419,10 +419,10 @@ window.addEventListener('mouseup',ev=>{
           e[epDrag.which + 'Side'] = null;
           e[epDrag.which + 'Offset'] = null;
           
-          // Auto-fixation when manually reconnecting to Group or Multi-node
-          if (tN.type === 'group' || tN.type === 'multi') {
-            e[epDrag.which + 'Fixed'] = true;
-          }
+          // Fixation logic: fix if on strip, or dynamic if on button
+          const elAt = document.elementFromPoint(ev.clientX, ev.clientY);
+          const isStrip = elAt && (elAt.classList.contains('group-frame-sensor') || elAt.classList.contains('multi-side-sensor'));
+          e[epDrag.which + 'Fixed'] = isStrip;
           
           getSnapPoint(tN, p, e, epDrag.which);
           

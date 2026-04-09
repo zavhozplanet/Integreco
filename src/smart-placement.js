@@ -33,10 +33,18 @@ function smartPlace(parentId, dirHint){
   return{x:candidates[0].x,y:candidates[0].y};
 }
 
-function addChild(parentId, dirHint){
+function addChild(parentId, dirHint, startPoint){
   sh();
   const pos=smartPlace(parentId, dirHint);
   const id=mkNode(pos.x,pos.y,'',parentId);
+  if (startPoint) {
+    const e = edges[edges.length - 1];
+    const fromN = gN(parentId);
+    if (fromN && (fromN.type === 'group' || fromN.type === 'multi')) {
+      e.fromFixed = true;
+      getSnapPoint(fromN, startPoint, e, 'from');
+    }
+  }
   if(autoMode)autoLayout();else render();
   selN=id;render();
   if(isMob()) showMobRename(id,true);

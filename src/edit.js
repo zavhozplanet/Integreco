@@ -19,6 +19,10 @@ function editNode(id, isNew=false){
   }
   
   const ta=document.createElement('textarea');ta.className='nedit';ta.value=n.label;ta.placeholder=' ;)';ta.rows=1;
+  const sourceEl = (n.type === 'group') ? targetContainer : sp;
+  if(sourceEl) {
+    ta.style.color = window.getComputedStyle(sourceEl).color;
+  }
   targetContainer.insertBefore(ta,sp);ta.focus();ta.select();
   let isDone = false;
   const done=()=>{

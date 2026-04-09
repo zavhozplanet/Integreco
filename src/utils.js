@@ -35,8 +35,29 @@ function isBaseVisible(id){
     let c=id;for(let i=0;i<200;i++){if(c===branchViewId)return true;const p=gPar(c);if(p==null)return false;c=p}
     return false;
   }
-  let c=id;for(let i=0;i<200;i++){const p=gPar(c);if(p==null)return true;const e=edges.find(e=>e.from===p&&e.to===c);if(e&&e.collapsed&&e.dash!=='link')return false;c=p}
-  return true;
+  
+  // Iterative check for any open path to a root
+  let q = [id];
+  let visited = new Set();
+  while(q.length > 0) {
+    let cur = q.shift();
+    const n = gN(cur);
+    if(!n || n.type === 'root') return true;
+    if(visited.has(cur)) continue;
+    visited.add(cur);
+    if(visited.size > 200) break; // cycle/depth limit
+
+    // Consider ALL incoming edges so that secondary lines ("связки") keep the node visible
+    const parents = edges.filter(e => e.to === cur);
+    if(parents.length === 0) return true; // floating node is visible
+    
+    for(const e of parents) {
+      if(!e.collapsed) {
+        q.push(e.from);
+      }
+    }
+  }
+  return false;
 }
 
 function sh(){hist.push(JSON.stringify({nodes,edges,bgSettings}));if(hist.length>100)hist.shift();fut=[]}

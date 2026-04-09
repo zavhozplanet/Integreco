@@ -18,17 +18,14 @@ function updatePlusDrag(ev){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
     
     let sx = n.x, sy = n.y;
-    if(n.type === 'multi') {
-      const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
-      sx = pStart.x; sy = pStart.y;
-    } else if (n.type === 'group') {
-      if (snapSettings.group) {
-        const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
-        sx = pStart.x; sy = pStart.y;
-      } else {
-        const snap = groupSnapPoint(n, {x: p.x, y: p.y});
-        sx = snap.x; sy = snap.y;
-      }
+    const isStrip = plusDrag.btnEl && (plusDrag.btnEl.classList.contains('group-frame-sensor') || plusDrag.btnEl.classList.contains('multi-side-sensor'));
+    if (isStrip) {
+      // Use current cursor 'p' to slide the start point along the border
+      const pt = getSnapPoint(n, p, { fromFixed: true }, 'from');
+      sx = pt.x; sy = pt.y;
+    } else if (n.type === 'group' || n.type === 'multi') {
+      const pt = getSnapPoint(n, p, { fromFixed: false }, 'from');
+      sx = pt.x; sy = pt.y;
     }
     glLink.style.display='block';
     ghHd.style.display='block';
@@ -61,8 +58,10 @@ function endPlusDrag(ev){
   const fromId=plusDrag.nodeId;
   const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
   
+  const isStrip = plusDrag.btnEl && (plusDrag.btnEl.classList.contains('group-frame-sensor') || plusDrag.btnEl.classList.contains('multi-side-sensor'));
   if(!wasMoved){
-    addChild(fromId, plusDrag.dirHint);
+    const pStart = isStrip ? s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top) : null;
+    addChild(fromId, plusDrag.dirHint, pStart);
   } else {
     if(tgt){
       const exists = edges.some(e => (e.from === fromId && e.to === tgt) || (e.from === tgt && e.to === fromId));
@@ -85,19 +84,32 @@ function endPlusDrag(ev){
         edges.push(e);
         selE=e.id; selEHandles=true; selN=null; selNSet.clear();
       }
-      if (fromN.type === 'group' || fromN.type === 'multi') e.fromFixed = true;
-      if (toN.type === 'group' || toN.type === 'multi') e.toFixed = true;
+      const isStrip = plusDrag.btnEl && (plusDrag.btnEl.classList.contains('group-frame-sensor') || plusDrag.btnEl.classList.contains('multi-side-sensor'));
+      const elAt = document.elementFromPoint(ev.clientX, ev.clientY);
+      const isEndStrip = elAt && (elAt.classList.contains('group-frame-sensor') || elAt.classList.contains('multi-side-sensor'));
+      
+      if (fromN.type === 'group' || fromN.type === 'multi') {
+        e.fromFixed = isStrip;
+      }
+      if (toN.type === 'group' || toN.type === 'multi') {
+        e.toFixed = isEndStrip; 
+      }
       
       const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
-      getSnapPoint(fromN, pStart, e, 'from'); // anchor 'from' to grab position
-      getSnapPoint(toN, p, e, 'to'); // anchor 'to' to drop position
+      // For fixed connection from strip, use the final cursor position 'p' to anchor it to the closest border point
+      getSnapPoint(fromN, p, e, 'from'); 
+      getSnapPoint(toN, p, e, 'to'); 
       render();
     } else {
-      sh();const id=mkNode(p.x,p.y,'+',fromId,false);
+      sh(); const id = mkNode(p.x, p.y, '+', fromId, false);
       const e = edges[edges.length - 1]; // mkNode pushes edge connecting parent and child
       const fromN = gN(fromId);
-      const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
-      if (fromN.type === 'multi') getSnapPoint(fromN, pStart, e, 'from');
+      const isStrip = plusDrag.btnEl && (plusDrag.btnEl.classList.contains('group-frame-sensor') || plusDrag.btnEl.classList.contains('multi-side-sensor'));
+      if (fromN.type === 'group' || fromN.type === 'multi') {
+        e.fromFixed = isStrip;
+        // Use final cursor 'p' for sliding effect
+        getSnapPoint(fromN, p, e, 'from');
+      }
       if(autoMode)autoLayout();render();selNode(id);
       if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);
     }
