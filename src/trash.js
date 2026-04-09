@@ -157,8 +157,18 @@ function hideCanvDblMenu(){canvDblMenu.style.display='none'}
 function showCanvDblMenu(cx,cy){
   hideAllMenus();
   canvDblMenu.style.display='flex';
-  canvDblMenu.style.left=Math.min(cx,window.innerWidth-180)+'px';
-  canvDblMenu.style.top=Math.min(cy,window.innerHeight-160)+'px';
+  let x = cx;
+  if(x + 180 > window.innerWidth) x = window.innerWidth - 190;
+  canvDblMenu.style.left = Math.max(10, x) + 'px';
+  
+  if (cy > window.innerHeight * 0.6) {
+    let b = window.innerHeight - cy;
+    canvDblMenu.style.bottom = (b + 10) + 'px';
+    canvDblMenu.style.top = 'auto';
+  } else {
+    canvDblMenu.style.top = Math.min(cy, window.innerHeight - 160) + 'px';
+    canvDblMenu.style.bottom = 'auto';
+  }
   canvDblMenu._cx=cx;canvDblMenu._cy=cy;
 }
 function addFromDbl(type){

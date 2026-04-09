@@ -42,17 +42,26 @@ function getSnapPoint(n, target, edge, side) {
   if (!n) return {x: 0, y: 0};
   const type = (n.type === 'root' || n.type === 'node') ? 'node' : n.type;
 
-  // ── FIXED endpoint: lock to stored side/offset ───────────────
-  if (edge && edge[side + 'Fixed']) {
-    // If side is already stored, return exactly that point without re-computing
+  const isFixed = edge && edge[side + 'Fixed'] === true;
+  const isForceUnfixed = edge && edge[side + 'Fixed'] === false;
+
+  // 1. Explicitly FIXED (either via button or drag)
+  if (isFixed) {
     if (edge[side + 'Side']) {
       return _getSidePoint(n, edge, side, edge[side + 'Side']);
     }
-    // First time: compute and store current position as fixed
     const computed = _computeBestSide(n, target, edge, side);
     edge[side + 'Side'] = computed.s;
     if (computed.offset != null) edge[side + 'Offset'] = computed.offset;
     return computed.pt;
+  }
+
+  // 2. Explicitly UNFIXED (override global setting if any)
+  if (isForceUnfixed) {
+    // Make sure we evaluate multi correctly (it has its own native offset logic, but normally we just return cardinal center if unfixed here)
+    if (n.type === 'group') return groupSnapPoint(n, target);
+    if (n.type === 'multi') return {x: n.x, y: n.y}; 
+    return {x: n.x, y: n.y};
   }
 
   // ── MULTI nodes always use side+offset anchoring ─────────────
@@ -65,8 +74,10 @@ function getSnapPoint(n, target, edge, side) {
       return _getSidePoint(n, edge, side, edge[side + 'Side']);
     }
     const computed = _computeBestSide(n, target, edge, side);
-    edge[side + 'Side'] = computed.s;
-    if (computed.offset != null) edge[side + 'Offset'] = computed.offset;
+    if (edge) {
+      edge[side + 'Side'] = computed.s;
+      if (computed.offset != null) edge[side + 'Offset'] = computed.offset;
+    }
     return computed.pt;
   }
 
@@ -880,6 +891,7 @@ function render(){
           epc.dataset.eid = e.id; epc.dataset.which = which;
           epc.addEventListener('mouseenter', showH);
           epc.addEventListener('mouseleave', hideH);
+          grp.appendChild(epc);
         });
       }
     }

@@ -18,9 +18,17 @@ function updatePlusDrag(ev){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
     
     let sx = n.x, sy = n.y;
-    if(n.type === 'group' || n.type === 'multi') {
-      const snap = getSnapPoint(n, {x: p.x, y: p.y}, null, 'from');
-      sx = snap.x; sy = snap.y;
+    if(n.type === 'multi') {
+      const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
+      sx = pStart.x; sy = pStart.y;
+    } else if (n.type === 'group') {
+      if (snapSettings.group) {
+        const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
+        sx = pStart.x; sy = pStart.y;
+      } else {
+        const snap = groupSnapPoint(n, {x: p.x, y: p.y});
+        sx = snap.x; sy = snap.y;
+      }
     }
     glLink.style.display='block';
     ghHd.style.display='block';
@@ -31,8 +39,8 @@ function updatePlusDrag(ev){
     if(tgtId) {
       const tgtN = gN(tgtId);
       if(tgtN.type === 'group' || tgtN.type === 'multi') {
-        const snap = getSnapPoint(tgtN, {x: sx, y: sy}, null, 'to');
-        ex = snap.x; ey = snap.y;
+        // No automatic visual snapping for group/multi, let drop be purely manual
+        ex = p.x; ey = p.y;
       } else {
         ex = tgtN.x; ey = tgtN.y;
       }
@@ -77,25 +85,19 @@ function endPlusDrag(ev){
         edges.push(e);
         selE=e.id; selEHandles=true; selN=null; selNSet.clear();
       }
-      // Save dynamic side offsets for multi nodes based on current drag release positions
-      let sx = fromN.x, sy = fromN.y;
-      if (fromN.type === 'multi') {
-        const snap = getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from');
-        sx = snap.x; sy = snap.y;
-      } else {
-        getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from'); 
-      }
-      if (toN.type === 'multi') {
-        getSnapPoint(toN, {x: sx, y: sy}, e, 'to');
-      } else {
-        getSnapPoint(toN, {x: sx, y: sy}, e, 'to');
-      }
+      if (fromN.type === 'group' || fromN.type === 'multi') e.fromFixed = true;
+      if (toN.type === 'group' || toN.type === 'multi') e.toFixed = true;
+      
+      const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
+      getSnapPoint(fromN, pStart, e, 'from'); // anchor 'from' to grab position
+      getSnapPoint(toN, p, e, 'to'); // anchor 'to' to drop position
       render();
     } else {
       sh();const id=mkNode(p.x,p.y,'+',fromId,false);
       const e = edges[edges.length - 1]; // mkNode pushes edge connecting parent and child
       const fromN = gN(fromId);
-      if (fromN.type === 'multi') getSnapPoint(fromN, {x: p.x, y: p.y}, e, 'from');
+      const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
+      if (fromN.type === 'multi') getSnapPoint(fromN, pStart, e, 'from');
       if(autoMode)autoLayout();render();selNode(id);
       if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);
     }
@@ -126,9 +128,17 @@ document.addEventListener('touchmove',ev=>{
     const n=gN(plusTouchDrag.nodeId);
     
     let sx = n.x, sy = n.y;
-    if(n.type === 'group') {
-      const snap = groupSnapPoint(n, {x: p.x, y: p.y});
-      sx = snap.x; sy = snap.y;
+    if(n.type === 'multi') {
+      const pStart = s2c(plusTouchDrag.sx-rc.left, plusTouchDrag.sy-rc.top);
+      sx = pStart.x; sy = pStart.y;
+    } else if (n.type === 'group') {
+      if (snapSettings.group) {
+        const pStart = s2c(plusTouchDrag.sx-rc.left, plusTouchDrag.sy-rc.top);
+        sx = pStart.x; sy = pStart.y;
+      } else {
+        const snap = groupSnapPoint(n, {x: p.x, y: p.y});
+        sx = snap.x; sy = snap.y;
+      }
     }
     glLink.setAttribute('x1',sx);glLink.setAttribute('y1',sy);
     
@@ -136,9 +146,9 @@ document.addEventListener('touchmove',ev=>{
     let ex = p.x, ey = p.y;
     if(tgtId) {
       const tgtN = gN(tgtId);
-      if(tgtN.type === 'group') {
-        const snap = groupSnapPoint(tgtN, {x: sx, y: sy});
-        ex = snap.x; ey = snap.y;
+      if(tgtN.type === 'group' || tgtN.type === 'multi') {
+        // No automatic visual snapping for group/multi
+        ex = p.x; ey = p.y;
       } else {
         ex = tgtN.x; ey = tgtN.y;
       }
@@ -167,7 +177,12 @@ document.addEventListener('touchend',ev=>{
     sh();
     const ne = mkEdge(fromId,tgt,true);
     edges.push(ne);
-    render();
+    const fromN = gN(fromId), toN = gN(tgt);
+    if (fromN.type === 'group' || fromN.type === 'multi') ne.fromFixed = true;
+    if (toN.type === 'group' || toN.type === 'multi') ne.toFixed = true;
+    const pStart = s2c(plusTouchDrag.sx-rc.left, plusTouchDrag.sy-rc.top);
+    getSnapPoint(fromN, pStart, ne, 'from');
+    getSnapPoint(toN, p, ne, 'to');
     // Just select the edge visually, don't open the context menu automatically
     selE=ne.id; selEHandles=true; selN=null; selNSet.clear(); render();
   }
@@ -187,6 +202,13 @@ function updateDragCreate(sx,sy){
   if(!dragCreate.active)return;
   const rc=wrap.getBoundingClientRect();
   const p=s2c(sx,sy);
+  const n=gN(dragCreate.fromId);
+  let ox = n.x, oy = n.y;
+  if(n.type === 'group' || n.type === 'multi') {
+    const pStart = s2c(dragCreate.startSX, dragCreate.startSY);
+    ox = pStart.x; oy = pStart.y;
+  }
+  glLink.setAttribute('x1',ox);glLink.setAttribute('y1',oy);
   glLink.setAttribute('x2',p.x);glLink.setAttribute('y2',p.y);
   ghHd.setAttribute('cx',p.x);ghHd.setAttribute('cy',p.y);
   const tgt=findNodeAt(sx,sy,dragCreate.fromId);
@@ -203,7 +225,12 @@ function endDragCreate(sx,sy){
     sh();
     const ne = mkEdge(fromId,tgt,true);
     edges.push(ne);
-    render();
+    const fromN = gN(fromId), toN = gN(tgt);
+    if (fromN.type === 'group' || fromN.type === 'multi') ne.fromFixed = true;
+    if (toN.type === 'group' || toN.type === 'multi') ne.toFixed = true;
+    const pStart = s2c(dragCreate.startSX, dragCreate.startSY);
+    getSnapPoint(fromN, pStart, ne, 'from');
+    getSnapPoint(toN, p, ne, 'to');
     // Just select the edge visually, don't open the context menu automatically
     selE=ne.id; selEHandles=true; selN=null; selNSet.clear(); render();
   }
@@ -241,7 +268,15 @@ function findNodeAt(sx,sy,excludeId){
     const {hw, hh} = nodeHalfExtents(n.id);
     if(Math.abs(p.x - n.x) <= hw && Math.abs(p.y - n.y) <= hh) {
       if(n.type === 'group') {
-        insideGroup = n.id;
+        const distToLeft = Math.abs((n.x - hw) - p.x);
+        const distToRight = Math.abs((n.x + hw) - p.x);
+        const distToTop = Math.abs((n.y - hh) - p.y);
+        const distToBottom = Math.abs((n.y + hh) - p.y);
+        const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+        // Only target the group if near its border (e.g. 24px)
+        if (minDist <= 24) {
+          insideGroup = n.id;
+        }
       } else {
         insideNode = n.id;
       }
@@ -263,6 +298,17 @@ function findNodeAt(sx,sy,excludeId){
     const dx = Math.max(Math.abs(n.x - p.x) - hw, 0);
     const dy = Math.max(Math.abs(n.y - p.y) - hh, 0);
     const d = dx*dx + dy*dy;
+    
+    // For groups, if inside the box (d==0), only consider it if near the border
+    if (n.type === 'group' && d === 0) {
+      const distToLeft = Math.abs((n.x - hw) - p.x);
+      const distToRight = Math.abs((n.x + hw) - p.x);
+      const distToTop = Math.abs((n.y - hh) - p.y);
+      const distToBottom = Math.abs((n.y + hh) - p.y);
+      const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+      if (minDist > 24) continue;
+    }
+
     if(d < MAX_DIST && d < bestD) {
       bestD = d;
       found = n.id;

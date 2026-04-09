@@ -126,10 +126,10 @@ svgl.addEventListener('mousedown',ev=>{
     const eid=parseInt(ev.target.dataset.eid);
     const which=ev.target.dataset.which; // 'from' or 'to'
     const e=gE(eid);if(!e)return;
-    const rc=wrap.getBoundingClientRect();
-    const fixedId=which==='from'?e.to:e.from;
-    const fixedN=gN(fixedId);
-    epDrag={active:true,eid,which,fixedX:fixedN.x,fixedY:fixedN.y};
+    const fixedId = which === 'from' ? e.to : e.from;
+    epDrag={active:true,eid,which,fixedId};
+    const eg = document.getElementById('eg'+eid);
+    if (eg) eg.style.display = 'none';
     ev.target.classList.add('dragging');
     return;
   }
@@ -208,9 +208,17 @@ window.addEventListener('mousemove',ev=>{
   // Edge endpoint reconnection: draw ghost line
   if(epDrag.active){
     const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
+    const e=gE(epDrag.eid);
+    let fx = 0, fy = 0;
+    if(e) {
+       const fixedN = gN(epDrag.fixedId);
+       const side = epDrag.which === 'from' ? 'to' : 'from';
+       const pt = getSnapPoint(fixedN, p, e, side);
+       fx = pt.x; fy = pt.y;
+    }
     // ghost-ln is a <line>, not <path> — use x1/y1/x2/y2
-    glLink.setAttribute('x1', epDrag.fixedX);
-    glLink.setAttribute('y1', epDrag.fixedY);
+    glLink.setAttribute('x1', fx);
+    glLink.setAttribute('y1', fy);
     glLink.setAttribute('x2', p.x);
     glLink.setAttribute('y2', p.y);
     glLink.style.display='block';
@@ -395,36 +403,39 @@ window.addEventListener('mouseup',ev=>{
     const rc=wrap.getBoundingClientRect();
     const e=gE(epDrag.eid);
     if(e){
-      // findNodeAt expects screen-relative coords, not canvas coords
       const targetId = findNodeAt(ev.clientX - rc.left, ev.clientY - rc.top);
       if (targetId) {
         const dupExists = edges.some(x => x.id !== e.id && ((x.from === (epDrag.which === 'from' ? targetId : e.from) && x.to === (epDrag.which === 'to' ? targetId : e.to)) || (x.from === (epDrag.which === 'to' ? targetId : e.to) && x.to === (epDrag.which === 'from' ? targetId : e.from))));
         if (!dupExists) {
           sh();
+          const tN = gN(targetId);
+          const p = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
+          
           if (epDrag.which === 'from') e.from = targetId;
           else e.to = targetId;
           e.cp1x = null; e.cp1y = null; e.cp2x = null; e.cp2y = null;
-          // Always clear old side/offset so the reconnection point is freshly computed
+          
+          // Re-compute side/offset based on drop position 'p'
           e[epDrag.which + 'Side'] = null;
           e[epDrag.which + 'Offset'] = null;
           
-          const tN = gN(targetId);
-          const p = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
-          if (tN.type === 'multi' || (tN.type === 'group' && e[epDrag.which + 'Fixed'])) {
-            // Force side+offset computation for multi OR fixed group endpoint
-            getSnapPoint(tN, p, e, epDrag.which);
-          } else if (tN.type === 'group') {
-            // Non-fixed group: compute cardinal side only, no offset
-            const otherN = gN(epDrag.which === 'from' ? e.to : e.from);
-            if (otherN) getSnapPoint(tN, otherN, e, epDrag.which);
+          // Auto-fixation when manually reconnecting to Group or Multi-node
+          if (tN.type === 'group' || tN.type === 'multi') {
+            e[epDrag.which + 'Fixed'] = true;
           }
+          
+          getSnapPoint(tN, p, e, epDrag.which);
+          
           render();
+          if(typeof syncFixBtns === 'function' && selE === e.id) syncFixBtns(e);
           toast('🔗 Переподключено');
         } else {
           toast('Связь уже существует');
         }
       }
     }
+    const eg = document.getElementById('eg'+epDrag.eid);
+    if(eg) eg.style.display = '';
     epDrag={active:false};return;
   }
   if(bzDrag.active){

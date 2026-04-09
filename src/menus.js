@@ -19,10 +19,20 @@ function posMenu(m, cx, cy) {
   const mh = m.offsetHeight || 300;
   let x = cx, y = cy;
   if (x + mw > window.innerWidth) x = window.innerWidth - mw - 10;
-  if (y + mh > window.innerHeight) y = Math.max(10, window.innerHeight - mh - 10);
   if (x < 0) x = 10;
   m.style.left = x + 'px';
-  m.style.top = y + 'px';
+  
+  // Adaptive vertical positioning to support expandable submenus
+  if (cy > window.innerHeight * 0.6) {
+    let b = window.innerHeight - cy;
+    if (b < 10) b = 10;
+    m.style.bottom = (b + 10) + 'px'; // +10 to avoid tight cursor overlap
+    m.style.top = 'auto';
+  } else {
+    if (y + mh > window.innerHeight) y = Math.max(10, window.innerHeight - mh - 10);
+    m.style.top = y + 'px';
+    m.style.bottom = 'auto';
+  }
 }
 
 function showMultiCtx(cx, cy) {

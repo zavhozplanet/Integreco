@@ -4,8 +4,20 @@
 function showLpAt(cx,cy,eid){
   hideAllMenus();
   const e=gE(eid);if(!e)return;lpPanel.style.display='flex';
-  lpPanel.style.left=Math.min(cx,window.innerWidth-235)+'px';
-  lpPanel.style.top=Math.min(cy+14,window.innerHeight-260)+'px';
+  
+  let x = cx;
+  if(x + 235 > window.innerWidth) x = window.innerWidth - 245;
+  lpPanel.style.left = Math.max(10, x) + 'px';
+  
+  if (cy > window.innerHeight * 0.6) {
+    let b = window.innerHeight - cy;
+    lpPanel.style.bottom = (b + 10) + 'px';
+    lpPanel.style.top = 'auto';
+  } else {
+    lpPanel.style.top = Math.min(cy + 14, window.innerHeight - 260) + 'px';
+    lpPanel.style.bottom = 'auto';
+  }
+  
   document.getElementById('lp-plus-sub').style.display='none';
   syncLP(e);
 }
@@ -90,19 +102,21 @@ function syncFixBtns(e) {
   const fromBtn = document.getElementById('ep-fix-from');
   const toBtn   = document.getElementById('ep-fix-to');
 
-  // Determine which endpoints support fixation (not group crossing-through lines)
-  const fromOk = fN && fN.type !== 'multi'; // multi already has native offset; no extra UI
+  // Determine which endpoints support fixation
+  const fromOk = fN && fN.type !== 'multi';
   const toOk   = tN && tN.type !== 'multi';
 
   if (fromBtn) {
     fromBtn.style.display = fromOk ? '' : 'none';
-    fromBtn.classList.toggle('on', !!e.fromFixed);
-    fromBtn.title = e.fromFixed ? 'Открепить от «' + (fN?.label||'?') + '»' : 'Зафиксировать у «' + (fN?.label||'?') + '»';
+    const isFixed = e.fromFixed === true || (e.fromFixed !== false && fN?.type === 'group' && snapSettings.group);
+    fromBtn.classList.toggle('on', isFixed);
+    fromBtn.title = isFixed ? 'Открепить от «' + (fN?.label||'?') + '»' : 'Зафиксировать у «' + (fN?.label||'?') + '»';
   }
   if (toBtn) {
     toBtn.style.display = toOk ? '' : 'none';
-    toBtn.classList.toggle('on', !!e.toFixed);
-    toBtn.title = e.toFixed ? 'Открепить от «' + (tN?.label||'?') + '»' : 'Зафиксировать у «' + (tN?.label||'?') + '»';
+    const isFixed = e.toFixed === true || (e.toFixed !== false && tN?.type === 'group' && snapSettings.group);
+    toBtn.classList.toggle('on', isFixed);
+    toBtn.title = isFixed ? 'Открепить от «' + (tN?.label||'?') + '»' : 'Зафиксировать у «' + (tN?.label||'?') + '»';
   }
 }
 
@@ -110,27 +124,31 @@ function toggleFixedEndpoint(which) {
   const e = gE(selE); if (!e) return;
   sh();
   const key = which + 'Fixed';
-  const wasFixed = !!e[key];
-  e[key] = !wasFixed;
-  if (wasFixed) {
-    // Unfix: clear stored side/offset so it snaps freely again
+  const n = which === 'from' ? gN(e.from) : gN(e.to);
+  const other = which === 'from' ? gN(e.to) : gN(e.from);
+  
+  const wasFixed = e[key] === true || (e[key] !== false && n?.type === 'group' && snapSettings.group);
+  const newFixed = !wasFixed;
+  
+  e[key] = newFixed;
+
+  if (!newFixed) {
+    // Unfix: clear stored side/offset so it snaps freely (smoothly)
     e[which + 'Side'] = null;
     e[which + 'Offset'] = null;
   } else {
     // Fix now: compute and save current snap point immediately
-    const n = which === 'from' ? gN(e.from) : gN(e.to);
-    const other = which === 'from' ? gN(e.to) : gN(e.from);
     if (n && other) {
-      // Clear old stored side to force recompute
       e[which + 'Side'] = null;
       e[which + 'Offset'] = null;
-      // Trigger computation through getSnapPoint
-      getSnapPoint(n, other, e, which);
+      // For groups, use actual border intersection point to avoid jumping
+      const targetPt = (n.type === 'group') ? groupSnapPoint(n, other) : other;
+      getSnapPoint(n, targetPt, e, which);
     }
   }
   render();
   syncFixBtns(e);
-  toast(e[key] ? '📌 Зафиксировано' : '📌 Откреплено');
+  toast(newFixed ? '📌 Зафиксировано' : '📌 Откреплено');
 }
 function updateBranchBtn(clr){
   const btn=document.getElementById('lp-branch-btn');if(!btn)return;
@@ -145,6 +163,9 @@ function insertObjectOnEdge(edgeId, type='node'){
   const e=gE(edgeId);if(!e)return;
   const mid=edgePt(e,0.5);
   sh();
+  document.getElementById('lp-plus-sub').style.display='none';
+  closeLp();
+  if (typeof closeLSheet === 'function') closeLSheet(); // for mobile
   const newNodeId=mkNode(mid.x,mid.y,'',null,false,type);
   // Rewire
   const toId=e.to;
