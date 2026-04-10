@@ -510,17 +510,44 @@ function pasteClipboard(){
   const rootNode = nodes.find(n=>n.type==='root');
   const targetId=selN||(rootNode&&rootNode.id);if(!targetId)return;
   const idMap={};
+  
   if(clipboard.type==='node'){
-    const d=clipboard.data;const newId=nid();idMap[d.id]=newId;
+    const d=clipboard.data;
     const pos=smartPlace(targetId);
-    nodes.push({id:newId,x:pos.x,y:pos.y,label:d.label,col:false,note:d.note||''});
-    edges.push(mkEdge(targetId,newId,false));
+    // mkNode handles ID generation, type, defaults, and edge creation.
+    const newId = mkNode(pos.x, pos.y, d.label, targetId, false, d.type || 'node', d.style);
+    const n = gN(newId);
+    if(n && d.note) n.note = d.note;
+    
   } else if(clipboard.type==='branch') {
     const{nodes:ns,edges:es,rootId}=clipboard.data;
-    const pos=smartPlace(targetId);const dx=pos.x-gN(rootId).x,dy=pos.y-gN(rootId).y;
-    ns.forEach(n=>{const ni=nid();idMap[n.id]=ni;nodes.push({id:ni,x:n.x+dx,y:n.y+dy,label:n.label,col:false,note:n.note||''})});
-    es.forEach(e=>{if(idMap[e.from]&&idMap[e.to])edges.push({...e,id:nid(),from:idMap[e.from],to:idMap[e.to]})});
-    edges.push(mkEdge(targetId,idMap[rootId],false));
+    const pos=smartPlace(targetId);
+    const rootNSource = ns.find(n => n.id === rootId);
+    const dx = pos.x - (rootNSource ? rootNSource.x : 0);
+    const dy = pos.y - (rootNSource ? rootNSource.y : 0);
+    
+    // First pass: Create all nodes
+    ns.forEach(n => {
+      const isRootOfBranch = n.id === rootId;
+      // Connect only the branch root to targetId. Children will be linked by recreated edges.
+      const pid = isRootOfBranch ? targetId : null;
+      const newId = mkNode(n.x+dx, n.y+dy, n.label, pid, false, n.type || 'node', n.style);
+      idMap[n.id] = newId;
+      const newNode = gN(newId);
+      if(newNode) {
+        newNode.note = n.note || '';
+        if(n.width) newNode.width = n.width;
+        if(n.height) newNode.height = n.height;
+        if(n.bg) newNode.bg = JSON.parse(JSON.stringify(n.bg));
+      }
+    });
+    // Second pass: Recreate internal edges with original styles
+    es.forEach(e => {
+      if(idMap[e.from] && idMap[e.to]) {
+        edges.push({...e, id:nid(), from:idMap[e.from], to:idMap[e.to]});
+      }
+    });
+    
   } else if(clipboard.type==='multi') {
     const {nodes:ns, edges:es} = clipboard.data;
     const pos=smartPlace(targetId);
@@ -529,8 +556,23 @@ function pasteClipboard(){
     const cy = (Math.min(...ys) + Math.max(...ys))/2;
     const dx = pos.x - cx, dy = pos.y - cy;
     
-    ns.forEach(n=>{const ni=nid();idMap[n.id]=ni;nodes.push({id:ni,x:n.x+dx,y:n.y+dy,label:n.label,col:false,note:n.note||'',locked:false})});
-    es.forEach(e=>{if(idMap[e.from]&&idMap[e.to])edges.push({...e,id:nid(),from:idMap[e.from],to:idMap[e.to]})});
+    ns.forEach(n => {
+      const newId = mkNode(n.x+dx, n.y+dy, n.label, null, false, n.type || 'node', n.style);
+      idMap[n.id] = newId;
+      const newNode = gN(newId);
+      if(newNode) {
+        newNode.note = n.note || '';
+        newNode.locked = false;
+        if(n.width) newNode.width = n.width;
+        if(n.height) newNode.height = n.height;
+      }
+    });
+    
+    es.forEach(e => {
+      if(idMap[e.from] && idMap[e.to]) {
+        edges.push({...e, id:nid(), from:idMap[e.from], to:idMap[e.to]});
+      }
+    });
     
     const nodeIds = new Set(ns.map(n=>n.id));
     const roots = ns.filter(n => {
@@ -539,7 +581,7 @@ function pasteClipboard(){
     });
     roots.forEach(r => edges.push(mkEdge(targetId, idMap[r.id], false)));
   }
-  render();toast('Вставлено');
+  render(); toast('Вставлено');
 }
 
 function getLuminance(hex){

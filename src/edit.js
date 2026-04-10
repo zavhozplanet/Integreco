@@ -31,6 +31,7 @@ function editNode(id, isNew=false){
     const val = ta.value.trim();
     if(val !== n.label) {
       if(!isNew) sh();
+      else hasUnsavedChanges = true; // Mark as modified even if skipping history
       n.label = val;
       saveToLocalStorage(); // ensure label persists even if render is skipped
       // Auto-name the map file when first title is set for a root node on a new map

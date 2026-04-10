@@ -1076,6 +1076,7 @@ function render(){
       sensor.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
       sensor.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
       sensor.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); startPlusDrag(ev,n.id,pos,sensor,pos); });
+      sensor.oncontextmenu = ev => showPlusCtx(ev, n.id, pos, pos);
       divUI.appendChild(sensor);
     });
     // title.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
@@ -1093,7 +1094,8 @@ function render(){
       const np=document.createElement('div');np.className='np group-np '+pos;np.textContent='+';
       np.addEventListener('mouseenter',()=>divUI.classList.add('hovered'));
       np.addEventListener('mouseleave',()=>divUI.classList.remove('hovered'));
-      np.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,np,pos)});
+      np.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); startPlusDrag(ev,n.id,pos,np,pos); });
+      np.oncontextmenu = ev => showPlusCtx(ev, n.id, pos, pos);
       divUI.appendChild(np);
     });
 
@@ -1134,7 +1136,8 @@ function render(){
       ['n','s','e','w'].forEach(pos=>{
         const sensor=document.createElement('div');
         sensor.className='multi-side-sensor '+pos;
-        sensor.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,pos,sensor,pos)});
+        sensor.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); startPlusDrag(ev,n.id,pos,sensor,pos); });
+        sensor.oncontextmenu = ev => showPlusCtx(ev, n.id, pos, pos);
         ni.appendChild(sensor);
       });
     }
@@ -1201,7 +1204,8 @@ function render(){
       const np=document.createElement('div');np.className='np '+dir+' smart-side';
       np.setAttribute('draggable', 'false');
       np.ondragstart = () => false;
-      np.textContent='+';np.addEventListener('mousedown',ev=>{ev.stopPropagation();startPlusDrag(ev,n.id,dir,np,dir)});
+      np.textContent='+';np.addEventListener('mousedown',ev=>{ if(ev.button!==0 && ev.button!==1) return; ev.stopPropagation(); startPlusDrag(ev,n.id,dir,np,dir); });
+      np.oncontextmenu = ev => showPlusCtx(ev, n.id, dir, dir);
       ni.appendChild(np);
     });
     // Mobile: touch-specific plus buttons
@@ -1210,6 +1214,7 @@ function render(){
       npC.setAttribute('draggable', 'false');
       npC.ondragstart = () => false;
       npC.addEventListener('touchend',ev=>{ev.stopPropagation();ev.preventDefault();addChild(n.id)});
+      npC.oncontextmenu = ev => showPlusCtx(ev, n.id, null, null);
       ni.appendChild(npC);
       ['touch-l','touch-r'].forEach(cls=>{
         const np=document.createElement('div');np.className='np '+cls;np.textContent='+';

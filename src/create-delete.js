@@ -61,17 +61,22 @@ function delNode(id, reattach=true, skipTrash=false){
   sh();
   const n=gN(id);if(!n)return;
   const isRoot = n.type === 'root';
-  if(!skipTrash) {
-    if(n.type === 'note') {
-      if(n.note || (n.label && n.label !== '+')) {
-        trash.push({label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: false});
+    if(!skipTrash) {
+      const isStandalone = n.type === 'note';
+      if(isStandalone) {
+        if(n.note || (n.label && n.label !== '+')) {
+          const item = {label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: false};
+          trash.push(item);
+          updateTrashBadge();
+          if(typeof saveTrashToFS === 'function') saveTrashToFS(item);
+        }
+      } else if(n.note) {
+        const item = {label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: true};
+        trash.push(item);
         updateTrashBadge();
+        if(typeof saveTrashToFS === 'function') saveTrashToFS(item);
       }
-    } else if(n.note) {
-      trash.push({label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: true});
-      updateTrashBadge();
     }
-  }
   const pid=gPar(id);
   const children=gCh(id);
   nodes=nodes.filter(n=>n.id!==id);
@@ -94,10 +99,15 @@ function delBranch(id, skipTrash=false){
   function dr(i){
     const n=gN(i);
     if(n && !skipTrash) {
-      if(n.type === 'note' && (n.note || (n.label && n.label !== '+'))) {
-        trash.push({label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: false});
+      const isStandalone = n.type === 'note';
+      if(isStandalone && (n.note || (n.label && n.label !== '+'))) {
+        const item = {label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: false};
+        trash.push(item);
+        if(typeof saveTrashToFS === 'function') saveTrashToFS(item);
       } else if(n.note) {
-        trash.push({label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: true});
+        const item = {label:n.label, note:n.note, id:n.id, deletedAt:Date.now(), isFromNode: true};
+        trash.push(item);
+        if(typeof saveTrashToFS === 'function') saveTrashToFS(item);
       }
     }
     gCh(i).forEach(c=>dr(c));

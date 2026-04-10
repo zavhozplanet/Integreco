@@ -73,6 +73,15 @@ function dl(content,name,type){const b=new Blob([content],{type});const u=URL.cr
 
 function newTab(){
   mmenu.classList.remove('show');
+  
+  const isEmptyTab = nodes.length <= 1 && (!nodes[0] || !nodes[0].label || nodes[0].label === 'Новая карта' || nodes[0].label === 'Главная тема');
+  if (isEmptyTab) {
+    if (typeof _initBlankMap === 'function') {
+      _initBlankMap();
+      return;
+    }
+  }
+
   // Generate a safe blank-map filename in the workspace folder
   const baseFilename = _resolveNewMapFilename();
   // Open the app in a new browser tab, passing the target filename via sessionStorage

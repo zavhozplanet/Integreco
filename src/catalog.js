@@ -6,7 +6,8 @@
 
 // ── State ────────────────────────────────────────────────────────
 let catalogView = 'cards';   // 'cards' | 'tiles'
-let catalogItems = [];       // [{filename, label, thumb, nodeCount}]
+let catalogSort = 'newest';  // 'name' | 'newest' | 'oldest'
+let catalogItems = [];       // [{filename, label, thumb, nodeCount, mtime}]
 const CAT_THUMB_W = 200, CAT_THUMB_H = 120;
 
 // ── Open / Close ─────────────────────────────────────────────────
@@ -50,13 +51,34 @@ async function refreshCatalog() {
   }
 
   catalogItems = await scanWorkspaceFolder();
+  
+  // Apply sorting
+  if (catalogSort === 'name') {
+    catalogItems.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  } else if (catalogSort === 'newest') {
+    catalogItems.sort((a, b) => b.mtime - a.mtime);
+  } else if (catalogSort === 'oldest') {
+    catalogItems.sort((a, b) => a.mtime - b.mtime);
+  }
 
   if (catalogItems.length === 0) {
-    grid.innerHTML = '<div class="cat-empty">Нет карт в рабочей папке</div>';
+    grid.innerHTML = `<div class="cat-empty">
+      Нет карт (.json) в выбранной папке.<br>
+      <small style="opacity:0.6">Проверьте, ту ли папку вы открыли.</small>
+    </div>`;
     return;
   }
 
   renderCatalogGrid(grid);
+}
+
+function setCatalogSort(sort) {
+  catalogSort = sort;
+  // Update UI active states
+  document.getElementById('cat-sort-name').classList.toggle('active', sort === 'name');
+  document.getElementById('cat-sort-newest').classList.toggle('active', sort === 'newest');
+  document.getElementById('cat-sort-oldest').classList.toggle('active', sort === 'oldest');
+  refreshCatalog();
 }
 
 async function scanWorkspaceFolder() {
@@ -68,21 +90,23 @@ async function scanWorkspaceFolder() {
         const file = await handle.getFile();
         const text = await file.text();
         const parsed = JSON.parse(text);
+        
         if (parsed.version !== '1.0' || !Array.isArray(parsed.nodes)) continue;
 
         const rootNode = parsed.nodes.find(n => n.type === 'root') || parsed.nodes[0];
         const label = rootNode?.label || name.replace('.json', '');
         const thumb = buildThumb(parsed.nodes, parsed.edges || []);
-        items.push({ filename: name, label, thumb, nodeCount: parsed.nodes.length });
-      } catch (e) {
-        // Skip malformed files silently
-      }
+        // Save mtime for sorting
+        items.push({ 
+          filename: name, 
+          label, 
+          thumb, 
+          nodeCount: parsed.nodes.length,
+          mtime: file.lastModified 
+        });
+      } catch (e) {}
     }
-  } catch (e) {
-    console.warn('Catalog scan error', e);
-  }
-  // Sort: directories first (by name)
-  items.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  } catch (e) {}
   return items;
 }
 
@@ -178,23 +202,53 @@ function renderCatalogGrid(grid) {
         <div class="cat-meta">${item.nodeCount} объектов · ${item.filename}</div>
       </div>
       <div class="cat-actions">
-        <button class="cat-act-btn" title="Поделиться" onclick="catShare(event,'${escAttr(item.filename)}')">🔗</button>
+        <button class="cat-act-btn cat-share-btn" title="Поделиться">🔗</button>
         <div class="cat-dl-wrap" style="position:relative">
-          <button class="cat-act-btn" title="Скачать" onclick="catToggleDl(event,this)">⬇️</button>
+          <button class="cat-act-btn cat-dl-trigger" title="Скачать">⬇️</button>
           <div class="cat-dl-sub" style="display:none">
-            <div class="cat-dl-item" onclick="catDownload(event,'${escAttr(item.filename)}','jsonld')">👁️🧠 JSON-LD</div>
-            <div class="cat-dl-item" onclick="catDownload(event,'${escAttr(item.filename)}','md')">📄 MD</div>
-            <div class="cat-dl-item" onclick="catDownload(event,'${escAttr(item.filename)}','png')">🖼️ PNG</div>
+            <div class="cat-dl-item" data-fmt="jsonld">👁️🧠 JSON-LD</div>
+            <div class="cat-dl-item" data-fmt="md">📄 MD</div>
+            <div class="cat-dl-item" data-fmt="png">🖼️ PNG</div>
           </div>
         </div>
-        <button class="cat-act-btn cat-act-trash" title="В корзину" onclick="catTrashMap(event,'${escAttr(item.filename)}')">🗑️</button>
+        <button class="cat-act-btn cat-act-trash" title="В корзину">🗑️</button>
       </div>
     `;
 
-    // Double-click → open map
-    card.addEventListener('dblclick', (ev) => {
+    // Programmatic listeners to avoid onclick escaping issues
+    const fn = item.filename;
+    card.querySelector('.cat-share-btn').addEventListener('click', (ev) => catShare(ev, fn));
+    card.querySelector('.cat-dl-trigger').addEventListener('click', (ev) => catToggleDl(ev, ev.currentTarget));
+    card.querySelectorAll('.cat-dl-item').forEach(btn => {
+      btn.addEventListener('click', (ev) => catDownload(ev, fn, ev.currentTarget.dataset.fmt));
+    });
+    
+    // Inline confirmation for trash button
+    const trashBtn = card.querySelector('.cat-act-trash');
+    let trashConfirmTimer = null;
+    trashBtn.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      catOpenMap(item.filename);
+      if (!trashBtn.classList.contains('confirming')) {
+        trashBtn.classList.add('confirming');
+        trashBtn.innerHTML = '❓';
+        trashBtn.title = 'Точно удалить?';
+        trashConfirmTimer = setTimeout(() => {
+          trashBtn.classList.remove('confirming');
+          trashBtn.innerHTML = '🗑️';
+          trashBtn.title = 'В корзину';
+        }, 3000);
+      } else {
+        clearTimeout(trashConfirmTimer);
+        catTrashMap(ev, fn, true); // Added 'true' flag to bypass confirm inside catTrashMap
+      }
+    });
+
+    // Double-click or click on info → open map
+    card.addEventListener('dblclick', (ev) => {
+      // If click was on actions panel, don't trigger card dblclick
+      if (ev.target.closest('.cat-actions')) return;
+      ev.stopPropagation();
+      catOpenMap(fn);
     });
 
     grid.appendChild(card);
@@ -232,6 +286,7 @@ async function catOpenMap(filename) {
     // Open in current tab
     if (applyData(dataStr)) {
       window.storageAPI._currentFilename = filename;
+      saveToLocalStorage(); // Sync session storage for refresh
       toast('Открыто: ' + filename);
     }
   } else {
@@ -274,23 +329,44 @@ async function catDownload(ev, filename, fmt) {
   }
 }
 
-async function catTrashMap(ev, filename) {
-  ev.stopPropagation();
-  if (!confirm('Отправить карту «' + filename + '» в корзину?')) return;
+async function catTrashMap(ev, filename, skipConfirm = false) {
+  if (ev) ev.stopPropagation();
+  if (!skipConfirm && !confirm('Отправить карту «' + filename + '» в корзину?')) return;
   // Move to trash: read data, add to in-memory trash[], delete file
   try {
     const dataStr = await window.storageAPI.loadData(filename);
     if (dataStr) {
       const parsed = JSON.parse(dataStr);
       const label = parsed.nodes?.find(n => n.type === 'root')?.label || filename;
-      trash.push({ kind: 'map', filename, label, data: dataStr, time: Date.now() });
+      const item = { kind: 'map', filename, label, data: dataStr, time: Date.now() };
+      trash.push(item);
       updateTrashBadge();
+      if(typeof saveTrashToFS === 'function') await saveTrashToFS(item);
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    } else {
+      throw new Error('Не удалось прочитать данные файла перед удалением');
     }
-    // Delete the file from the folder
+    // Delete the file from the folder only after it's in trash
     await window.storageAPI.dirHandle.removeEntry(filename);
+    
+    // Notify other tabs to close/reset if they have this map open
+    if (window._deleteChannel) {
+      window._deleteChannel.postMessage({ type: 'deleted', filename });
+    }
+
+    // Local reset if the deleted map was the one active in THIS tab
+    if (window.storageAPI?._currentFilename === filename) {
+      if (typeof _initBlankMap === 'function') {
+        _initBlankMap();
+        window.storageAPI._currentFilename = 'map.json';
+        saveToLocalStorage();
+      }
+    }
+
     toast('«' + filename + '» перемещена в корзину');
     await refreshCatalog();
   } catch(e) {
+    console.error('catTrashMap error', e);
     toast('Ошибка удаления: ' + e.message);
   }
 }

@@ -9,6 +9,53 @@ function openTrash(){
   document.getElementById('tmod').classList.add('show');
 }
 function closeTrash(){document.getElementById('tmod').classList.remove('show')}
+
+async function saveTrashToFS(item) {
+  if (!window.storageAPI || !window.storageAPI.dirHandle) return;
+  const filename = item.kind === 'map' ? item.filename : `note_${item.id || Date.now()}_${(item.label || 'note').substring(0,20).replace(/[^a-z0-9]/gi, '_')}.json`;
+  item.fsFilename = filename; 
+  await window.storageAPI.saveTrashItem(filename, JSON.stringify(item));
+}
+
+async function deleteTrashFromFS(item) {
+  if (!window.storageAPI || !window.storageAPI.dirHandle || !item.fsFilename) return;
+  await window.storageAPI.deleteTrashItem(item.fsFilename);
+}
+
+async function loadTrashFromFS() {
+  if (!window.storageAPI || !window.storageAPI.dirHandle) return;
+  const files = await window.storageAPI.listTrashFiles();
+  const fsItems = [];
+  for (let f of files) {
+    try {
+      const handle = f.handle;
+      const file = await handle.getFile();
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if(!parsed.time && parsed.deletedAt) parsed.time = parsed.deletedAt;
+      parsed.fsFilename = f.name;
+      fsItems.push(parsed);
+    } catch (e) {
+      console.warn('Failed to load trash item from FS', f.name, e);
+    }
+  }
+  
+  fsItems.forEach(fsItem => {
+    const exists = trash.find(mItem => 
+      (mItem.kind === 'map' && mItem.filename === fsItem.filename) || 
+      (mItem.kind !== 'map' && mItem.id === fsItem.id && fsItem.id)
+    );
+    if (!exists) {
+      trash.push(fsItem);
+    } else {
+      exists.fsFilename = fsItem.fsFilename;
+    }
+  });
+  
+  trash.sort((a,b) => (b.time||b.deletedAt||0) - (a.time||a.deletedAt||0));
+  updateTrashBadge();
+}
+
 function renderTrash(){
   const list=document.getElementById('tlist');
   list.innerHTML='';
@@ -28,11 +75,15 @@ function renderTrash(){
   trash.forEach((item, idx)=>{
     const div=document.createElement('div');
     div.className='ti';
-    const icon = item.isFromNode ? '➔📝' : '📝';
+    const isMap = item.kind === 'map';
+    const icon = isMap ? '🗺️' : (item.isFromNode ? '➔📝' : '📝');
+    let clickAction = isMap ? "" : `onclick="closeTrash();openNote(null,'view',${idx})"`;
+    
     div.innerHTML=`
       <input type="checkbox" class="t-checkbox" data-idx="${idx}" onchange="toggleTrashItem(${idx}, this.checked)" style="width:18px;height:18px;cursor:pointer" onclick="event.stopPropagation()">
-      <div style="display:flex;align-items:center;gap:10px;flex:1" onclick="closeTrash();openNote(null,'view',${idx})">
-        <span>${icon}</span> <span>${item.label || '+'}</span>
+      <div style="display:flex;align-items:center;gap:10px;flex:1;${isMap?'cursor:default':''}" ${clickAction}>
+        <span>${icon}</span> <span>${item.label || (isMap ? item.filename : '+')}</span>
+        ${isMap ? '<button class="ti-restore-btn" onclick="tAction(\'restore\','+idx+')" title="Восстановить">📦</button>' : ''}
       </div>
     `;
     list.appendChild(div);
@@ -89,10 +140,36 @@ function toggleTDlMenu(ev) {
   document.getElementById('t-share-sub').style.display = 'none';
 }
 
-function tAction(action) {
-  if(selectedTrashItems.size === 0) return;
+function tAction(action, singleIdx = null) {
+  const indices = (singleIdx !== null) ? [singleIdx] : Array.from(selectedTrashItems).sort((a,b) => b - a);
+  if(indices.length === 0) return;
   
-  const indices = Array.from(selectedTrashItems).sort((a,b) => b - a);
+  if(action === 'restore') {
+     (async () => {
+       for(let idx of indices) {
+         const item = trash[idx];
+         if(item.kind === 'map') {
+            if(window.storageAPI && window.storageAPI.dirHandle) {
+              const ok = await window.storageAPI.saveData(item.data, item.filename);
+              if(ok) {
+                toast('Карта «' + item.filename + '» восстановлена');
+                await deleteTrashFromFS(item);
+                trash.splice(idx, 1);
+              } else {
+                toast('Ошибка восстановления «' + item.filename + '»');
+              }
+            }
+         } else {
+            // Re-creating nodes from trash is complex, mainly maps for now.
+         }
+       }
+       updateTrashBadge();
+       if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+       renderTrash();
+       if(typeof refreshCatalog === 'function') refreshCatalog();
+     })();
+     return;
+  }
   
   if(action === 'cut' || action === 'copy') {
     if(indices.length !== 1) return;
@@ -100,16 +177,21 @@ function tAction(action) {
     navigator.clipboard.writeText(item.note || '');
     toast(action === 'cut' ? 'Вырезано' : 'Скопировано');
     if(action === 'cut') {
+      const item = trash[indices[0]];
+      deleteTrashFromFS(item);
       trash.splice(indices[0], 1);
       updateTrashBadge();
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
       renderTrash();
     }
   } else if(action === 'share-txt' || action === 'share-md') {
     let combinedText = '';
-    indices.reverse().forEach(idx => {
-      combinedText += (trash[idx].label || '+') + '\n' + (trash[idx].note || '') + '\n\n';
+    indices.forEach(idx => {
+       if(trash[idx].kind !== 'map') {
+         combinedText += (trash[idx].label || '+') + '\n' + (trash[idx].note || '') + '\n\n';
+       }
     });
-    if(navigator.share){
+    if(navigator.share && combinedText){
       navigator.share({text:combinedText.trim()}).catch(()=>{});
     } else {
       toast('Скопируйте адрес из строки браузера');
@@ -117,9 +199,12 @@ function tAction(action) {
     document.getElementById('t-share-sub').style.display = 'none';
   } else if(action === 'dl-txt' || action === 'dl-md') {
     let combinedText = '';
-    indices.reverse().forEach(idx => {
-      combinedText += (trash[idx].label || '+') + '\n' + (trash[idx].note || '') + '\n\n';
+    indices.forEach(idx => {
+       if(trash[idx].kind !== 'map') {
+         combinedText += (trash[idx].label || '+') + '\n' + (trash[idx].note || '') + '\n\n';
+       }
     });
+    if(!combinedText) return;
     const fmt = action === 'dl-txt' ? 'txt' : 'md';
     const blob=new Blob([combinedText.trim()],{type:'text/plain'});
     const url=URL.createObjectURL(blob);
@@ -130,10 +215,18 @@ function tAction(action) {
     URL.revokeObjectURL(url);
     document.getElementById('t-dl-sub').style.display = 'none';
   } else if(action === 'delete') {
-    if(confirm(`Удалить выбранные заметки (${indices.length}) навсегда?`)) {
-      indices.forEach(idx => trash.splice(idx, 1));
-      updateTrashBadge();
-      renderTrash();
+    if(confirm(`Удалить выбранные объекты (${indices.length}) навсегда?`)) {
+      (async () => {
+        const sorted = [...indices].sort((a,b)=>b-a);
+        for(let idx of sorted) {
+          const item = trash[idx];
+          await deleteTrashFromFS(item);
+          trash.splice(idx, 1);
+        }
+        updateTrashBadge();
+        if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+        renderTrash();
+      })();
     }
   }
 }
@@ -156,17 +249,42 @@ function centerOnNode(id){
 function hideCanvDblMenu(){canvDblMenu.style.display='none'}
 function showCanvDblMenu(cx,cy){
   hideAllMenus();
+  canvDblMenu.classList.remove('from-plus');
+  const rootItem = canvDblMenu.querySelector('.cdm-root-node');
+  if(rootItem) rootItem.style.display = 'flex';
   canvDblMenu.style.display='flex';
   posMenu(canvDblMenu, cx, cy);
   canvDblMenu._cx=cx;canvDblMenu._cy=cy;
 }
+function showPlusCtx(ev, nodeId, dirHint, sensorPos){
+  ev.preventDefault();
+  ev.stopPropagation();
+  hideAllMenus();
+  canvDblMenu.classList.add('from-plus');
+  const rootItem = canvDblMenu.querySelector('.cdm-root-node');
+  if(rootItem) rootItem.style.display = 'none';
+  canvDblMenu.style.display='flex';
+  posMenu(canvDblMenu, ev.clientX, ev.clientY);
+  canvDblMenu._cx=ev.clientX;canvDblMenu._cy=ev.clientY;
+  canvDblMenu._plusNodeId = nodeId;
+  canvDblMenu._plusDir = dirHint;
+  
+  // Calculate canvas coordinates of the click for potential fixed start point
+  const rc = wrap.getBoundingClientRect();
+  canvDblMenu._plusStartPoint = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
+}
 function addFromDbl(type){
+  const fromPlus = canvDblMenu.classList.contains('from-plus');
   hideCanvDblMenu();
+  if(fromPlus){
+    addChildType(canvDblMenu._plusNodeId, canvDblMenu._plusDir, canvDblMenu._plusStartPoint, type);
+    return;
+  }
   const rc=wrap.getBoundingClientRect();
   const p=s2c(canvDblMenu._cx-rc.left,canvDblMenu._cy-rc.top);
   sh();
   let id;
-  if(type==='root') id=mkNode(p.x,p.y,'+',null,false,'root');
+  if(type==='root') id = mkNode(p.x,p.y,'+',null,false,'root');
   else if(type==='node') id=mkNode(p.x,p.y,'+',null,false,'node');
   else if(type==='note') id=mkNode(p.x,p.y,'+',null,false,'note');
   else if(type==='group') id=mkNode(p.x,p.y,'Новая группа',null,false,'group');

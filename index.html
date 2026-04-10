@@ -259,10 +259,17 @@
      onclick="if(event.target===this)closeCatalog()">
   <div id="catalog-box">
     <div id="catalog-hdr">
-      <div id="catalog-title">📂 Каталог карт</div>
-      <div id="catalog-view-toggle">
-        <button id="cat-view-cards" class="cat-view-btn active" onclick="setCatalogView('cards')" title="Карточки">☰</button>
-        <button id="cat-view-tiles" class="cat-view-btn" onclick="setCatalogView('tiles')" title="Плитки">⊞</button>
+      <div id="catalog-title">📂 Каталог</div>
+      <div id="catalog-controls">
+        <div id="catalog-sort">
+          <button id="cat-sort-name" class="cat-view-btn" onclick="setCatalogSort('name')" title="По алфавиту (А-Я)">📄</button>
+          <button id="cat-sort-newest" class="cat-view-btn active" onclick="setCatalogSort('newest')" title="Сначала новые">🆕</button>
+          <button id="cat-sort-oldest" class="cat-view-btn" onclick="setCatalogSort('oldest')" title="Сначала старые">📅</button>
+        </div>
+        <div id="catalog-view-toggle">
+          <button id="cat-view-cards" class="cat-view-btn active" onclick="setCatalogView('cards')" title="Карточки">☰</button>
+          <button id="cat-view-tiles" class="cat-view-btn" onclick="setCatalogView('tiles')" title="Плитки">⊞</button>
+        </div>
       </div>
       <button id="catalog-close" onclick="closeCatalog()" title="Закрыть">✕</button>
     </div>
@@ -272,7 +279,7 @@
 
 <!-- canvas double click menu -->
 <div id="canv-dbl-menu">
-  <div class="cdm-item" onclick="addFromDbl('root')" title="Создать новый стартовый узел">
+  <div class="cdm-item cdm-root-node" onclick="addFromDbl('root')" title="Создать новый стартовый узел">
     <div class="cdm-icon"><div class="cdm-preview root"></div></div>
   </div>
   <div class="cdm-item" onclick="addFromDbl('node')" title="Создать новый обычный узел">
@@ -609,6 +616,7 @@
 async function selectWorkspaceFolder() {
   const ok = await window.storageAPI.selectFolder();
   if (ok) {
+    if (typeof loadTrashFromFS === 'function') await loadTrashFromFS();
     const dataStr = await window.storageAPI.loadData();
     if (dataStr) {
       if (applyData(dataStr)) {

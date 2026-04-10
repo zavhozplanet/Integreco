@@ -21,12 +21,30 @@ function init(){
 async function bootApp() {
   if (window.storageAPI) await window.storageAPI.init();
 
+  // Cross-tab deletion sync
+  const deleteChannel = new BroadcastChannel('integreco_map_events');
+  deleteChannel.onmessage = (ev) => {
+    if (ev.data.type === 'deleted' && window.storageAPI?._currentFilename === ev.data.filename) {
+      // Try to close tab, fallback to blank map if blocked
+      window.close();
+      setTimeout(() => {
+        if (!window.closed && typeof _initBlankMap === 'function') {
+          _initBlankMap();
+          window.storageAPI._currentFilename = 'map.json';
+          toast('Карта была удалена в другой вкладке');
+        }
+      }, 300);
+    }
+  };
+  window._deleteChannel = deleteChannel;
+
   // ── Handle catalog open in new tab ───────────────────────────
   if (window._pendingCatOpen) {
     const { filename, data } = window._pendingCatOpen;
     window._pendingCatOpen = null;
     applyData(data);
     window.storageAPI._currentFilename = filename;
+    saveToLocalStorage(); // Sync session storage for refresh
     return;
   }
 
@@ -60,7 +78,16 @@ async function bootApp() {
     const permOpts = { mode: 'readwrite' };
     const perm = await window.storageAPI.dirHandle.queryPermission(permOpts);
     if (perm === 'granted') {
-       const filename = window.storageAPI._currentFilename || 'map.json';
+       if (typeof loadTrashFromFS === 'function') await loadTrashFromFS();
+       
+       // Try to restore the specific file this tab was working on
+       let filename = window.storageAPI._currentFilename || 'map.json';
+       const sess = sessionStorage.getItem('integreco-tab-data');
+       if (sess) {
+         try { filename = JSON.parse(sess).filename || filename; } catch(e){}
+       }
+       window.storageAPI._currentFilename = filename;
+
        const dataStr = await window.storageAPI.loadData(filename);
        if (dataStr) loaded = applyData(dataStr);
     } else {
@@ -81,6 +108,7 @@ async function bootApp() {
 function _initBlankMap() {
   // Create a fresh empty canvas with a center "+" placeholder — user will type the first title
   nodes = []; edges = []; idC = 0; hist = []; fut = [];
+  hasUnsavedChanges = false;
   // Create a root node that immediately enters edit mode so user types the title
   const r = mkNode(CS/2, CS/2, '', null, false, 'root');
   hist = [];
@@ -159,31 +187,38 @@ function importData(input) {
 function saveToLocalStorage() {
   const data = {
     version: '1.0',
-    nodes,
-    edges,
-    bgSettings,
-    snapSettings,
-    glDefaults,
-    linkDefaults,
-    nodeDefaults,
-    groupDefaults,
-    lastUsedMapRootId,
-    idC
+    nodes, edges, bgSettings, snapSettings,
+    glDefaults, linkDefaults, nodeDefaults, groupDefaults,
+    lastUsedMapRootId, idC,
+    filename: window.storageAPI?._currentFilename || 'map.json',
+    hasUnsavedChanges
   };
   const str = JSON.stringify(data);
   try {
     localStorage.setItem('mindmap-data', str);
+    // Tab-specific persistence to handle independent refreshes
+    sessionStorage.setItem('integreco-tab-data', str);
   } catch (e) {
     console.error('Failed to save to local storage', e);
   }
   
   if (window.storageAPI && window.storageAPI.dirHandle) {
     const fn = window.storageAPI._currentFilename || 'map.json';
-    window.storageAPI.saveData(str, fn).catch(e => console.error("FS Save Error", e));
+    if (hasUnsavedChanges) {
+      window.storageAPI.saveData(str, fn).catch(e => console.error("FS Save Error", e));
+    }
   }
 }
 
 function loadFromLocalStorage() {
+  // Priority 1: Current tab's session state (refreshes)
+  const sess = sessionStorage.getItem('integreco-tab-data');
+  if (sess) {
+    const parsed = JSON.parse(sess);
+    if (parsed.filename) window.storageAPI._currentFilename = parsed.filename;
+    return applyData(parsed);
+  }
+  // Priority 2: Global last-used data (new tabs)
   const data = localStorage.getItem('mindmap-data');
   if (data) return applyData(data);
   return false;
@@ -208,6 +243,7 @@ function applyData(data) {
       }
       if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
       idC = parsed.idC;
+      hasUnsavedChanges = false;
       render();
       applyBg();
       

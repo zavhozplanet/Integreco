@@ -121,14 +121,17 @@ function trashNote(){
   if(confirm('Переместить заметку в корзину?')){
     sh();
     const isStandalone = n.type === 'note';
-    trash.push({
+    const item = {
       label: n.label, 
       note: n.note, 
       id: n.id, 
       deletedAt: Date.now(),
       isFromNode: !isStandalone
-    });
+    };
+    trash.push(item);
     updateTrashBadge();
+    if(typeof saveTrashToFS === 'function') saveTrashToFS(item);
+    if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
     
     if(isStandalone) {
       const id = noteNodeId;

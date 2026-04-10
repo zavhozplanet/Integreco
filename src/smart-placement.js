@@ -51,6 +51,28 @@ function addChild(parentId, dirHint, startPoint){
   else setTimeout(()=>editNode(id,true),50);
 }
 
+function addChildType(parentId, dirHint, startPoint, type){
+  sh();
+  const pos=smartPlace(parentId, dirHint);
+  const label = (type === 'group') ? 'Новая группа' : '';
+  const id=mkNode(pos.x,pos.y,label,parentId,false,type);
+  if (startPoint) {
+    const e = edges[edges.length - 1];
+    const fromN = gN(parentId);
+    if (fromN && (fromN.type === 'group' || fromN.type === 'multi')) {
+      e.fromFixed = true;
+      getSnapPoint(fromN, startPoint, e, 'from');
+    }
+  }
+  if(autoMode)autoLayout();else render();
+  selNode(id);
+  if(type==='note'){
+    openNote(id,'edit');
+  } else {
+    if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);
+  }
+}
+
 function alignGroupNodes(gId) {
   const g = gN(gId);
   if (!g || g.type !== 'group') return;

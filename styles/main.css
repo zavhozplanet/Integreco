@@ -683,6 +683,16 @@ body.edge-selected .multi-side-sensor { pointer-events: none!important; display:
 #catalog-title {
   font-size: 17px; font-weight: 700; color: var(--tx); flex: 1;
 }
+#catalog-controls {
+  display: flex; align-items: center; gap: 15px; margin-right: 15px;
+}
+#catalog-sort {
+  display: flex; gap: 5px; position: relative;
+}
+#catalog-sort::after {
+  content: ''; position: absolute; right: -10px; top: 5px; bottom: 5px;
+  width: 1px; background: var(--nbr-dk); opacity: 0.5;
+}
 #catalog-view-toggle {
   display: flex; gap: 5px;
 }
@@ -726,6 +736,7 @@ body.edge-selected .multi-side-sensor { pointer-events: none!important; display:
   transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
   overflow: hidden; gap: 0;
   position: relative;
+  flex-shrink: 0;
 }
 .catalog-grid.cards .cat-card:hover {
   box-shadow: 0 6px 24px rgba(0,0,0,0.12);

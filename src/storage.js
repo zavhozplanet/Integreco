@@ -110,18 +110,55 @@ class StorageManager {
     }
   }
 
-  // List all .json files in the folder (returns array of {name, handle})
-  async listFiles() {
-    if (!this.dirHandle) return [];
+  async getTrashHandle() {
+    if (!this.dirHandle || !(await this.verifyPermission())) return null;
+    try {
+      return await this.dirHandle.getDirectoryHandle('_trash', { create: true });
+    } catch (e) {
+      console.error('Failed to get trash directory', e);
+      return null;
+    }
+  }
+
+  async saveTrashItem(filename, dataStr) {
+    const trashHandle = await this.getTrashHandle();
+    if (!trashHandle) return false;
+    try {
+      const fileHandle = await trashHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(dataStr);
+      await writable.close();
+      return true;
+    } catch (e) {
+      console.error('Failed to save to trash FS', e);
+      return false;
+    }
+  }
+
+  async deleteTrashItem(filename) {
+    const trashHandle = await this.getTrashHandle();
+    if (!trashHandle) return false;
+    try {
+      await trashHandle.removeEntry(filename);
+      return true;
+    } catch (e) {
+      console.error('Failed to delete from trash FS', e);
+      return false;
+    }
+  }
+
+  async listTrashFiles() {
+    const trashHandle = await this.getTrashHandle();
+    if (!trashHandle) return [];
     const result = [];
     try {
-      for await (const [name, handle] of this.dirHandle.entries()) {
+      for await (const [name, handle] of trashHandle.entries()) {
         if (handle.kind === 'file' && name.endsWith('.json')) {
           result.push({ name, handle });
         }
       }
     } catch (e) {
-      console.warn('listFiles error', e);
+      console.warn('listTrashFiles error', e);
     }
     return result;
   }
