@@ -83,10 +83,14 @@ class StorageManager {
     return false;
   }
 
-  async saveData(dataStr, filename = 'map.json') {
+  async saveData(dataStr, filename = 'map.json', subfolderName = null) {
     if (!this.dirHandle || !(await this.verifyPermission())) return false;
     try {
-      const fileHandle = await this.dirHandle.getFileHandle(filename, { create: true });
+      let root = this.dirHandle;
+      if (subfolderName) {
+        root = await this.dirHandle.getDirectoryHandle(subfolderName, { create: true });
+      }
+      const fileHandle = await root.getFileHandle(filename, { create: true });
       const writable = await fileHandle.createWritable();
       await writable.write(dataStr);
       await writable.close();

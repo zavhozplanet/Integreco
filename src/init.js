@@ -89,7 +89,10 @@ async function bootApp() {
        window.storageAPI._currentFilename = filename;
 
        const dataStr = await window.storageAPI.loadData(filename);
-       if (dataStr) loaded = applyData(dataStr);
+       if (dataStr) {
+         loaded = applyData(dataStr);
+         if (loaded) saveToLocalStorage(); // Ensure sessionStorage is synced with FS data
+       }
     } else {
        showReconnectOverlay();
        return;
@@ -109,6 +112,28 @@ function _initBlankMap() {
   // Create a fresh empty canvas with a center "+" placeholder — user will type the first title
   nodes = []; edges = []; idC = 0; hist = []; fut = [];
   hasUnsavedChanges = false;
+  selN = null; selE = null;
+
+  // Reset settings defaults to factory values (preventing inheritance from previous map)
+  glDefaults = {shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null};
+  linkDefaults = {shape:'straight',dash:'link',width:1,dir:'none',color:null};
+  nodeDefaults = {
+    style: {shape:'pill', borderType:'solid', borderWidth:1.5, padding:10, opacity:1, blur:0, borderColor:null, backgroundColor:null},
+    recentColors: []
+  };
+  bgSettings = {
+    color: '#f0ede8', lastColor: '#f0ede8', pattern: 'none', patOpacity: 0.15, patBlur: 0, patScale: 1, 
+    image: null, imgEnabled: false, imgOpacity: 1, imgBlur: 0, recentColors: []
+  };
+  snapSettings = {
+    node: false, nodeAdaptive: true,
+    note: false, noteAdaptive: true,
+    group: false, groupAdaptive: true,
+    multi: false, multiAdaptive: true
+  };
+  autoMode = false;
+  applyBg(); // Refresh visual background immediately
+
   // Create a root node that immediately enters edit mode so user types the title
   const r = mkNode(CS/2, CS/2, '', null, false, 'root');
   hist = [];
@@ -157,19 +182,38 @@ function showReconnectOverlay() {
 
 bootApp();
 
-function exportData() {
+async function exportData() {
   const data = {
     version: '1.0',
     nodes,
     edges,
     bgSettings,
+    snapSettings,
+    glDefaults, linkDefaults, nodeDefaults, groupDefaults,
     idC
   };
-  const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+  const json = JSON.stringify(data, null, 2);
+
+  // If using File System Access API, save to _backups folder
+  if (window.storageAPI && window.storageAPI.dirHandle) {
+    const rootLabel = nodes.find(n => n.type === 'root')?.label || 'map';
+    const cleanLabel = rootLabel.replace(/[<>:"/\\|?*]/g, '_').slice(0, 50);
+    const timestamp = new Date().toLocaleString('ru-RU').replace(/[,]/g, '').replace(/[.: ]/g, '-');
+    const filename = `${cleanLabel}_backup_${timestamp}.json`;
+    
+    const ok = await window.storageAPI.saveData(json, filename, '_backups');
+    if (ok) {
+      toast(`Бэкап сохранен: _backups/${filename}`);
+      return;
+    }
+  }
+
+  // Fallback to traditional download if no workspace folder
+  const blob = new Blob([json], {type: 'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'mindmap.json';
+  a.download = 'mindmap_backup.json';
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -179,7 +223,16 @@ function importData(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    applyData(e.target.result);
+    if (applyData(e.target.result)) {
+      if (typeof closeCatalog === 'function') closeCatalog();
+      if (window.storageAPI) {
+        window.storageAPI._currentFilename = file.name;
+        // Mark as modified so it gets physically saved to the workspace folder instantly
+        hasUnsavedChanges = true;
+        saveToLocalStorage();
+        toast('Файл «' + file.name + '» добавлен в рабочую папку');
+      }
+    }
   };
   reader.readAsText(file);
 }
@@ -247,6 +300,16 @@ function applyData(data) {
       render();
       applyBg();
       
+      // Mirror to session storage so this tab 'owns' this data and stays independent on refresh
+      const dataToSave = {
+        version: '1.0', nodes, edges, bgSettings, snapSettings,
+        glDefaults, linkDefaults, nodeDefaults, groupDefaults,
+        lastUsedMapRootId, idC,
+        filename: window.storageAPI?._currentFilename || 'map.json',
+        hasUnsavedChanges: false
+      };
+      try { sessionStorage.setItem('integreco-tab-data', JSON.stringify(dataToSave)); } catch(e){}
+
       requestAnimationFrame(()=>{
         const root = (typeof gN !== 'undefined' ? gN(lastUsedMapRootId) : null) || nodes.find(n => n.type === 'root');
         if (root && typeof applyT !== 'undefined') {
@@ -266,3 +329,54 @@ function applyData(data) {
   }
   return false;
 }
+
+/* ================================================================
+   GENERIC CONTEXT MENU (for buttons/catalog)
+   ================================================================ */
+function showGenericContext(ev, data) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  const menu = document.getElementById('generic-ctx');
+  if (!menu) return;
+
+  menu.style.display = 'block';
+  menu._data = data;
+
+  // Prevent overflow
+  const padding = 10;
+  let x = ev.clientX;
+  let y = ev.clientY;
+  if (x + menu.offsetWidth > window.innerWidth - padding) x = window.innerWidth - menu.offsetWidth - padding;
+  if (y + menu.offsetHeight > window.innerHeight - padding) y = window.innerHeight - menu.offsetHeight - padding;
+
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+// Global initialization for generic context
+window.addEventListener('load', () => {
+  const menu = document.getElementById('generic-ctx');
+  if (!menu) return;
+  document.addEventListener('click', () => { menu.style.display = 'none'; });
+
+  const itemOpenNew = document.getElementById('gc-open-new-tab');
+  if (itemOpenNew) {
+    itemOpenNew.onclick = (ev) => {
+      ev.stopPropagation();
+      const data = menu._data;
+      if (!data) return;
+      if (data.type === 'catalog' && typeof catOpenMap === 'function') {
+        catOpenMap(data.filename, true);
+      } else if (data.type === 'newmap' && typeof newTab === 'function') {
+        newTab(true);
+      }
+      menu.style.display = 'none';
+    };
+  }
+
+  // Attach to New Map button in main menu
+  const miNew = document.getElementById('mi-newtab');
+  if (miNew) {
+    miNew.addEventListener('contextmenu', (ev) => showGenericContext(ev, { type: 'newmap' }));
+  }
+});

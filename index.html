@@ -39,6 +39,11 @@
 <div class="fb" id="btn-zout" onclick="zoomOut()">-</div>
 <div class="fb" id="btn-center" onclick="handleCenterClick()">⊙</div>
 <div class="fb" id="btn-mini" onclick="toggleMini()">🗺</div>
+<div class="fb" id="btn-catalog" onclick="openCatalog()" title="Каталог карт">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+    <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
+  </svg>
+</div>
 <div class="fb" id="btn-fs" onclick="toggleFS()">⛶</div>
 <div class="fb" id="btn-menu" onclick="toggleMenu(event)">☰</div>
 
@@ -224,16 +229,11 @@
   <div class="mi" id="mi-share"><span class="mic">🔗</span></div>
   <div class="mi" id="mi-dl" onclick="toggleExportSub(event)"><span class="mic">⬇</span></div>
   <div id="export-sub">
-    <div class="esi" onclick="selectWorkspaceFolder()">📁 Выбрать рабочую папку</div>
     <div class="esi" onclick="exportData()">💾 Сохранить в память (бэкап)</div>
     <div class="esi" onclick="exportFmt('jsonld')">👁️🧠 JSON-LD</div>
     <div class="esi" onclick="exportFmt('md')">📄 MD</div>
     <div class="esi" onclick="exportFmt('png')">🖼️ PNG</div>
   </div>
-  <div class="mi" id="mi-import" onclick="document.getElementById('import-file').click()"><span class="mic">📂</span></div>
-  <input type="file" id="import-file" style="display:none" onchange="importData(this)">
-  <div class="mi" id="mi-newtab" onclick="newTab()"><span class="mic">➕</span></div>
-  <div class="mi" id="mi-catalog" onclick="openCatalog()"><span class="mic">🗂️</span><span style="flex:1">Каталог карт</span></div>
   <div class="mi" id="mi-trash" onclick="openTrash()">
     <span class="mic">🗑️</span>
     <div id="trash-badge" class="trash-badge"></div>
@@ -262,10 +262,18 @@
       <div id="catalog-title">📂 Каталог</div>
       <div id="catalog-controls">
         <div id="catalog-sort">
+          <button id="cat-sort-recent" class="cat-view-btn" onclick="setCatalogSort('recent')" title="Недавние">🕒</button>
           <button id="cat-sort-name" class="cat-view-btn" onclick="setCatalogSort('name')" title="По алфавиту (А-Я)">📄</button>
           <button id="cat-sort-newest" class="cat-view-btn active" onclick="setCatalogSort('newest')" title="Сначала новые">🆕</button>
           <button id="cat-sort-oldest" class="cat-view-btn" onclick="setCatalogSort('oldest')" title="Сначала старые">📅</button>
         </div>
+
+        <div id="catalog-mid-actions">
+          <button class="cat-view-btn cat-accent-btn" onclick="newTab()" title="Создать новую карту">➕</button>
+          <button class="cat-view-btn" onclick="document.getElementById('import-file').click()" title="Открыть файл из папки">📂</button>
+          <input type="file" id="import-file" style="display:none" onchange="importData(this)">
+        </div>
+
         <div id="catalog-view-toggle">
           <button id="cat-view-cards" class="cat-view-btn active" onclick="setCatalogView('cards')" title="Карточки">☰</button>
           <button id="cat-view-tiles" class="cat-view-btn" onclick="setCatalogView('tiles')" title="Плитки">⊞</button>
@@ -396,6 +404,8 @@
           <span class="slider-sw"></span>
         </label>
       </div>
+      <div style="height:1px;background:#f0ede8;margin:10px 0"></div>
+      <button class="cat-select-btn" onclick="selectWorkspaceFolder();toggleSettings()" style="width:100%;font-size:13px">📁 Выбрать рабочую папку</button>
     </div>
   </div>
 </div>
@@ -611,6 +621,11 @@
 <script src="src/catalog.js"></script>
 <script src="src/menu.js"></script>
 <script src="src/init.js"></script>
+
+<!-- generic context menu for catalog/buttons -->
+<div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;">
+  <div class="gc-item" id="gc-open-new-tab">🔗 Открыть в новой вкладке</div>
+</div>
 
 <script>
 async function selectWorkspaceFolder() {

@@ -4,7 +4,12 @@
 function toggleMenu(ev){
   if(ev) ev.stopPropagation();
   const isOpening = !mmenu.classList.contains('show');
-  if(isOpening) hideAllMenus();
+  if(isOpening) {
+    hideAllMenus();
+  } else {
+    // When closing, also hide submenus
+    document.getElementById('export-sub').classList.remove('open');
+  }
   mmenu.classList.toggle('show');
 }
 function toggleExportSub(ev){if(ev)ev.stopPropagation();document.getElementById('export-sub').classList.toggle('open')}
@@ -71,23 +76,25 @@ function exportFmt(fmt, customNodes, customEdges){
 
 function dl(content,name,type){const b=new Blob([content],{type});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
 
-function newTab(){
+function newTab(newWindow = false){
   mmenu.classList.remove('show');
+  if (typeof closeCatalog === 'function') closeCatalog();
   
-  const isEmptyTab = nodes.length <= 1 && (!nodes[0] || !nodes[0].label || nodes[0].label === 'Новая карта' || nodes[0].label === 'Главная тема');
-  if (isEmptyTab) {
+  const baseFilename = _resolveNewMapFilename();
+
+  if (newWindow) {
+    const key = 'newtab_' + Date.now();
+    sessionStorage.setItem(key, JSON.stringify({ newFile: baseFilename }));
+    window.open(location.pathname + '?newtabkey=' + encodeURIComponent(key), '_blank');
+  } else {
+    if (window.storageAPI) {
+      window.storageAPI._currentFilename = baseFilename;
+    }
     if (typeof _initBlankMap === 'function') {
       _initBlankMap();
-      return;
+      saveToLocalStorage(); // Sync session storage for refresh
     }
   }
-
-  // Generate a safe blank-map filename in the workspace folder
-  const baseFilename = _resolveNewMapFilename();
-  // Open the app in a new browser tab, passing the target filename via sessionStorage
-  const key = 'newtab_' + Date.now();
-  sessionStorage.setItem(key, JSON.stringify({ newFile: baseFilename }));
-  window.open(location.pathname + '?newtabkey=' + encodeURIComponent(key), '_blank');
 }
 
 // Pick a filename that doesn't collide with existing files in the folder

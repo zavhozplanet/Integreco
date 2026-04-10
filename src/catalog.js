@@ -55,7 +55,7 @@ async function refreshCatalog() {
   // Apply sorting
   if (catalogSort === 'name') {
     catalogItems.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
-  } else if (catalogSort === 'newest') {
+  } else if (catalogSort === 'newest' || catalogSort === 'recent') {
     catalogItems.sort((a, b) => b.mtime - a.mtime);
   } else if (catalogSort === 'oldest') {
     catalogItems.sort((a, b) => a.mtime - b.mtime);
@@ -75,9 +75,10 @@ async function refreshCatalog() {
 function setCatalogSort(sort) {
   catalogSort = sort;
   // Update UI active states
-  document.getElementById('cat-sort-name').classList.toggle('active', sort === 'name');
-  document.getElementById('cat-sort-newest').classList.toggle('active', sort === 'newest');
-  document.getElementById('cat-sort-oldest').classList.toggle('active', sort === 'oldest');
+  ['name','newest','oldest','recent'].forEach(s => {
+    const btn = document.getElementById('cat-sort-' + s);
+    if (btn) btn.classList.toggle('active', sort === s);
+  });
   refreshCatalog();
 }
 
@@ -186,73 +187,102 @@ function renderCatalogGrid(grid) {
   grid.innerHTML = '';
   const currentFile = window.storageAPI?._currentFilename || 'map.json';
 
-  catalogItems.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'cat-card' + (item.filename === currentFile ? ' cat-card-active' : '');
-    card.title = item.label;
-
-    const thumbHtml = item.thumb
-      ? `<img src="${item.thumb}" class="cat-thumb" alt="${item.label}">`
-      : `<div class="cat-thumb cat-thumb-empty">🗺️</div>`;
-
-    card.innerHTML = `
-      ${thumbHtml}
-      <div class="cat-info">
-        <div class="cat-label">${escHtml(item.label)}</div>
-        <div class="cat-meta">${item.nodeCount} объектов · ${item.filename}</div>
-      </div>
-      <div class="cat-actions">
-        <button class="cat-act-btn cat-share-btn" title="Поделиться">🔗</button>
-        <div class="cat-dl-wrap" style="position:relative">
-          <button class="cat-act-btn cat-dl-trigger" title="Скачать">⬇️</button>
-          <div class="cat-dl-sub" style="display:none">
-            <div class="cat-dl-item" data-fmt="jsonld">👁️🧠 JSON-LD</div>
-            <div class="cat-dl-item" data-fmt="md">📄 MD</div>
-            <div class="cat-dl-item" data-fmt="png">🖼️ PNG</div>
-          </div>
-        </div>
-        <button class="cat-act-btn cat-act-trash" title="В корзину">🗑️</button>
-      </div>
-    `;
-
-    // Programmatic listeners to avoid onclick escaping issues
-    const fn = item.filename;
-    card.querySelector('.cat-share-btn').addEventListener('click', (ev) => catShare(ev, fn));
-    card.querySelector('.cat-dl-trigger').addEventListener('click', (ev) => catToggleDl(ev, ev.currentTarget));
-    card.querySelectorAll('.cat-dl-item').forEach(btn => {
-      btn.addEventListener('click', (ev) => catDownload(ev, fn, ev.currentTarget.dataset.fmt));
-    });
+  if (catalogSort === 'recent') {
+    const now = Date.now();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const recentItems = catalogItems.filter(item => (now - item.mtime) < oneDay || catalogItems.indexOf(item) < 3);
+    const otherItems = catalogItems.filter(item => !recentItems.includes(item));
     
-    // Inline confirmation for trash button
-    const trashBtn = card.querySelector('.cat-act-trash');
-    let trashConfirmTimer = null;
-    trashBtn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      if (!trashBtn.classList.contains('confirming')) {
-        trashBtn.classList.add('confirming');
-        trashBtn.innerHTML = '❓';
-        trashBtn.title = 'Точно удалить?';
-        trashConfirmTimer = setTimeout(() => {
-          trashBtn.classList.remove('confirming');
-          trashBtn.innerHTML = '🗑️';
-          trashBtn.title = 'В корзину';
-        }, 3000);
-      } else {
-        clearTimeout(trashConfirmTimer);
-        catTrashMap(ev, fn, true); // Added 'true' flag to bypass confirm inside catTrashMap
-      }
-    });
+    if (recentItems.length > 0) {
+      _renderCatalogList(grid, recentItems, 'Недавние', currentFile);
+    }
+    if (otherItems.length > 0) {
+      _renderCatalogList(grid, otherItems, 'Другие карты', currentFile);
+    }
+  } else {
+    _renderCatalogList(grid, catalogItems, null, currentFile);
+  }
+}
 
-    // Double-click or click on info → open map
-    card.addEventListener('dblclick', (ev) => {
-      // If click was on actions panel, don't trigger card dblclick
-      if (ev.target.closest('.cat-actions')) return;
-      ev.stopPropagation();
-      catOpenMap(fn);
-    });
-
-    grid.appendChild(card);
+function _renderCatalogList(grid, items, title, currentFile) {
+  if (title) {
+    const hdr = document.createElement('div');
+    hdr.className = 'cat-group-header';
+    hdr.textContent = title;
+    grid.appendChild(hdr);
+  }
+  items.forEach(item => {
+    grid.appendChild(_createCatalogCard(item, currentFile));
   });
+}
+
+function _createCatalogCard(item, currentFile) {
+  const card = document.createElement('div');
+  const fn = item.filename;
+  card.className = 'cat-card' + (fn === currentFile ? ' cat-card-active' : '');
+  card.title = item.label;
+
+  const thumbHtml = item.thumb
+    ? `<img src="${item.thumb}" class="cat-thumb" alt="${item.label}">`
+    : `<div class="cat-thumb cat-thumb-empty">🗺️</div>`;
+
+  card.innerHTML = `
+    ${thumbHtml}
+    <div class="cat-info">
+      <div class="cat-label">${escHtml(item.label)}</div>
+      <div class="cat-meta">${item.nodeCount} объектов · ${item.filename}</div>
+    </div>
+    <div class="cat-actions">
+      <button class="cat-act-btn cat-share-btn" title="Поделиться">🔗</button>
+      <div class="cat-dl-wrap" style="position:relative">
+        <button class="cat-act-btn cat-dl-trigger" title="Скачать">⬇️</button>
+        <div class="cat-dl-sub" style="display:none">
+          <div class="cat-dl-item" data-fmt="jsonld">👁️🧠 JSON-LD</div>
+          <div class="cat-dl-item" data-fmt="md">📄 MD</div>
+          <div class="cat-dl-item" data-fmt="png">🖼️ PNG</div>
+        </div>
+      </div>
+      <button class="cat-act-btn cat-act-trash" title="В корзину">🗑️</button>
+    </div>
+  `;
+
+  // Listeners
+  card.querySelector('.cat-share-btn').addEventListener('click', (ev) => catShare(ev, fn));
+  card.querySelector('.cat-dl-trigger').addEventListener('click', (ev) => catToggleDl(ev, ev.currentTarget));
+  card.querySelectorAll('.cat-dl-item').forEach(btn => {
+    btn.addEventListener('click', (ev) => catDownload(ev, fn, btn.dataset.fmt));
+  });
+  
+  const trashBtn = card.querySelector('.cat-act-trash');
+  let trashConfirmTimer = null;
+  trashBtn.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (!trashBtn.classList.contains('confirming')) {
+      trashBtn.classList.add('confirming');
+      trashBtn.innerHTML = '❓';
+      trashConfirmTimer = setTimeout(() => {
+        trashBtn.classList.remove('confirming');
+        trashBtn.innerHTML = '🗑️';
+      }, 3000);
+    } else {
+      clearTimeout(trashConfirmTimer);
+      catTrashMap(ev, fn, true);
+    }
+  });
+
+  card.addEventListener('dblclick', (ev) => {
+    if (ev.target.closest('.cat-actions')) return;
+    ev.stopPropagation();
+    catOpenMap(fn);
+  });
+
+  card.addEventListener('contextmenu', (ev) => {
+    if (typeof showGenericContext === 'function') {
+      showGenericContext(ev, { type: 'catalog', filename: fn });
+    }
+  });
+
+  return card;
 }
 
 function escHtml(s) {
@@ -272,28 +302,25 @@ function setCatalogView(view) {
 }
 
 // ── Open map from catalog ────────────────────────────────────────
-async function catOpenMap(filename) {
+async function catOpenMap(filename, newWindow = false) {
   closeCatalog();
   if (!window.storageAPI || !window.storageAPI.dirHandle) return;
-
-  // If current tab has an empty/new map (only root node, label empty or default)
-  const isEmptyTab = nodes.length <= 1 && (!nodes[0]?.label || nodes[0].label === 'Новая карта' || nodes[0].label === 'Главная тема');
 
   const dataStr = await window.storageAPI.loadData(filename);
   if (!dataStr) { toast('Не удалось загрузить карту'); return; }
 
-  if (isEmptyTab) {
-    // Open in current tab
+  if (newWindow) {
+    // Open in new browser tab — pass data through sessionStorage with a unique key
+    const key = 'cat_open_' + Date.now();
+    sessionStorage.setItem(key, JSON.stringify({ filename, data: dataStr }));
+    window.open(location.pathname + '?catkey=' + encodeURIComponent(key), '_blank');
+  } else {
+    // Always open in current tab as per Single Window SPA goal
     if (applyData(dataStr)) {
       window.storageAPI._currentFilename = filename;
       saveToLocalStorage(); // Sync session storage for refresh
       toast('Открыто: ' + filename);
     }
-  } else {
-    // Open in new browser tab — pass data through sessionStorage with a unique key
-    const key = 'cat_open_' + Date.now();
-    sessionStorage.setItem(key, JSON.stringify({ filename, data: dataStr }));
-    window.open(location.pathname + '?catkey=' + encodeURIComponent(key), '_blank');
   }
 }
 

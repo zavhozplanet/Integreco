@@ -954,6 +954,8 @@ function hideAllMenus(){
   canvCtx.style.display='none';
   activeBgGroupId=null;
   mmenu.classList.remove('show');
+  const expSub = document.getElementById('export-sub');
+  if(expSub) expSub.classList.remove('open');
   document.getElementById('n-burger-menu').classList.remove('show');
   hideCanvDblMenu();
   closeLp();
