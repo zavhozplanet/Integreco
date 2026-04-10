@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mindmap-cache-v2';
+const CACHE_NAME = 'mindmap-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
