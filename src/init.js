@@ -106,6 +106,24 @@ async function bootApp() {
   if (!loaded) {
     init();
   }
+
+  // Restore UI settings
+  const ui = localStorage.getItem('integreco-ui-settings');
+  if (ui) {
+    try {
+      const p = JSON.parse(ui);
+      if (p.btnOpa !== undefined) updateUiOpa('btn', p.btnOpa);
+      if (p.menuOpa !== undefined) updateUiOpa('menu', p.menuOpa);
+      // Sync sliders
+      const btnSl = document.getElementById('ui-btn-opa-slider');
+      const menuSl = document.getElementById('ui-menu-opa-slider');
+      if (btnSl) btnSl.value = p.btnOpa;
+      if (menuSl) menuSl.value = p.menuOpa;
+      syncUiBtnColors();
+    } catch(e){}
+  } else {
+    syncUiBtnColors(); // Default colors on first run
+  }
 }
 
 function _initBlankMap() {
@@ -145,6 +163,58 @@ function _initBlankMap() {
   // Show the empty-canvas "+" prompt, then focus for typing
   setTimeout(() => editNode(r, true), 80);
   saveToLocalStorage();
+}
+
+function updateUiOpa(type, val) {
+  const v = parseFloat(val);
+  if (type === 'btn') {
+    uiSettings.btnOpa = v;
+    document.documentElement.style.setProperty('--ui-btn-opa', v);
+    syncUiBtnColors();
+  } else {
+    uiSettings.menuOpa = v;
+    document.documentElement.style.setProperty('--ui-menu-opa', v);
+  }
+  localStorage.setItem('integreco-ui-settings', JSON.stringify(uiSettings));
+}
+
+function syncUiBtnColors() {
+  const opa = uiSettings.btnOpa !== undefined ? uiSettings.btnOpa : 0.88;
+  const hex = bgSettings.color || '#f0ede8';
+  
+  let r = parseInt(hex.slice(1, 3), 16) || 0;
+  let g = parseInt(hex.slice(3, 5), 16) || 0;
+  let b = parseInt(hex.slice(5, 7), 16) || 0;
+
+  // Approximate image effect - dragging image opacity effectively lowers luminance readability 
+  if (bgSettings.imgEnabled && bgSettings.image != null) {
+    const io = bgSettings.imgOpacity || 1;
+    // Darken approximation to force safe white text over complex images
+    r = Math.max(0, r - (255 * io * 0.4));
+    g = Math.max(0, g - (255 * io * 0.4));
+    b = Math.max(0, b - (255 * io * 0.4));
+  }
+  
+  // Blend white button background with canvas background
+  const effR = Math.round(255 * opa + r * (1 - opa));
+  const effG = Math.round(255 * opa + g * (1 - opa));
+  const effB = Math.round(255 * opa + b * (1 - opa));
+  
+  // Luminance: 0 = black, 1 = white. 
+  // Custom threshold 0.68 ensures 50%-opaque buttons over dark backgrounds get white text.
+  const lum = (effR * 0.299 + effG * 0.587 + effB * 0.114) / 255;
+  
+  const isDark = lum < 0.68;
+  const color = isDark ? '#ffffff' : '#2c2a27';
+  
+  // Progressive border fading depending on opacity level
+  let bColor;
+  if (opa > 0.6) bColor = 'var(--nbr-dk)';
+  else if (opa > 0.2) bColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.25)';
+  else bColor = color;
+  
+  document.documentElement.style.setProperty('--ui-btn-icon-color', color);
+  document.documentElement.style.setProperty('--ui-btn-border-color', bColor);
 }
 
 function showReconnectOverlay() {

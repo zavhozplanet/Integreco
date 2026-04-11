@@ -46,6 +46,10 @@ let snapSettings = {
   group: false, groupAdaptive: true,
   multi: false, multiAdaptive: true
 };
+let uiSettings = {
+  btnOpa: 0.88,
+  menuOpa: 0.98
+};
 let nodeDefaults = {
   style: {
     shape: 'pill',

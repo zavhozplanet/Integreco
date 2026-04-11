@@ -10,7 +10,7 @@ function onNodeMD(ev,id){
   const now=Date.now();
   
   // Pending insertion on DOUBLE CLICK
-  const isDbl = ms.lastId===id && now-ms.lastT < 350;
+  const isDbl = ms.lastId===id && now-ms.lastT < 500;
 
   if(isDbl && pendingInsert && pendingInsert.nodeId === id) {
     sh(); insertNodeBetween(pendingInsert.edgeId, pendingInsert.nodeId);
@@ -46,10 +46,7 @@ function onNodeMD(ev,id){
       selNSet.add(id);
     }
     render();
-  } else {
-    if(!selNSet.has(id) && selN !== id) {
-      selNode(id);
-    }
+    // Deferred selNode(id) to mouseup event if it's just a click
   }
 
   ms.dragging=true;
@@ -95,10 +92,11 @@ function onNodeMD(ev,id){
     }
   };
 
-  if(selNSet.size > 0) {
+  if(selNSet.size > 0 && (selNSet.has(id) || selN === id)) {
     selNSet.forEach(nid => {
       addNodeToDrag(nid);
     });
+    if(selN) addNodeToDrag(selN);
   } else {
     addNodeToDrag(id);
   }
@@ -114,7 +112,15 @@ function onNodeMD(ev,id){
     edges.forEach(e => (draggedIds.has(e.from) || draggedIds.has(e.to)) ? draggedEdges.push(e) : otherEdges.push(e));
     edges = [...otherEdges, ...draggedEdges];
     
-    render();
+    // Instantly bring dragged DOM elements to front without forcing a full canvas re-render
+    draggedNodes.forEach(n => {
+      const el = document.getElementById('nd'+n.id) || document.getElementById('gb'+n.id);
+      if (el) canvas.appendChild(el);
+    });
+    draggedEdges.forEach(e => {
+      const eg = document.querySelector(`.edge-group[data-eid="${e.id}"]`);
+      if (eg) svgl.insertBefore(eg, glLink);
+    });
   }
 }
 
@@ -283,7 +289,7 @@ window.addEventListener('mousemove',ev=>{
   if(ms.dragging&&ms.dragId){
     if(ms.dragOffsets && ms.dragOffsets.length > 0) {
       const dx=ev.clientX-ms.sx,dy=ev.clientY-ms.sy;
-      if(!ms.drgd&&(Math.abs(dx)>4||Math.abs(dy)>4))ms.drgd=true;
+      if(!ms.drgd&&(Math.abs(dx)>2||Math.abs(dy)>2))ms.drgd=true;
       if(ms.drgd){
         const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
         ms.dragOffsets.forEach(doff => {
@@ -323,8 +329,19 @@ window.addEventListener('mousemove',ev=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
               // Ignore internal lines of group
               if(dn.type === 'group' && dn.nodes && dn.nodes.includes(e.from) && dn.nodes.includes(e.to)) return;
+              
+              // Fast AABB pre-filter: skip edges whose bounding box is nowhere near the node
+              const {fx, fy, tx, ty} = getEdgePts(e);
+              let minX = Math.min(fx, tx) - 30, maxX = Math.max(fx, tx) + 30;
+              let minY = Math.min(fy, ty) - 30, maxY = Math.max(fy, ty) + 30;
+              if (e.cp1x != null) {
+                minX = Math.min(minX, e.cp1x - 30, e.cp2x - 30); maxX = Math.max(maxX, e.cp1x + 30, e.cp2x + 30);
+                minY = Math.min(minY, e.cp1y - 30, e.cp2y - 30); maxY = Math.max(maxY, e.cp1y + 30, e.cp2y + 30);
+              }
+              if (dn.x < minX || dn.x > maxX || dn.y < minY || dn.y > maxY) return;
+
               let minDist = Infinity;
-              for(let t=0; t<=1; t+=0.01){
+              for(let t=0; t<=1; t+=0.05){
                 const p = edgePt(e, t);
                 const d = Math.hypot(dn.x-p.x, dn.y-p.y);
                 if(d < minDist) minDist = d;
@@ -490,7 +507,7 @@ window.addEventListener('mouseup',ev=>{
     }
     pruneGroupEdges();sh();render();
   }  // save history + re-render once on drop
-  else if(ms.dragging && !ms.drgd && selNSet.has(ms.dragId) && !(ev.ctrlKey || ev.metaKey || ev.button === 1)) {
+  else if(ms.dragging && !ms.drgd && !(ev.ctrlKey || ev.metaKey || ev.button === 1)) {
     selNode(ms.dragId);
   }
   ms.dragging=false;ms.panning=false;ms.drgd=false;

@@ -1255,7 +1255,9 @@ function renderEdgesOnly(){
     const f=gN(e.from),t=gN(e.to);
     if(!f||!t||!isVisible(e.from))return;
     if(!isVisible(e.to)&&!e.collapsed)return;
-    const isSel=e.id===selE;const clr=isSel?'#4a7cf7':(e.color||LCOLS[0]);
+    const isSel=e.id===selE;
+    let baseClr = e.color || LCOLS[0];
+    let clr = isSel ? '#4a7cf7' : adjustColorForContrast(baseClr, bgSettings.color || '#f0ede8');
     const grp=mkSVG('g');
     const isPending = pendingInsert && pendingInsert.edgeId === e.id;
     grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(isPending?' drop-target':''));

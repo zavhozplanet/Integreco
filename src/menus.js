@@ -633,6 +633,11 @@ function applyBg(groupId=null){
     base.style.backgroundImage = 'none';
   }
   
+  // 1.1 Global Background Sync for UI Icons
+  if (!groupId && typeof syncUiBtnColors === 'function') {
+    syncUiBtnColors();
+  }
+
   if(groupId) {
     base.style.opacity = bg.opacity != null ? bg.opacity : 1;
   }
@@ -701,6 +706,13 @@ function updateBg(key, val, commit=true){
     if(key === 'opacity' && isGroup && activeGroupColorTarget === 'title') k = 'titleOpacity';
     if(target[k] === val) return;
     target[k] = val;
+
+    // Auto-toggle imgEnabled based on imgOpacity
+    if (k === 'imgOpacity') {
+      if (val === 0 && target.imgEnabled) target.imgEnabled = false;
+      else if (val > 0 && !target.imgEnabled) target.imgEnabled = true;
+    }
+
     if(key==='pattern'){
       if(val==='paper' || val==='rough'){
         if(val==='paper') target.lastColor = target.color;
@@ -780,6 +792,7 @@ function toggleImg(){
       target.pattern = 'none';
     }
     target.imgEnabled = true;
+    if((target.imgOpacity || 0) === 0) target.imgOpacity = 0.1;
     if(activeBgGroupId) render(); else applyBg();
     renderCanvCtx();
   } else {

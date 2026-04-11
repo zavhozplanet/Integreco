@@ -18,9 +18,9 @@ function onNdTS(ev,id){
     handleLinkClick(id);return;
   }
 
-  const isDblTap=ntd.lastId===id&&now-ntd.lastT<350;
+  const isDblTap=ntd.lastId===id&&now-ntd.lastT<500;
   
-  if(!selNSet.has(id)) selNode(id);
+  // Deferred selNode(id) to touchend if just a tap
   
   const dragOffsets = [];
   
@@ -40,7 +40,7 @@ function onNdTS(ev,id){
     }
   };
 
-  if(selNSet.size > 0) {
+  if(selNSet.size > 0 && selNSet.has(id)) {
     selNSet.forEach(nid => {
       addNodeToDrag(nid);
     });
@@ -58,7 +58,14 @@ function onNdTS(ev,id){
     edges.forEach(e => (draggedIds.has(e.from) || draggedIds.has(e.to)) ? draggedEdges.push(e) : otherEdges.push(e));
     edges = [...otherEdges, ...draggedEdges];
     
-    render();
+    draggedNodes.forEach(n => {
+      const el = document.getElementById('nd'+n.id) || document.getElementById('gb'+n.id);
+      if (el) canvas.appendChild(el);
+    });
+    draggedEdges.forEach(e => {
+      const eg = document.querySelector(`.edge-group[data-eid="${e.id}"]`);
+      if (eg) svgl.insertBefore(eg, glLink);
+    });
   }
 
   ntd={id,sx:t.clientX,sy:t.clientY,ox:p.x-n.x,oy:p.y-n.y,moved:false,dragging:false,lastId:id,lastT:now,dragOffsets};
@@ -75,7 +82,8 @@ function onNdTS(ev,id){
     return;
   }
 
-  selNode(id);
+  // selection deferred to onNdTE
+
   ntd.lt=setTimeout(()=>{if(!ntd.moved){if(navigator.vibrate)navigator.vibrate(30);showNodeCtx(t.clientX,t.clientY,id)}},550);
 }
 
@@ -102,7 +110,14 @@ function onNdTM(ev,id){
 }
 
 function onNdTE(ev,id){
-  clearTimeout(ntd.lt);if(ntd.dragging)sh();ntd.dragging=false;
+  clearTimeout(ntd.lt);
+  if(ntd.dragging) {
+    sh();
+  } else {
+    // Just a tap -> select the node
+    selNode(id);
+  }
+  ntd.dragging=false;
 }
 
 /* canvas touch */
