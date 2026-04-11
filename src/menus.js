@@ -802,6 +802,9 @@ function toggleImg(){
 
 function handleBgFile(input){
   const file=input.files[0];if(!file)return;
+  if(window.storageAPI && window.storageAPI.dirHandle) {
+    window.storageAPI.saveImageFile(file, file.name || `image_${Date.now()}`);
+  }
   const reader=new FileReader();
   reader.onload=e=>{
     sh();
@@ -819,6 +822,131 @@ function handleBgFile(input){
   };
   reader.readAsDataURL(file);
 }
+
+// ================================================================
+// IMAGE CATALOG
+// ================================================================
+let selectedImgCatItemNames = new Set();
+let allImgCatItems = [];
+
+async function openImgCatalog() {
+  hideAllMenus();
+  document.getElementById('imgcat-overlay').style.display = 'flex';
+  await renderImgCatalog();
+}
+
+function closeImgCatalog() {
+  document.getElementById('imgcat-overlay').style.display = 'none';
+}
+
+async function renderImgCatalog() {
+  const grid = document.getElementById('imgcat-grid');
+  grid.innerHTML = '<div style="width:100%;text-align:center;color:var(--mu);padding:40px;">Загрузка...</div>';
+  selectedImgCatItemNames.clear();
+  document.getElementById('imgcat-select-all').checked = false;
+  document.getElementById('imgcat-delete-btn').style.display = 'none';
+
+  if (!window.storageAPI || !window.storageAPI.dirHandle) {
+    grid.innerHTML = '<div class="cat-empty">Каталог изображений работает только при выбранной рабочей папке.</div>';
+    return;
+  }
+  
+  const files = await window.storageAPI.listImageFiles();
+  allImgCatItems = files;
+  
+  if (files.length === 0) {
+    grid.innerHTML = '<div class="cat-empty">В каталоге пока нет изображений. Нажмите "Добавить из файла", чтобы они появились здесь.</div>';
+    return;
+  }
+  
+  grid.innerHTML = '';
+  for (let item of files) {
+    let url;
+    try { url = URL.createObjectURL(item.file); } catch(e) { continue; }
+    
+    const card = document.createElement('div');
+    card.className = 'cat-card'; 
+    card.style.position = 'relative';
+    card.ondblclick = () => applyImgCatBg(item.file);
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.style.position = 'absolute';
+    cb.style.top = '10px'; cb.style.left = '10px';
+    cb.style.width = '18px'; cb.style.height = '18px';
+    cb.style.cursor = 'pointer'; cb.style.zIndex = '10';
+    cb.onchange = (e) => {
+      e.stopPropagation();
+      if (cb.checked) selectedImgCatItemNames.add(item.name);
+      else selectedImgCatItemNames.delete(item.name);
+      updateImgCatActions();
+    };
+    
+    const thumb = document.createElement('img');
+    thumb.className = 'cat-thumb';
+    thumb.src = url;
+    thumb.style.height = '140px';
+    thumb.onload = () => URL.revokeObjectURL(url);
+    
+    const info = document.createElement('div');
+    info.className = 'cat-info';
+    info.innerHTML = `<div class="cat-label" title="${item.name}">${item.name}</div>`;
+    
+    card.appendChild(cb);
+    card.appendChild(thumb);
+    card.appendChild(info);
+    grid.appendChild(card);
+  }
+}
+
+function updateImgCatActions() {
+  document.getElementById('imgcat-delete-btn').style.display = selectedImgCatItemNames.size > 0 ? 'block' : 'none';
+  document.getElementById('imgcat-select-all').checked = selectedImgCatItemNames.size === allImgCatItems.length && allImgCatItems.length > 0;
+}
+
+function toggleAllImgCat(checked) {
+  const cbs = document.querySelectorAll('#imgcat-grid input[type="checkbox"]');
+  if (checked) {
+    allImgCatItems.forEach(i => selectedImgCatItemNames.add(i.name));
+    cbs.forEach(cb => cb.checked = true);
+  } else {
+    selectedImgCatItemNames.clear();
+    cbs.forEach(cb => cb.checked = false);
+  }
+  updateImgCatActions();
+}
+
+async function deleteSelectedImgCat() {
+  if (selectedImgCatItemNames.size === 0) return;
+  if (!confirm('Удалить выбранные изображения?')) return;
+  
+  for (let name of selectedImgCatItemNames) {
+    await window.storageAPI.deleteImageFile(name);
+  }
+  
+  await renderImgCatalog();
+}
+
+function applyImgCatBg(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    sh();
+    const target = activeBgGroupId ? gN(activeBgGroupId).bg : bgSettings;
+    target.image = e.target.result;
+    target.imgEnabled = true;
+    if(target.pattern === 'paper') {
+      target.pattern = 'none';
+      target.color = target.lastColor;
+    } else if(target.pattern === 'rough') {
+      target.pattern = 'none';
+    }
+    closeImgCatalog();
+    if(activeBgGroupId) render(); else applyBg();
+    renderCanvCtx();
+  };
+  reader.readAsDataURL(file);
+}
+
 
 function renderCanvCtx(){
   let target;

@@ -197,7 +197,12 @@
     </div>
     <div class="bg-toggle-row" style="padding-top:2px;">
       <span>🖼️</span>
-      <div class="bg-custom-btn" onclick="document.getElementById('bg-file').click()" title="📂" style="margin-left:8px">📂</div>
+      <div class="bg-custom-btn" onclick="openImgCatalog()" title="Каталог изображений" style="margin-left:8px; border-color:var(--mu)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; opacity:0.8;">
+          <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
+        </svg>
+      </div>
+      <div class="bg-custom-btn" onclick="document.getElementById('bg-file').click()" title="📂 Добавить из файла" style="margin-left:8px">📂</div>
       <label class="switch">
         <input type="checkbox" id="bg-img-switch" onchange="toggleImg()">
         <span class="slider-sw"></span>
@@ -636,6 +641,24 @@
 <!-- generic context menu for catalog/buttons -->
 <div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;">
   <div class="gc-item" id="gc-open-new-tab">🔗 Открыть в новой вкладке</div>
+</div>
+
+<!-- IMG CATALOG OVERLAY -->
+<div id="imgcat-overlay" style="position: fixed; inset: 0; z-index: 1000; background: rgba(20,18,16,0.72); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center;" onclick="if(event.target===this)closeImgCatalog()">
+  <div id="imgcat-box" style="width: min(98vw, 900px); height: min(96vh, 700px); background: rgba(255,255,255,var(--ui-menu-opa)); backdrop-filter: blur(16px); border-radius: 24px; box-shadow: 0 32px 80px rgba(0,0,0,0.32); display: flex; flex-direction: column; overflow: hidden; transform: scale(1) translateY(0);">
+    <div id="imgcat-hdr" style="padding: 16px 20px; border-bottom: 1.5px solid var(--nbr); display: flex; align-items: center; flex-shrink: 0; background: rgba(255,255,255,var(--ui-menu-opa));">
+      <div id="imgcat-title" style="font-size: 17px; font-weight: 700; color: var(--tx); white-space: nowrap;">🖼️ Каталог фонов</div>
+      <div id="imgcat-controls" style="display:flex; align-items:center; justify-content: flex-end; gap: 12px; flex: 1; margin: 0 16px;">
+        <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color: var(--tx);">
+          <input type="checkbox" id="imgcat-select-all" onchange="toggleAllImgCat(this.checked)" style="width:18px;height:18px;cursor:pointer;">
+          <span style="font-size:14px; font-weight:600;">Отметить все</span>
+        </label>
+        <button id="imgcat-delete-btn" onclick="deleteSelectedImgCat()" title="Удалить отмеченные" style="background:none; border:none; font-size:18px; cursor:pointer; color:var(--red); display:none;">🗑️</button>
+      </div>
+      <button onclick="closeImgCatalog()" title="Закрыть" style="width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--nbr-dk); background: #fff; cursor: pointer; font-size: 18px; color: var(--mu); display: flex; align-items: center; justify-content: center; transition: all 0.12s;">✕</button>
+    </div>
+    <div id="imgcat-grid" class="catalog-grid tiles" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 14px;"></div>
+  </div>
 </div>
 
 <script>

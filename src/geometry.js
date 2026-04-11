@@ -38,6 +38,13 @@ function isPtInStad(px, py, nx, ny, hw, hh, isGroup, style) {
   return (cdx * cdx + cdy * cdy <= rad * rad + 0.1); // Small epsilon
 }
 
+function isPointInNode(id, px, py) {
+  const n = gN(id);
+  if (!n) return false;
+  const {hw, hh} = nodeHalfExtents(id);
+  return isPtInStad(px, py, n.x, n.y, hw, hh, n.type === 'group' || n.type === 'multi', n.style);
+}
+
 function getSnapPoint(n, target, edge, side) {
   if (!n) return {x: 0, y: 0};
   const type = (n.type === 'root' || n.type === 'node') ? 'node' : n.type;

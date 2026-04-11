@@ -5,7 +5,7 @@ let plusDrag={active:false};
 
 function startPlusDrag(ev,nodeId,dir,btnEl,dirHint){
   ev.stopPropagation();
-  plusDrag={active:true,nodeId,dir,dirHint:dirHint||dir,btnEl,startX:ev.clientX,startY:ev.clientY,moved:false,targeting:null};
+  plusDrag={active:true,nodeId,dir,dirHint:dirHint||dir,btnEl,startX:ev.clientX,startY:ev.clientY,moved:false,targeting:null,button:ev.button};
 }
 
 function updatePlusDrag(ev){
@@ -30,6 +30,7 @@ function updatePlusDrag(ev){
     glLink.style.display='block';
     ghHd.style.display='block';
     glLink.setAttribute('x1',sx);glLink.setAttribute('y1',sy);
+    plusDrag.curSX = sx; plusDrag.curSY = sy;
     
     const tgtId=findNodeAt(ev.clientX-rc.left,ev.clientY-rc.top,plusDrag.nodeId);
     let ex = p.x, ey = p.y;
@@ -101,6 +102,15 @@ function endPlusDrag(ev){
       getSnapPoint(toN, p, e, 'to'); 
       render();
     } else {
+      if (isPointInNode(fromId, p.x, p.y)) {
+        plusDrag = { active: false };
+        return;
+      }
+      if (plusDrag.button === 1) {
+        showPlusCtxAfterDrag(ev, fromId, plusDrag.dirHint, p, {x: plusDrag.curSX, y: plusDrag.curSY});
+        plusDrag = { active: false };
+        return;
+      }
       sh(); const id = mkNode(p.x, p.y, '+', fromId, false);
       const e = edges[edges.length - 1]; // mkNode pushes edge connecting parent and child
       const fromN = gN(fromId);
@@ -198,7 +208,10 @@ document.addEventListener('touchend',ev=>{
     // Just select the edge visually, don't open the context menu automatically
     selE=ne.id; selEHandles=true; selN=null; selNSet.clear(); render();
   }
-  else{sh();const id=mkNode(p.x,p.y,'',fromId);render();selN=id;render();showMobRename(id,true)}
+  else{
+    if (isPointInNode(fromId, p.x, p.y)) return;
+    sh();const id=mkNode(p.x,p.y,'',fromId);render();selN=id;render();showMobRename(id,true)
+  }
 },{passive:true});
 let dragCreate={active:false};
 
@@ -246,7 +259,10 @@ function endDragCreate(sx,sy){
     // Just select the edge visually, don't open the context menu automatically
     selE=ne.id; selEHandles=true; selN=null; selNSet.clear(); render();
   }
-  else{sh();const id=mkNode(p.x,p.y,'',fromId);render();selN=id;render();if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50)}
+  else{
+    if (isPointInNode(fromId, p.x, p.y)) return;
+    sh();const id=mkNode(p.x,p.y,'',fromId);render();selN=id;render();if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50)
+  }
 }
 
 function findNodeAt(sx,sy,excludeId){

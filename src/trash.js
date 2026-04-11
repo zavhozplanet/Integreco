@@ -268,16 +268,34 @@ function showPlusCtx(ev, nodeId, dirHint, sensorPos){
   canvDblMenu._cx=ev.clientX;canvDblMenu._cy=ev.clientY;
   canvDblMenu._plusNodeId = nodeId;
   canvDblMenu._plusDir = dirHint;
+  canvDblMenu._targetPoint = null;
   
   // Calculate canvas coordinates of the click for potential fixed start point
   const rc = wrap.getBoundingClientRect();
   canvDblMenu._plusStartPoint = s2c(ev.clientX - rc.left, ev.clientY - rc.top);
 }
+function showPlusCtxAfterDrag(ev, nodeId, dirHint, targetPoint, startPoint){
+  hideAllMenus();
+  canvDblMenu.classList.add('from-plus');
+  const rootItem = canvDblMenu.querySelector('.cdm-root-node');
+  if(rootItem) rootItem.style.display = 'none';
+  canvDblMenu.style.display='flex';
+  posMenu(canvDblMenu, ev.clientX, ev.clientY);
+  canvDblMenu._cx=ev.clientX;canvDblMenu._cy=ev.clientY;
+  canvDblMenu._plusNodeId = nodeId;
+  canvDblMenu._plusDir = dirHint;
+  canvDblMenu._targetPoint = targetPoint;
+  canvDblMenu._plusStartPoint = startPoint;
+}
 function addFromDbl(type){
   const fromPlus = canvDblMenu.classList.contains('from-plus');
   hideCanvDblMenu();
   if(fromPlus){
-    addChildType(canvDblMenu._plusNodeId, canvDblMenu._plusDir, canvDblMenu._plusStartPoint, type);
+    if (canvDblMenu._targetPoint) {
+       addChildTypeAt(canvDblMenu._plusNodeId, canvDblMenu._targetPoint, canvDblMenu._plusStartPoint, type);
+    } else {
+       addChildType(canvDblMenu._plusNodeId, canvDblMenu._plusDir, canvDblMenu._plusStartPoint, type);
+    }
     return;
   }
   const rc=wrap.getBoundingClientRect();

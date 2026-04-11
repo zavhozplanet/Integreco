@@ -166,6 +166,65 @@ class StorageManager {
     }
     return result;
   }
+
+  // --- Images ---
+  async getImagesHandle() {
+    if (!this.dirHandle || !(await this.verifyPermission())) return null;
+    try {
+      return await this.dirHandle.getDirectoryHandle('images', { create: true });
+    } catch (e) {
+      console.error('Failed to get images directory', e);
+      return null;
+    }
+  }
+
+  async saveImageFile(file, name) {
+    const imgHandle = await this.getImagesHandle();
+    if (!imgHandle) return false;
+    try {
+      const fileHandle = await imgHandle.getFileHandle(name, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(file);
+      await writable.close();
+      return true;
+    } catch (e) {
+      console.error('Failed to save image to FS', e);
+      return false;
+    }
+  }
+
+  async deleteImageFile(filename) {
+    const imgHandle = await this.getImagesHandle();
+    if (!imgHandle) return false;
+    try {
+      await imgHandle.removeEntry(filename);
+      return true;
+    } catch (e) {
+      console.error('Failed to delete image from FS', e);
+      return false;
+    }
+  }
+
+  async listImageFiles() {
+    const imgHandle = await this.getImagesHandle();
+    if (!imgHandle) return [];
+    const result = [];
+    try {
+      for await (const [name, handle] of imgHandle.entries()) {
+        if (handle.kind === 'file') {
+          try {
+            const file = await handle.getFile();
+            result.push({ name, file });
+          } catch(e) {
+            console.warn('Could not read image file details', name, e);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('listImageFiles error', e);
+    }
+    return result;
+  }
 }
 
 window.storageAPI = new StorageManager();
