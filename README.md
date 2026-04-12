@@ -1,20 +1,34 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Integreco 🧠
 
-# Run and deploy your AI Studio app
+**Integreco** — это интерактивная offline-first майнд-карта для визуального мышления, построения концептов и графов взаимосвязей. Проект вдохновлен такими инструментами, как Mindomo и Obsidian, но с упором на минимализм интерфейса и максимальную инфографичность.
 
-This contains everything you need to run your app locally.
+## ✨ Ключевые особенности
+* **Offline-first & Local Storage:** Все данные (карты, фоны, изображения) сохраняются локально на вашем устройстве с помощью File System Access API и IndexedDB.
+* **Vanilla JS + SVG:** Проект написан на чистом JavaScript без использования тяжелых фреймворков (React, Vue) или сборщиков. Это обеспечивает мгновенную загрузку и легкость кода.
+* **Гибридные узлы (Multi-Nodes):** Масштабируемые блоки с поддержкой произвольных точек подключения на границах.
+* **PWA Ready:** Приложение можно установить на рабочий стол или смартфон (поддерживается Service Worker).
+* **Стелс-режим и Глассморфизм:** Удобный, настраиваемый интерфейс, который не отвлекает от работы (UI можно полностью скрыть для презентаций).
 
-View your app in AI Studio: https://ai.studio/apps/fd1759df-ee84-4959-997f-313ecd1e769b
+## 🚀 Как запустить (Для разработчиков и пользователей)
 
-## Run Locally
+Поскольку проект использует модульную архитектуру на нативном JavaScript (ES Modules), для его запуска **не требуются** Node.js или npm.
 
-**Prerequisites:**  Node.js
+**Способ 1: Локальный сервер (Рекомендуемый)**
+Для корректной работы ES-модулей (`<script type="module">`) и File System API файлы должны отдаваться через локальный сервер (простое открытие `index.html` кликом может заблокировать CORS).
+1. Скачайте проект.
+2. Запустите любой простой веб-сервер в папке проекта. Например:
+   - Если используете VS Code / Antigravity: нажмите кнопку **Go Live** (расширение Live Server).
+   - Если есть Python: выполните в терминале `python -m http.server 8080`.
+3. Откройте в браузере `http://localhost:8080`.
 
+**Способ 2: GitHub Pages**
+Проект может быть размещен на любом статичном хостинге (GitHub Pages, Vercel, Netlify) и будет работать прямо в браузере.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🛠 Технический стек
+* HTML5 / CSS3 (Кастомные CSS-переменные для тем)
+* Vanilla JavaScript (ES6+ модули)
+* SVG (Отрисовка связей и кривых Безье)
+* Web Storage API / File System Access API
+
+## 📝 Статус проекта
+Проект находится в активной разработке. Актуальный бэклог задач и архитектурные решения описаны во внутренних файлах документации.

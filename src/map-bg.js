@@ -88,8 +88,8 @@ function setCanvasBgMode(mode) {
   document.getElementById('cbg-mode-map').classList.toggle('on', mode === 'map');
   document.getElementById('bg-img-group-canvas').style.display = mode === 'canvas' ? '' : 'none';
   document.getElementById('bg-img-group-map').style.display = mode === 'map' ? '' : 'none';
-  document.getElementById('bg-img-map-zoom-row').style.display = mode === 'map' ? 'flex' : 'none';
   if (mode === 'map') {
+    syncMapBgUI();    // sync sliders/zoom before showing selector
     openMapBgRootSelector();
   }
 }
