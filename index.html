@@ -15,9 +15,10 @@
   <div id="bg-pat"></div>
 </div>
 
-<!-- canvas -->
+<!-- Map background layer (inside canvas transform, per root node) -->
 <div id="wrap" ondragstart="return false;">
   <div id="canvas" ondragstart="return false;">
+    <div id="map-bg-layer" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0;"></div>
     <svg id="svgl" xmlns="http://www.w3.org/2000/svg">
       <line id="ghost-ln"/>
       <circle id="ghost-hd" r="5"/>
@@ -191,40 +192,69 @@
     </div>
   </div>
 
+  <!-- Image group — switcher: canvas bg / map bg -->
   <div class="bg-group" id="bg-img-group">
     <div style="display:flex; justify-content:flex-end; padding:4px 4px 0;">
       <button class="lp-pin" id="bg-pin-image" onclick="toggleBgPin('image')" title="📌 Изображение по умолчанию">📌</button>
     </div>
-    <div class="bg-toggle-row" style="padding-top:2px;">
-      <span>🖼️</span>
-      <div class="bg-custom-btn" onclick="openImgCatalog()" title="Каталог изображений" style="margin-left:8px; border-color:var(--mu)">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; opacity:0.8;">
-          <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
-        </svg>
-      </div>
-      <div class="bg-custom-btn" onclick="document.getElementById('bg-file').click()" title="📂 Добавить из файла" style="margin-left:8px">📂</div>
-      <label class="switch">
-        <input type="checkbox" id="bg-img-switch" onchange="toggleImg()">
-        <span class="slider-sw"></span>
-      </label>
+
+    <!-- Mode switch row -->
+    <div style="display:flex;gap:4px;padding:4px 8px 6px;">
+      <div class="bg-pat-btn on" id="cbg-mode-canvas" onclick="setCanvasBgMode('canvas')" title="Фон холста" style="flex:1;font-size:12px;">🖼 Холст</div>
+      <div class="bg-pat-btn" id="cbg-mode-map" onclick="setCanvasBgMode('map')" title="Фон карты" style="flex:1;font-size:12px;">🗺 Карта</div>
     </div>
-    <input type="file" id="bg-file" style="display:none" accept="image/*" onchange="handleBgFile(this)">
-    <div class="bg-sliders" id="img-sliders">
-      <div class="slider-row"><span>💧</span><input type="range" id="bg-img-opacity" min="0" max="1" step="0.05" oninput="updateBg('imgOpacity', parseFloat(this.value), false)" onchange="updateBg('imgOpacity', parseFloat(this.value), true)"></div>
-      <div class="slider-row"><span>🌫️</span><input type="range" id="bg-img-blur" min="0" max="20" step="1" oninput="updateBg('imgBlur', parseFloat(this.value), false)" onchange="updateBg('imgBlur', parseFloat(this.value), true)"></div>
-    </div>
-  <div id="bg-apply-all-row" style="padding: 4px 0; border-top: 1px solid var(--nbr, #f0ede8); margin-top: 6px; display: none;">
-    <button class="bg-pat-btn" id="bg-apply-all-btn" style="width: 100%; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="applyBgStyleToSelection()" title="Применить текущий стиль фона ко всем выделенным группам">
-      <span style="font-size:20px; color: #888;">📦</span>
-      <span style="font-size:16px; color: #aaa;">➔</span>
-      <div style="position:relative; width:26px; height:20px;">
-        <span style="position:absolute; left:0; top:4px; font-size:18px; color: #888;">📦</span>
-        <span style="position:absolute; left:5px; top:2px; font-size:18px; color: #888;">📦</span>
-        <span style="position:absolute; left:10px; top:0; font-size:18px; color: #888;">📦</span>
+
+    <!-- === CANVAS BG panel === -->
+    <div id="bg-img-group-canvas">
+      <div class="bg-toggle-row" style="padding-top:2px;">
+        <span>🖼️</span>
+        <div class="bg-custom-btn" onclick="openImgCatalog()" title="Каталог изображений" style="margin-left:8px; border-color:var(--mu)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; opacity:0.8;">
+            <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
+          </svg>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="bg-img-switch" onchange="toggleImg()">
+          <span class="slider-sw"></span>
+        </label>
       </div>
-    </button>
+      <input type="file" id="bg-file" style="display:none" accept="image/*" onchange="handleBgFile(this)">
+      <div class="bg-sliders" id="img-sliders">
+        <div class="slider-row"><span>💧</span><input type="range" id="bg-img-opacity" min="0" max="1" step="0.05" oninput="updateBg('imgOpacity', parseFloat(this.value), false)" onchange="updateBg('imgOpacity', parseFloat(this.value), true)"></div>
+        <div class="slider-row"><span>🌫️</span><input type="range" id="bg-img-blur" min="0" max="20" step="1" oninput="updateBg('imgBlur', parseFloat(this.value), false)" onchange="updateBg('imgBlur', parseFloat(this.value), true)"></div>
+      </div>
+    </div>
+
+    <!-- === MAP BG panel === -->
+    <div id="bg-img-group-map" style="display:none;">
+      <div class="bg-toggle-row" style="padding-top:2px;">
+        <span>🗺️</span>
+        <div class="bg-custom-btn" onclick="openMapBgRootSelector()" title="Выбрать карту" style="margin-left:8px; border-color:var(--mu);font-size:12px;">⚙️</div>
+      </div>
+      <!-- Zoom row — active only when map mode, has image -->
+      <div id="bg-img-map-zoom-row" style="display:flex;align-items:center;gap:8px;padding:4px 8px;opacity:0.4;pointer-events:none;">
+        <div class="bg-custom-btn" onclick="mapBgZoom(-1)" title="Уменьшить" style="font-size:16px;flex-shrink:0;">−</div>
+        <span id="mapbg-zoom-label" style="font-size:12px;font-weight:600;color:var(--tx);min-width:36px;text-align:center;">100%</span>
+        <div class="bg-custom-btn" onclick="mapBgZoom(1)" title="Увеличить" style="font-size:16px;flex-shrink:0;">+</div>
+      </div>
+      <div class="bg-sliders" id="mapbg-sliders" style="opacity:0.4;pointer-events:none;">
+        <div class="slider-row"><span>💧</span><input type="range" id="mapbg-img-opacity" min="0" max="1" step="0.05" oninput="updateMapBg('imgOpacity', parseFloat(this.value))" onchange="updateMapBg('imgOpacity', parseFloat(this.value))"></div>
+        <div class="slider-row"><span>🌫️</span><input type="range" id="mapbg-img-blur" min="0" max="20" step="1" oninput="updateMapBg('imgBlur', parseFloat(this.value))" onchange="updateMapBg('imgBlur', parseFloat(this.value))"></div>
+      </div>
+    </div>
+
+    <div id="bg-apply-all-row" style="padding: 4px 0; border-top: 1px solid var(--nbr, #f0ede8); margin-top: 6px; display: none;">
+      <button class="bg-pat-btn" id="bg-apply-all-btn" style="width: 100%; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px;" onclick="applyBgStyleToSelection()" title="Применить текущий стиль фона ко всем выделенным группам">
+        <span style="font-size:20px; color: #888;">📦</span>
+        <span style="font-size:16px; color: #aaa;">➔</span>
+        <div style="position:relative; width:26px; height:20px;">
+          <span style="position:absolute; left:0; top:4px; font-size:18px; color: #888;">📦</span>
+          <span style="position:absolute; left:5px; top:2px; font-size:18px; color: #888;">📦</span>
+          <span style="position:absolute; left:10px; top:0; font-size:18px; color: #888;">📦</span>
+        </div>
+      </button>
+    </div>
   </div>
-</div>
 </div>
 
 <!-- burger menu -->
@@ -636,6 +666,7 @@
 <script src="src/ui.js"></script>
 <script src="src/catalog.js"></script>
 <script src="src/menu.js"></script>
+<script src="src/map-bg.js"></script>
 <script src="src/init.js"></script>
 
 <!-- generic context menu for catalog/buttons -->
@@ -645,10 +676,13 @@
 
 <!-- IMG CATALOG OVERLAY -->
 <div id="imgcat-overlay" style="position: fixed; inset: 0; z-index: 1000; background: rgba(20,18,16,0.72); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center;" onclick="if(event.target===this)closeImgCatalog()">
-  <div id="imgcat-box" style="width: min(98vw, 900px); height: min(96vh, 700px); background: rgba(255,255,255,var(--ui-menu-opa)); backdrop-filter: blur(16px); border-radius: 24px; box-shadow: 0 32px 80px rgba(0,0,0,0.32); display: flex; flex-direction: column; overflow: hidden; transform: scale(1) translateY(0);">
+  <div id="imgcat-box" style="width: min(98vw, 900px); height: min(96vh, 700px); background: rgba(255,255,255,var(--ui-menu-opa)); backdrop-filter: blur(16px); border-radius: 24px; box-shadow: 0 32px 80px rgba(0,0,0,0.32); display: flex; flex-direction: column; overflow: hidden;">
     <div id="imgcat-hdr" style="padding: 16px 20px; border-bottom: 1.5px solid var(--nbr); display: flex; align-items: center; flex-shrink: 0; background: rgba(255,255,255,var(--ui-menu-opa));">
       <div id="imgcat-title" style="font-size: 17px; font-weight: 700; color: var(--tx); white-space: nowrap;">🖼️ Каталог фонов</div>
       <div id="imgcat-controls" style="display:flex; align-items:center; justify-content: flex-end; gap: 12px; flex: 1; margin: 0 16px;">
+        <!-- Add from file button (was in canvas menu, now here) -->
+        <div class="bg-custom-btn" onclick="document.getElementById('imgcat-file-input').click()" title="📂 Добавить из файла" style="font-size:14px;width:auto;padding:0 10px;">📂 Добавить</div>
+        <input type="file" id="imgcat-file-input" style="display:none" accept="image/*" onchange="handleImgCatFileInput(this)">
         <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color: var(--tx);">
           <input type="checkbox" id="imgcat-select-all" onchange="toggleAllImgCat(this.checked)" style="width:18px;height:18px;cursor:pointer;">
           <span style="font-size:14px; font-weight:600;">Отметить все</span>
@@ -658,6 +692,17 @@
       <button onclick="closeImgCatalog()" title="Закрыть" style="width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--nbr-dk); background: #fff; cursor: pointer; font-size: 18px; color: var(--mu); display: flex; align-items: center; justify-content: center; transition: all 0.12s;">✕</button>
     </div>
     <div id="imgcat-grid" class="catalog-grid tiles" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 14px;"></div>
+  </div>
+</div>
+
+<!-- MAP BG ROOT SELECTOR OVERLAY -->
+<div id="mapbg-root-overlay" style="position: fixed; inset: 0; z-index: 1100; background: rgba(20,18,16,0.72); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center;" onclick="if(event.target===this)closeMapBgRootSelector()">
+  <div style="width: min(98vw, 780px); max-height: min(96vh, 600px); background: rgba(255,255,255,var(--ui-menu-opa)); backdrop-filter: blur(16px); border-radius: 24px; box-shadow: 0 32px 80px rgba(0,0,0,0.32); display: flex; flex-direction: column; overflow: hidden;">
+    <div style="padding: 16px 20px; border-bottom: 1.5px solid var(--nbr); display: flex; align-items: center; gap: 12px; flex-shrink: 0;">
+      <div style="font-size: 17px; font-weight: 700; color: var(--tx); flex: 1;">🗺️ Фон карты — выбор карты</div>
+      <button onclick="closeMapBgRootSelector()" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--nbr-dk);background:#fff;cursor:pointer;font-size:18px;color:var(--mu);display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="mapbg-root-grid" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 20px; overflow-y: auto; align-content: flex-start;"></div>
   </div>
 </div>
 

@@ -1350,5 +1350,11 @@ function renderEdgesOnly(){
   });
 }
 
-function applyT(){canvas.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;canvas.style.transformOrigin='0 0'}
+function applyT(){
+  canvas.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;
+  canvas.style.transformOrigin='0 0';
+  // Refresh map-bg layer positions (attached to root nodes)
+  if (typeof renderAllMapBgs === 'function') renderAllMapBgs();
+}
+
 

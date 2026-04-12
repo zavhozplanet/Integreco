@@ -369,6 +369,7 @@ function applyData(data) {
       hasUnsavedChanges = false;
       render();
       applyBg();
+      if (typeof renderAllMapBgs === 'function') renderAllMapBgs();
       
       // Mirror to session storage so this tab 'owns' this data and stays independent on refresh
       const dataToSave = {

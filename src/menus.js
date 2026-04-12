@@ -829,9 +829,14 @@ function handleBgFile(input){
 let selectedImgCatItemNames = new Set();
 let allImgCatItems = [];
 
-async function openImgCatalog() {
+// isMapBgMode: true when opened from map-bg root selector
+async function openImgCatalog(isMapBgMode) {
   hideAllMenus();
+  document.getElementById('imgcat-overlay')._isMapBgMode = !!isMapBgMode;
   document.getElementById('imgcat-overlay').style.display = 'flex';
+  // Title update
+  const titleEl = document.getElementById('imgcat-title');
+  if (titleEl) titleEl.textContent = isMapBgMode ? '🗺️ Выбор фона карты' : '🖼️ Каталог фонов';
   await renderImgCatalog();
 }
 
@@ -867,7 +872,7 @@ async function renderImgCatalog() {
     const card = document.createElement('div');
     card.className = 'cat-card'; 
     card.style.position = 'relative';
-    card.ondblclick = () => applyImgCatBg(item.file);
+    card.ondblclick = () => _imgCatApply(item.file);
     
     const cb = document.createElement('input');
     cb.type = 'checkbox';
@@ -927,6 +932,30 @@ async function deleteSelectedImgCat() {
   await renderImgCatalog();
 }
 
+// Internal router: routes apply to canvas bg or map bg based on catalog mode
+function _imgCatApply(file) {
+  const isMapBgMode = document.getElementById('imgcat-overlay')._isMapBgMode;
+  if (isMapBgMode && typeof applyImgCatBgToRoot === 'function') {
+    applyImgCatBgToRoot(file);
+  } else {
+    applyImgCatBg(file);
+  }
+}
+
+// Handle "Add from file" button inside catalog (saves to FS and applies)
+async function handleImgCatFileInput(input) {
+  const file = input.files[0]; if (!file) return;
+  // Save to FS images folder
+  if (window.storageAPI && window.storageAPI.dirHandle) {
+    await window.storageAPI.saveImageFile(file, file.name || `image_${Date.now()}`);
+  }
+  _imgCatApply(file);
+  // Refresh catalog grid
+  await renderImgCatalog();
+  // Reset input so same file can be picked again
+  input.value = '';
+}
+
 function applyImgCatBg(file) {
   const reader = new FileReader();
   reader.onload = e => {
@@ -946,7 +975,6 @@ function applyImgCatBg(file) {
   };
   reader.readAsDataURL(file);
 }
-
 
 function renderCanvCtx(){
   let target;
@@ -971,7 +999,35 @@ function renderCanvCtx(){
   document.getElementById('bg-opacity-row').style.display = isGroup ? 'flex' : 'none';
   document.getElementById('bg-pat-group').style.display = isGroup ? 'none' : 'block';
 
-  
+  // Mode switcher (canvas/map) only available for canvas, not group bg
+  const modeSwitcherRow = document.getElementById('bg-img-group');
+  if (modeSwitcherRow) {
+    const switcherDiv = modeSwitcherRow.querySelector('[id="cbg-mode-canvas"]');
+    const switcherParent = switcherDiv ? switcherDiv.parentElement : null;
+    if (switcherParent) switcherParent.style.display = isGroup ? 'none' : 'flex';
+  }
+  // Canvas-bg panel: always show for both group and canvas bg
+  const canvasBgPanel = document.getElementById('bg-img-group-canvas');
+  const mapBgPanel = document.getElementById('bg-img-group-map');
+  if (isGroup) {
+    // For groups: only show canvas panel (no map bg for groups)
+    if (canvasBgPanel) canvasBgPanel.style.display = '';
+    if (mapBgPanel) mapBgPanel.style.display = 'none';
+    // Reset mode to canvas when switching to group
+    if (typeof canvasBgMode !== 'undefined') {
+      canvasBgMode = 'canvas';
+      const btnC = document.getElementById('cbg-mode-canvas');
+      const btnM = document.getElementById('cbg-mode-map');
+      if (btnC) btnC.classList.add('on');
+      if (btnM) btnM.classList.remove('on');
+    }
+  }
+  // When in map mode for canvas: sync map-bg UI
+  if (!isGroup && typeof canvasBgMode !== 'undefined' && canvasBgMode === 'map') {
+    if (typeof syncMapBgUI === 'function') syncMapBgUI();
+  }
+
+
   document.getElementById('bg-pat-rough').style.display = isGroup ? 'none' : 'flex';
   document.getElementById('bg-pat-paper').style.display = isGroup ? 'none' : 'flex';
 
@@ -1022,15 +1078,19 @@ function renderCanvCtx(){
   document.getElementById('bg-pat-opacity').value=target.patOpacity;
   document.getElementById('bg-pat-blur').value=target.patBlur;
 
-  // Image
+  // Image (canvas bg)
   const imgSwitch = document.getElementById('bg-img-switch');
-  imgSwitch.checked = target.imgEnabled;
+  if (imgSwitch) imgSwitch.checked = target.imgEnabled;
 
   const imgSliders = document.getElementById('img-sliders');
-  if(!target.imgEnabled) imgSliders.classList.add('bg-inactive'); else imgSliders.classList.remove('bg-inactive');
+  if (imgSliders) {
+    if(!target.imgEnabled) imgSliders.classList.add('bg-inactive'); else imgSliders.classList.remove('bg-inactive');
+  }
 
-  document.getElementById('bg-img-opacity').value=target.imgOpacity;
-  document.getElementById('bg-img-blur').value=target.imgBlur;
+  const imgOpEl = document.getElementById('bg-img-opacity');
+  const imgBlurEl = document.getElementById('bg-img-blur');
+  if (imgOpEl) imgOpEl.value = target.imgOpacity;
+  if (imgBlurEl) imgBlurEl.value = target.imgBlur;
 
   // Apply to Selected button row visibility and button state
   const bgApplyRow = document.getElementById('bg-apply-all-row');
