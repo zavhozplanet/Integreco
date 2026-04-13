@@ -3,15 +3,15 @@ trigger: always_on
 ---
 
 ## USER & COMMUNICATION
-- User: Andrey (non-technical). **Always respond in Russian.** Simple language, step-by-step.
+- User: Andrey (non-technical). **Always respond in English.**
+- **Extreme Conciseness:** Do NOT parrot or repeat the user's prompt or task logic back to them. If a task is implemented successfully, provide a minimal confirmation (e.g., "Done" or "Implemented"). Provide detailed responses ONLY if you need clarification, hit a blocker, or need to discuss architectural alternatives.
 - At the start of every new session: read `BACKLOG.md` and report the current active tasks.
 - If the task involves geometry, storage, or architecture: also read `ARCHITECTURE.md`.
 
 ## WORKFLOW RULES
 - **Confirmation protocol:** `+` at the start of a message = success confirmed. `-` = failure or no change.
-- Never cross out tasks in `BACKLOG.md` until the user confirms with `+`.
+- **Task completion:** Do not delete tasks or move them to other files. When the user confirms the task with the '+' sign, simply replace the initial marker (`-`) with a checkmark emoji (`✅`) in `BACKLOG.md`. The user will handle file cleanup manually.
 - The final success criterion is the user's test — not the assistant's browser check.
-- When the user adds new tasks to `BACKLOG.md`, reorder all active tasks by optimal implementation sequence and briefly explain the chosen order.
 - Never write a text history of the project (Git handles that).
 - **Edit files surgically. Never rewrite a module from scratch.**
 
@@ -29,10 +29,3 @@ trigger: always_on
 7. **Dev URL: `http://localhost:8080/` only.** `file:///` = isolated storage — never use for development.
 8. Fullscreen on Chrome/Wayland: `requestFullscreen()` fires technically but the window does not expand. F11 works. This is an OS-level limitation, not a bug. The `⛶` button icon is intentionally static.
 
-## AI MODEL ROUTING
-Append complexity + model recommendation to every response during active work:
-- **Low** — CSS / text / color tweaks → Gemini Flash
-- **Medium** — new UI component, surface JS refactor → Gemini Pro Low
-- **High** — architecture changes, async state, graph math → Gemini Pro High / Claude Sonnet
-- **Extreme** — debug loop, core redesign → Claude Opus
-- If stuck in a loop: **STOP** and tell the user to switch model. Never waste heavy tokens guessing blindly.
