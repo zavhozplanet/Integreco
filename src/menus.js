@@ -216,7 +216,10 @@ function showNodeCtx(cx,cy,id){
       {icon:'✂️',title:'Вырезать',action:()=>{ openSubmenu('ctx-cut-sub'); }},
       {icon:'📋',title:'Копировать',action:()=>{ openSubmenu('ctx-copy-sub'); }},
       {icon:'📌',title:'Вставить',action:()=>{hideCtxMenu();ctxExec('paste')}},
-      {icon:lockIcon,title:lockTitle,action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
+      {icon:lockIcon,title:lockTitle,
+       disabled: (n.type === 'root' && n.mapBg && n.mapBg.image && n.mapBg.imgEnabled),
+       action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
+
       {icon:'🔭',title:'Войти в режим ветки (Filter View)',action:()=>{hideCtxMenu();enterBranchView(id)}},
       {icon:'🗑',title:'Удалить',danger:true,action:()=>{
         const isRoot = n.type === 'root';

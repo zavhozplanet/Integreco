@@ -166,7 +166,11 @@ function renderMapBgRootSelector() {
       if (!mb2 || !mb2.image) return;
       sh();
       mb2.imgEnabled = cb.checked;
+      // Lock root when bg enabled, unlock when disabled
+      const rn = gN(root.id);
+      if (rn) rn.locked = cb.checked;
       renderAllMapBgs();
+      render();
       saveToLocalStorage();
     };
     cbWrap.appendChild(cb);
@@ -220,8 +224,10 @@ function applyImgCatBgToRoot(file) {
     if (!mb) return;
     mb.image = e.target.result;
     mb.imgEnabled = true;
-    // Reset zoom to default
     mb.imgZoom = 1;
+    // Auto-lock root to its map bg
+    const rn = gN(mapBgRootId);
+    if (rn) rn.locked = true;
     renderAllMapBgs();
     saveToLocalStorage();
 
