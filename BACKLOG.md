@@ -1,20 +1,60 @@
 # Integreco — Backlog
-> Agents: cross out completed items only after user confirms with `+`. Never delete items yourself.
+> Agents: cross out completed items ONLY after the user confirms with `+`. Never delete items yourself.
 
 ## 🔴 Active Tasks
 
-- **Очистка корзины:** Добавить кнопку «Очистить всё» в модальное окно корзины.
-- **Меню форматирования текста:** При ПКМ на текстовом поле — стандартный набор: размер/выбор шрифта, цвет, выравнивание.
-- **Больше рамок в меню настроек:** Добавить виды рамок (примеры из сервисов майнд-карт), добавить скролл. Текущие 3 вида — первыми.
-- **Кнопка "Открыть объект как карту":** В контекстном меню объекта. Создаёт новую карту в новой вкладке с данным объектом как корневым.
+- **(1) Canvas Background & Map Background Logic:**
+  - In the canvas menu (image section), add a toggle switch: "Canvas Background" vs "Map Background".
+  - Add image zoom buttons (active ONLY when the switch is set to "Map Background").
+  - Move the "Add from folder" button from the canvas menu to the image catalog window.
+  - **"Map Background" Mode Logic:** - Ties the image to a specific root node. The root node is pinned to a new image layer (above the canvas background). 
+    - Panning/zooming the canvas normally scales both the map and the image proportionally.
+    - *Setup Mode (Map Background):* If objects (besides the root) are pinned to the map, zooming the image out is disabled. Zooming in increases link lengths proportionally (objects act as if anchored to the image). If no objects are pinned, zooming changes the image size relative to the map (Min zoom: 25%, Max: until it collides with another image). Default size is screen size.
+  - **Multiple Root Nodes (Multiple Maps):**
+    - Switching to "Map Background" opens a preview grid of all root nodes. The currently viewed map's root is highlighted.
+    - Roots without images show a checkerboard background (like Photoshop).
+    - Each preview has a checkbox and a "+" button. Checkbox toggles the visibility of the currently attached image (disabled if no image was ever attached).
+    - Clicking "+" or double-clicking a preview selects that node, closes the selection window, and opens the image catalog.
+    - Selecting an image anchors it to that root node, closes the catalog, and centers the root node on the screen.
+  - **Locking/Pinning Mechanics:** - A root node attached to a map background guarantees they move together (glued).
+    - Adding a map background automatically enables the lock (`locked`/`pinned` state) for that root node. It cannot be unlocked from the object menu until the background is disabled via the preview checkbox.
+    - Disabling the checkbox unlocks all objects on that map. Re-enabling it restores the locks, scale, and defaults as they were before.
+  - **Visibility:** The image is visible as long as the checkbox in the root preview grid is checked.
 
-## 🟡 Roadmap (не срочно)
+- **Export to Standalone HTML:**
+  - Add an "html" option in the main menu's download submenu. 
+  - Goal: Download a self-contained, view-only version of the map that works offline.
+  - Features allowed: Panning, zooming, opening node/note/group contents (double-click), collapsing/expanding branches.
+  - UI restrictions: Hide all menus except the main menu (which will only contain "Share", "Download" (no backup option), and "Stealth Mode"). Keep zoom/center/minimap controls, main menu button, and fullscreen button.
 
-- **Single Window SPA** — управление несколькими картами внутри одного окна (вкладки/переключатель). 🔴 ПРИОРИТЕТ
-- **GitHub Sync** — автоматическая синхронизация без Syncthing.
-- **Shareable Links** — ссылки view-only и шаблоны.
-- Облачная синхронизация (PouchDB/CouchDB)
-- AI-интеграция (анализ/генерация карт через LLM)
-- Плагин для Obsidian
-- API для сторонних сервисов
-- Google Drive / Google Keep интеграция
+- **"Copy Style" Feature:**
+  - Add a "Copy Style" toggle in the settings submenu.
+  - When enabled, opens a window identical to the Map Catalog, but with only two buttons per card: "Preview" and "Apply", plus a "Cancel" button top-right.
+  - *Preview:* Opens a view-only thumbnail of that map (almost full screen, draggable, zoomable) to inspect the style. Top buttons: "Apply" and "Cancel".
+  - *Apply:* Applies all style defaults from the selected map to the current map. Closes the catalog/preview windows but keeps the settings submenu open.
+  - Disabling the toggle reverts the current map to default styles.
+  - If any manual style change is made after copying, the toggle becomes inactive (styles cannot be reverted via toggle anymore).
+
+- **Recycle Bin Overhaul:**
+  - Replace individual restore buttons with a single global "Restore" button.
+  - Add checkboxes to every map/object card, and a "Select All" checkbox in the header.
+  - "Restore" button recovers checked items to the catalog. *Constraint:* Object restoration is only allowed if no new objects were moved/created on the map. Note restoration is only allowed if the parent object's text wasn't edited.
+  - "Delete" button permanently removes checked items.
+  - Add a "Clear All" button.
+
+- **Text Formatting Menu:** - Right-click (RMB) on a text field opens standard options: font size/family, color, alignment.
+
+- **Expand Frame Options:** - Add more frame types (inspired by other mind-map tools) to the settings menu. Implement scrolling. Keep the current 3 types at the top.
+
+- **"Open Object as Map" Button:** - Add to the object context menu. Creates a new map in a new tab with the selected object acting as the new root node.
+
+## 🟡 Roadmap (Low Priority)
+
+- **Single Window SPA** — Handle multiple maps within one window (tabs/switcher). 🔴 HIGH PRIORITY
+- **GitHub Sync** — Automatic sync without Syncthing.
+- **Shareable Links** — View-only links and templates.
+- **Cloud Sync** (PouchDB/CouchDB)
+- **AI Integration** (Map analysis/generation via LLM)
+- **Obsidian Plugin**
+- **External API**
+- **Google Drive / Keep Integration**
