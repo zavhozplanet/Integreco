@@ -2,26 +2,37 @@
 trigger: always_on
 ---
 
-## ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ И ОБЩЕНИЕ
-- Пользователь: Андрей (нетехнический специалист).
-- Общаться строго на русском языке.
-- Все объяснения давать максимально простым языком, пошагово, без сложного программистского жаргона.
-- В начале каждого нового диалога сверяйся с файлом `BACKLOG.md` и кратко сообщай, какие задачи сейчас актуальны.
+## USER & COMMUNICATION
+- User: Andrey (non-technical). **Always respond in Russian.** Simple language, step-by-step.
+- At the start of every new session: read `BACKLOG.md` and report the current active tasks.
+- If the task involves geometry, storage, or architecture: also read `ARCHITECTURE.md`.
 
-## ПРАВИЛА АССИСТЕНТА И АНТИ-РЕГРЕССИЯ
-- Тебе ЗАПРЕЩЕНО вести текстовую историю проекта или генерировать списки сделанного (для этого используется Git).
-- Удаляй выполненные задачи только из `BACKLOG.md` и только после того, как пользователь подтвердит успех символом `+` в чате.
-- Окончательным критерием успеха является тест пользователя, а не твоя проверка в браузере.
-- Изоляция: Решая визуальные баги UI, всегда используй локальные переменные вместо глобальных изменений, чтобы не сломать соседние элементы.
-- Всегда используй встроенный поиск по базе кода перед изменением функций, чтобы проанализировать зависимости.
+## WORKFLOW RULES
+- **Confirmation protocol:** `+` at the start of a message = success confirmed. `-` = failure or no change.
+- Never cross out tasks in `BACKLOG.md` until the user confirms with `+`.
+- The final success criterion is the user's test — not the assistant's browser check.
+- When the user adds new tasks to `BACKLOG.md`, reorder all active tasks by optimal implementation sequence and briefly explain the chosen order.
+- Never write a text history of the project (Git handles that).
+- **Edit files surgically. Never rewrite a module from scratch.**
 
-## ТЕХНИЧЕСКИЕ ДОГМЫ INTEGRECO (НЕ МЕНЯТЬ БЕЗ ПРИКАЗА!)
-1. Измерения узлов: Только через `canvas.measureText()`. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать `getBoundingClientRect()`.
-2. Отрисовка: SVG (`#svgl`) всегда находится позади узлов-div (z-index). Кнопки на линиях видимы через JS-хендлеры.
-3. Корневой узел: всегда `nodes[0]`. Запрещено удалять напрямую. Функция `gPar()` принудительно возвращает `null` для корня.
-4. Связи (`isLink: true`): исключительно декоративные, не влияют на иерархию (gCh, gPar).
-5. Файлы: Файл всегда редактируется точечно, не переписывается с нуля.
+## ANTI-REGRESSION
+- UI bugs: always use local CSS variables — never global changes — to avoid breaking adjacent elements.
+- Before modifying any function: search the codebase (`grep_search`) to map all call sites and dependencies.
 
-## РОУТИНГ И ЭКОНОМИЯ КВОТ
-- В конце каждого своего ответа при плановой работе указывай сложность следующего этапа и давай рекомендацию, какая модель ИИ потребуется (Low, Medium, High, Extreme).
-- Если ты зашел в тупик (debugging loop) или задача требует реструктуризации ядра — ты ДОЛЖЕН остановиться и попросить пользователя переключить модель на более мощную. Запрещено тратить токены вслепую.
+## INTEGRECO TECHNICAL DOGMAS (DO NOT CHANGE WITHOUT EXPLICIT INSTRUCTION)
+1. Node sizing: only via `canvas.measureText()`. **NEVER use `getBoundingClientRect()`.**
+2. SVG `#svgl` is always behind node divs (z-index). Line buttons are visible via JS handlers only.
+3. Root node is always `nodes[0]`. `gPar()` always returns `null` for root. No edge can make root a child.
+4. `isLink: true` edges are decorative — excluded from `gCh`, `gPar`, `isVisible`.
+5. Touch vs desktop: `isMob() = window.innerWidth < 768 || 'ontouchstart' in window`.
+6. Floating menus use `posMenu(el, x, y)`. Opening a submenu must trigger forced reposition of the parent (anti-overflow).
+7. **Dev URL: `http://localhost:8080/` only.** `file:///` = isolated storage — never use for development.
+8. Fullscreen on Chrome/Wayland: `requestFullscreen()` fires technically but the window does not expand. F11 works. This is an OS-level limitation, not a bug. The `⛶` button icon is intentionally static.
+
+## AI MODEL ROUTING
+Append complexity + model recommendation to every response during active work:
+- **Low** — CSS / text / color tweaks → Gemini Flash
+- **Medium** — new UI component, surface JS refactor → Gemini Pro Low
+- **High** — architecture changes, async state, graph math → Gemini Pro High / Claude Sonnet
+- **Extreme** — debug loop, core redesign → Claude Opus
+- If stuck in a loop: **STOP** and tell the user to switch model. Never waste heavy tokens guessing blindly.
