@@ -61,10 +61,12 @@ function renderAllMapBgs() {
     const w = defaultW * imgZoom;
     const h = defaultH * imgZoom;
 
-    // Anchor to root node center
+    // Anchor to root node center + offset
+    const ox = mb.imgOffsetX || 0;
+    const oy = mb.imgOffsetY || 0;
     el.style.display = 'block';
-    el.style.left = (root.x - w / 2) + 'px';
-    el.style.top  = (root.y - h / 2) + 'px';
+    el.style.left = (root.x + ox - w / 2) + 'px';
+    el.style.top  = (root.y + oy - h / 2) + 'px';
     el.style.width  = w + 'px';
     el.style.height = h + 'px';
 
@@ -76,22 +78,60 @@ function renderAllMapBgs() {
   });
 }
 
+function getMapBgAtScreen(sx, sy) {
+  const container = document.getElementById('map-bg-layer');
+  if (!container) return null;
+  const children = Array.from(container.children);
+  for (let i = children.length - 1; i >= 0; i--) {
+    const el = children[i];
+    if (el.style.display !== 'none') {
+      const rect = el.getBoundingClientRect();
+      if (sx >= rect.left && sx <= rect.right && sy >= rect.top && sy <= rect.bottom) {
+        return parseInt(el.dataset.rootId);
+      }
+    }
+  }
+  return null;
+}
+
 // ── UI: Map-BG control panel (in canvctx) ─────────────────────
 // "canvasBgMode" state: 'canvas' | 'map'
 let canvasBgMode = 'canvas';
 // When in 'map' mode, the root we're editing
 let mapBgRootId = null;
 
-function setCanvasBgMode(mode) {
+function setCanvasBgMode(mode, skipSelector = false, specificRootId = null) {
   canvasBgMode = mode;
   document.getElementById('cbg-mode-canvas').classList.toggle('on', mode === 'canvas');
   document.getElementById('cbg-mode-map').classList.toggle('on', mode === 'map');
   document.getElementById('bg-img-group-canvas').style.display = mode === 'canvas' ? '' : 'none';
   document.getElementById('bg-img-group-map').style.display = mode === 'map' ? '' : 'none';
   if (mode === 'map') {
+    if (specificRootId !== null) mapBgRootId = specificRootId;
     syncMapBgUI();    // sync sliders/zoom before showing selector
-    openMapBgRootSelector();
+    if (!skipSelector) {    
+      openMapBgRootSelector();
+    }
   }
+}
+
+function toggleMapBgSwitch(enabled) {
+  const rootId = mapBgRootId || lastUsedMapRootId;
+  if (!rootId) return;
+  const mb = getMapBg(rootId);
+  if (!mb || !mb.image) return;
+  sh();
+  mb.imgEnabled = enabled;
+  const rn = gN(rootId);
+  if (rn) rn.locked = enabled;
+  renderAllMapBgs();
+  render();
+  saveToLocalStorage();
+  syncMapBgUI();
+}
+
+function openMapBgPositioning() {
+  // To be implemented in task 3
 }
 
 function openMapBgRootSelector() {
@@ -224,7 +264,7 @@ function applyImgCatBgToRoot(file) {
     if (!mb) return;
     mb.image = e.target.result;
     mb.imgEnabled = true;
-    mb.imgZoom = 1;
+    fitMapBgToBranch(mapBgRootId);
     // Auto-lock root to its map bg
     const rn = gN(mapBgRootId);
     if (rn) rn.locked = true;
@@ -275,12 +315,15 @@ function syncMapBgUI() {
   const rootId = mapBgRootId || lastUsedMapRootId;
   const mb = rootId ? getMapBg(rootId) : null;
   const hasRoot = !!mb && !!mb.image;
-  const zoomRow = document.getElementById('bg-img-map-zoom-row');
-  if (zoomRow) {
-    zoomRow.style.opacity = hasRoot ? '1' : '0.4';
-    zoomRow.style.pointerEvents = hasRoot ? 'auto' : 'none';
-    const zoomLabel = document.getElementById('mapbg-zoom-label');
-    if (zoomLabel && mb) zoomLabel.textContent = Math.round((mb.imgZoom || 1) * 100) + '%';
+  const sw = document.getElementById('bg-img-map-switch');
+  if (sw) {
+    sw.checked = hasRoot && mb.imgEnabled;
+    sw.disabled = !hasRoot;
+  }
+  const posBtn = document.getElementById('mapbg-positioning-btn');
+  if (posBtn) {
+    posBtn.style.opacity = hasRoot ? '1' : '0.4';
+    posBtn.style.pointerEvents = hasRoot ? 'auto' : 'none';
   }
   // Opacity/Blur sliders
   const opaEl = document.getElementById('mapbg-img-opacity');
@@ -303,4 +346,56 @@ function updateMapBg(key, val) {
   mb[key] = val;
   renderAllMapBgs();
   saveToLocalStorage();
+}
+
+function fitMapBgToBranch(rootId) {
+  const root = gN(rootId);
+  if (!root) return;
+  const mb = getMapBg(rootId);
+  if (!mb) return;
+
+  const branchNodes = [root];
+  const visited = new Set([root.id]);
+  const queue = [root.id];
+  while(queue.length > 0) {
+    const id = queue.shift();
+    if(typeof gCh === 'function') {
+      gCh(id).forEach(childId => {
+        if (!visited.has(childId)) {
+          visited.add(childId);
+          queue.push(childId);
+          const cn = gN(childId);
+          if (cn) branchNodes.push(cn);
+        }
+      });
+    }
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  branchNodes.forEach(n => {
+    const w = n.width || 120;
+    const h = n.height || 40;
+    minX = Math.min(minX, n.x - w / 2);
+    maxX = Math.max(maxX, n.x + w / 2);
+    minY = Math.min(minY, n.y - h / 2);
+    maxY = Math.max(maxY, n.y + h / 2);
+  });
+
+  const bW = maxX - minX;
+  const bH = maxY - minY;
+  const branchW = bW + 200; // padding
+  const branchH = bH + 200;
+
+  const bCX = (minX + maxX) / 2;
+  const bCY = (minY + maxY) / 2;
+
+  const defaultW = window.innerWidth / zoom;
+  const defaultH = window.innerHeight / zoom;
+
+  const scaleX = branchW / defaultW;
+  const scaleY = branchH / defaultH;
+
+  mb.imgZoom = Math.max(1, scaleX, scaleY);
+  mb.imgOffsetX = bCX - root.x;
+  mb.imgOffsetY = bCY - root.y;
 }

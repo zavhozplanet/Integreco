@@ -834,7 +834,6 @@ let allImgCatItems = [];
 
 // isMapBgMode: true when opened from map-bg root selector
 async function openImgCatalog(isMapBgMode) {
-  hideAllMenus();
   document.getElementById('imgcat-overlay')._isMapBgMode = !!isMapBgMode;
   document.getElementById('imgcat-overlay').style.display = 'flex';
   // Title update
@@ -1138,11 +1137,19 @@ function applyBgStyleToSelection() {
   toast('Стили фона применены к ' + targets.length + ' группам');
 }
 
-function showCanvCtx(cx,cy){
+function showCanvCtx(cx,cy) {
   hideAllMenus();
   canvCtx.style.display='block';
   posMenu(canvCtx, cx, cy);
   canvCtx._cx=cx;canvCtx._cy=cy;
+  
+  const mapRootId = typeof getMapBgAtScreen === 'function' ? getMapBgAtScreen(cx, cy) : null;
+  if (mapRootId !== null) {
+    if (typeof setCanvasBgMode === 'function') setCanvasBgMode('map', true, mapRootId);
+  } else {
+    if (typeof setCanvasBgMode === 'function') setCanvasBgMode('canvas', true);
+  }
+
   renderCanvCtx();
 }
 function canvCtxNewMap(){

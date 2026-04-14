@@ -21,6 +21,31 @@
     - Disabling the checkbox unlocks all objects on that map. Re-enabling it restores the locks, scale, and defaults as they were before.
   - **Visibility:** The image is visible as long as the checkbox in the root preview grid is checked.
 
+(2)
+- if the background menu is clicked on the canvas background – the background menu opens with the "canvas" button enabled.
+- if the background menu is clicked on an already added map background – the background menu opens with the "map" button enabled, the toggle switch turned on, and with active adjustments and map background menu buttons.
+- Add an "on - off" toggle switch to the map background menu (enables and disables the map background image, similar to the toggle switch that enables/disables the background in the canvas menu).
+- Remove zoom buttons and change the icon on the map background menu settings button from a gear to "background catalog" (using the same icon as the background catalog button in the canvas background menu).
+- When opening nested menus and windows, maintain the reverse sequence upon closing (do not close the previous menu or window when closing the current one).
+- when adding a map background, it automatically fits into the background boundaries (shifts and zooms so that all its objects are within the map background boundaries).
+- moving the root node moves the entire map along with its background relative to the canvas background (identical to moving the map via MMB drag on the map background).
+
+(3)
+- add a "positioning" button to the map background menu with a coordinate plane icon (x-axis + y-axis).
+The positioning button opens a near-fullscreen window displaying the current map background with the map overlaid on it.
+The map is unavailable for editing and is displayed as a static layer on top of the background.
+The map layer can be panned and zoomed relative to the background.
+The window header includes:
++ a button to center the map relative to the background (map center corresponds to the root node).
++ map zoom buttons relative to the background.
+(Minimum zoom – 25% relative to the background.
+Maximum zoom – default).
++ "save" button (green checkmark).
++ "cancel" button.
++ "close" button.
+Clicking outside this window closes it and discards changes, if any.
+Upon saving, the map retains its position and scale relative to the map background, and its root node is anchored to the map background at the current position.
+
 - **Export to Standalone HTML:**
   - Add an "html" option in the main menu's download submenu. 
   - Goal: Download a self-contained, view-only version of the map that works offline.
