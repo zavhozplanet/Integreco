@@ -18,7 +18,7 @@
 <!-- Map background layer (inside canvas transform, per root node) -->
 <div id="wrap" ondragstart="return false;">
   <div id="canvas" ondragstart="return false;">
-    <div id="map-bg-layer" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0;"></div>
+    <div id="map-bg-layer" style="position:absolute;top:0;left:0;pointer-events:none;z-index:-5;"></div>
     <svg id="svgl" xmlns="http://www.w3.org/2000/svg">
       <line id="ghost-ln"/>
       <circle id="ghost-hd" r="5"/>
@@ -234,8 +234,13 @@
             <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
           </svg>
         </div>
-        <div class="bg-custom-btn" id="mapbg-positioning-btn" onclick="openMapBgPositioning()" title="Позиционирование" style="margin-left:4px; border-color:var(--mu); font-size:16px;">
-          ✛
+        <div class="bg-custom-btn" id="mapbg-positioning-btn" onclick="openMapBgPositioning()" title="Позиционирование" style="margin-left:4px; border-color:var(--mu);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; opacity:0.8;">
+            <line x1="12" y1="3" x2="12" y2="21" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <polyline points="9 15 12 12 15 15" style="stroke-width:1.5" transform="rotate(0, 12, 12) translate(0, -9)"/>
+            <polyline points="9 15 12 12 15 15" style="stroke-width:1.5" transform="rotate(90, 12, 12) translate(0, -9)"/>
+          </svg>
         </div>
         <label class="switch">
           <input type="checkbox" id="bg-img-map-switch" onchange="toggleMapBgSwitch(this.checked)">
@@ -708,6 +713,30 @@
       <button onclick="closeMapBgRootSelector()" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--nbr-dk);background:#fff;cursor:pointer;font-size:18px;color:var(--mu);display:flex;align-items:center;justify-content:center;">✕</button>
     </div>
     <div id="mapbg-root-grid" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 20px; overflow-y: auto; align-content: flex-start;"></div>
+  </div>
+</div>
+
+<!-- Map Background Positioning Overlay -->
+<div id="mapbg-pos-overlay" onclick="closeMapBgPositioning(false)">
+  <div id="mapbg-pos-win" onclick="event.stopPropagation()">
+    <div id="mapbg-pos-header">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:16px; font-weight:600; color:var(--tx);">📍 Позиционирование</span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="cat-btn" onclick="mapBgPosReset()" title="Центрировать" style="width:34px;height:34px;border-radius:8px;border:1.5px solid var(--nbr-dk);background:#fff;cursor:pointer;font-size:18px;">🎯</button>
+        <div style="display:flex; background:var(--bg); border:1px solid var(--nbr); border-radius:8px; overflow:hidden; gap:0;">
+          <button class="bg-pat-btn" onclick="mapBgPosZoom(-1)" style="width:34px;height:34px; border:0; border-right:1px solid var(--nbr); border-radius:0;">−</button>
+          <button class="bg-pat-btn" onclick="mapBgPosZoom(1)" style="width:34px;height:34px; border:0; border-radius:0;">+</button>
+        </div>
+        <button class="cat-btn" onclick="closeMapBgPositioning(true)" style="width:34px;height:34px;border-radius:8px;background:var(--grn); color:#fff; border:0;cursor:pointer;font-size:18px;" title="Сохранить">✅</button>
+        <button class="cat-btn" onclick="closeMapBgPositioning(false)" style="width:34px;height:34px;border-radius:8px;background:var(--red); color:#fff; border:0;cursor:pointer;font-size:18px;" title="Отмена">❌</button>
+      </div>
+    </div>
+    <div id="mapbg-pos-view">
+      <div id="mapbg-pos-bg"></div>
+      <div id="mapbg-pos-map"></div>
+    </div>
   </div>
 </div>
 

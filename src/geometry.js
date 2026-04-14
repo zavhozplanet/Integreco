@@ -1255,13 +1255,29 @@ function render(){
   }
 }
 
-function renderEdgesOnly(){
-  Array.from(svgl.children).forEach(el=>{if(el.id!=='ghost-ln'&&el.id!=='ghost-hd')el.remove()});
-  svgl.setAttribute('viewBox',`0 0 ${CS} ${CS}`);
-  edges.forEach(e=>{
+function renderEdgesOnly(specificEdgeIds){
+  const updateSubset = Array.isArray(specificEdgeIds);
+  if(!updateSubset) {
+    Array.from(svgl.children).forEach(el=>{if(el.id!=='ghost-ln'&&el.id!=='ghost-hd')el.remove()});
+    svgl.setAttribute('viewBox',`0 0 ${CS} ${CS}`);
+  }
+
+  const targetEdges = updateSubset ? edges.filter(e => specificEdgeIds.includes(e.id)) : edges;
+
+  targetEdges.forEach(e=>{
     const f=gN(e.from),t=gN(e.to);
     if(!f||!t||!isVisible(e.from))return;
-    if(!isVisible(e.to)&&!e.collapsed)return;
+    const effGroupCollapsed = (t.type === 'group' && t.collapsed);
+    const effCollapsed = e.collapsed || effGroupCollapsed;
+    
+    if(!isVisible(e.to) && !effCollapsed && !effGroupCollapsed) return;
+    
+    // If updating subset, remove old group first
+    if(updateSubset) {
+      const old = svgl.querySelector(`.edge-group[data-eid="${e.id}"]`);
+      if(old) old.remove();
+    }
+
     const isSel=e.id===selE;
     let baseClr = e.color || LCOLS[0];
     let clr = isSel ? '#4a7cf7' : adjustColorForContrast(baseClr, bgSettings.color || '#f0ede8');
@@ -1269,7 +1285,8 @@ function renderEdgesOnly(){
     const isPending = pendingInsert && pendingInsert.edgeId === e.id;
     grp.setAttribute('class','edge-group'+(isSel?' sel-group':'')+(isPending?' drop-target':''));
     grp.dataset.eid=e.id;
-    if(!e.collapsed){
+    
+    if(!effCollapsed){
       const d=mkPathD(e);
       const hit=mkSVG('path');hit.setAttribute('d',d);hit.setAttribute('class','ehit');hit.dataset.eid=e.id;grp.appendChild(hit);
       const ep=mkSVG('path');ep.setAttribute('d',d);
@@ -1319,7 +1336,6 @@ function renderEdgesOnly(){
       if(!isSel){
         hit.addEventListener('mouseenter',showH);
         hit.addEventListener('mouseleave',hideH);
-        // Endpoint grab circles — only when NOT selected
         const exitPt2 = lineExitFrom(e);
         const entryPt2 = lineEntryTo(e);
         const EP_R2 = 6, EP_OFF2 = 8;
@@ -1337,15 +1353,15 @@ function renderEdgesOnly(){
         });
       }
     }
-    // Collapse/expand buttons update with curve
     if(true){
       const sh = e.shape || gls;
-      if(!e.collapsed && (!isSel || sh === 'elbow')){
+      if(!effCollapsed && (!isSel || sh === 'elbow')){
         const ex=lineExitFrom(e);
         addCollapseBtn(grp,ex,clr,e);
       }
-      else if(e.collapsed){const ex=lineExitFrom(e);addExpandCircle(grp,ex,e.from,e.id);}
+      else if(effCollapsed){const ex=lineExitFrom(e);addExpandCircle(grp,ex,e.from,e.id, effGroupCollapsed);}
     }
+    // Insert before ghost lines
     svgl.insertBefore(grp,glLink);
   });
 }

@@ -75,27 +75,108 @@ function onNodeMD(ev,id){
   const moveOnlyFrame = (ev.button === 0);
 
 
-  const addNodeToDrag = (nid) => {
-    if(!ms.dragOffsets.find(d=>d.id===nid)) {
-      const n = gN(nid);
-      if(n && !n.locked) {
-        ms.dragOffsets.push({ id: nid, ox: p.x - n.x, oy: p.y - n.y });
-        if(n.type === 'group' && !moveOnlyFrame) {
-          // Find all nodes inside this group
-          nodes.forEach(child => {
-            if(child.id !== nid && !child.locked && child.x >= n.x - n.width/2 && child.x <= n.x + n.width/2 && child.y >= n.y - n.height/2 && child.y <= n.y + n.height/2) {
-              addNodeToDrag(child.id);
-            }
-          });
-        }
+  let bgBoundsCache = null;
+  const getBgCache = () => {
+    if (!bgBoundsCache) {
+      if (typeof getMapBgBounds !== 'function') return [];
+      bgBoundsCache = nodes
+        .filter(rn => rn.type === 'root' && rn.mapBg && rn.mapBg.image && rn.mapBg.imgEnabled)
+        .map(rn => ({ rootId: rn.id, bounds: getMapBgBounds(rn.id) }))
+        .filter(b => b.bounds);
+    }
+    return bgBoundsCache;
+  };
+
+  // Helper: check if a node is inside a strictly defined map background
+  const getNodeMapBgBounds = (n) => {
+    if (!n) return null;
+    const bgs = getBgCache();
+    for (const bg of bgs) {
+      if (n.x >= bg.bounds.x && n.x <= bg.bounds.x2 && n.y >= bg.bounds.y && n.y <= bg.bounds.y2) {
+        return bg;
       }
+    }
+    return null;
+  };
+
+  const addNodeToDrag = (nid, isMapMove = false, allowedRootBg = undefined) => {
+    if(ms.dragOffsets.some(d => d.id === nid)) return;
+    const n = gN(nid);
+    if(!n) return;
+    
+    // Which map background does this node belong to?
+    const bgInfo = getNodeMapBgBounds(n);
+    const inBgRootId = bgInfo ? bgInfo.rootId : null;
+
+    // Rigid Region Barrier:
+    // A root node with an active map background acts as a regional platform.
+    // It can ONLY be moved if it is the very first node clicked (isMapMove = false).
+    // It can NEVER be recruited recursively by dragging its contents or connected items.
+    if (isMapMove && n.type === 'root' && n.mapBg && n.mapBg.imgEnabled) {
+      return; 
+    }
+
+    // Cross-contamination barrier (Bidirectional):
+    // If we started this map move inside/outside a specific domain, we must stay in it.
+    if (isMapMove && allowedRootBg !== undefined) {
+       if (allowedRootBg !== inBgRootId) return; // Barrier stop!
+    }
+
+    if(n.locked && n.type !== 'root' && !isMapMove) return;
+
+    ms.dragOffsets.push({ id: nid, n: n, ox: p.x - n.x, oy: p.y - n.y });
+
+    // Undirected graph expansion
+    if (isMapMove || n.type === 'root') {
+      const currentBg = allowedRootBg !== undefined ? allowedRootBg : inBgRootId;
+      edges.forEach(e => {
+        if (e.from === nid) addNodeToDrag(e.to, true, currentBg);
+        if (e.to === nid) addNodeToDrag(e.from, true, currentBg);
+      });
+      
+      // Spatial expansion ONLY if we are moving a background map
+      if (bgInfo && bgInfo.rootId === n.id) {
+        nodes.forEach(nn => {
+          if (nn.x >= bgInfo.bounds.x && nn.x <= bgInfo.bounds.x2 && nn.y >= bgInfo.bounds.y && nn.y <= bgInfo.bounds.y2) {
+            addNodeToDrag(nn.id, true, bgInfo.rootId);
+          }
+        });
+      }
+    }
+
+    // Group contents expansion
+    if(n.type === 'group' && !moveOnlyFrame) {
+      const gW = (n.width || 300) / 2;
+      const gH = (n.height || 200) / 2;
+      nodes.forEach(child => {
+        if(child.id !== nid && child.x >= n.x - gW && child.x <= n.x + gW && child.y >= n.y - gH && child.y <= n.y + gH) {
+          const childBg = getNodeMapBgBounds(child);
+          const childBgId = childBg ? childBg.rootId : null;
+          // Only pull children if they are in the same (or no) background domain
+          if ((!isMapMove) || (childBgId === inBgRootId)) {
+            addNodeToDrag(child.id, isMapMove, allowedRootBg !== undefined ? allowedRootBg : inBgRootId);
+          }
+        }
+      });
+    }
+
+    // Recursively pull group if a node is inside it
+    if (isMapMove) {
+      const currentBg = allowedRootBg !== undefined ? allowedRootBg : inBgRootId;
+      nodes.forEach(g => {
+        if (g.type === 'group' && g.id !== nid) {
+          const gw = (g.width || 300) / 2;
+          const gh = (g.height || 200) / 2;
+          if (n.x >= g.x - gw && n.x <= g.x + gw && n.y >= g.y - gh && n.y <= g.y + gh) {
+            addNodeToDrag(g.id, true, currentBg);
+          }
+        }
+      });
     }
   };
 
   if(selNSet.size > 0 && (selNSet.has(id) || selN === id)) {
-    selNSet.forEach(nid => {
-      addNodeToDrag(nid);
-    });
+    selNSet.forEach(nid => addNodeToDrag(nid));
     if(selN) addNodeToDrag(selN);
   } else {
     addNodeToDrag(id);
@@ -167,9 +248,18 @@ wrap.addEventListener('mousedown',ev=>{
   // If the click originated inside a node, let the node's own handler deal with it
   if(ev.target.closest('.node'))return;
   if(ev.button===1){
-    // Middle mouse button = pan
+    // Middle mouse button = pan canvas OR drag map background
     ev.preventDefault();
     if(linkMode){exitLinkMode();return;}
+    
+    // Check if clicking on a map background
+    const mBgRootId = typeof getMapBgAtScreen === 'function' ? getMapBgAtScreen(ev.clientX, ev.clientY) : null;
+    if (mBgRootId !== null) {
+       // Drag the entire map via its background
+       onNodeMD(ev, mBgRootId);
+       return;
+    }
+
     ms.panning=true;ms.psx=ev.clientX;ms.psy=ev.clientY;ms.spx=panX;ms.spy=panY;
     return;
   }
@@ -205,8 +295,18 @@ wrap.addEventListener('contextmenu',ev=>{
     showCanvCtx(ev.clientX,ev.clientY);
   }
 });
+let rafId = null;
+let pendingMouseEv = null;
 
-window.addEventListener('mousemove',ev=>{
+function onRaf() {
+  if (!pendingMouseEv) {
+    rafId = null;
+    return;
+  }
+  const ev = pendingMouseEv;
+  pendingMouseEv = null;
+  rafId = null;
+
   const rc=wrap.getBoundingClientRect();
   if(groupResize.active){updateGroupResize(ev);return}
   if(ms.drgCreate){updateDragCreate(ev.clientX-rc.left,ev.clientY-rc.top);return}
@@ -292,32 +392,36 @@ window.addEventListener('mousemove',ev=>{
       if(!ms.drgd&&(Math.abs(dx)>2||Math.abs(dy)>2))ms.drgd=true;
       if(ms.drgd){
         const p=s2c(ev.clientX-rc.left,ev.clientY-rc.top);
+        const deltas = new Map();
         ms.dragOffsets.forEach(doff => {
-          const n = gN(doff.id);
+          const n = doff.n;
           const prevX = n.x, prevY = n.y;
           n.x = p.x - doff.ox;
           n.y = p.y - doff.oy;
           const ddx = n.x - prevX, ddy = n.y - prevY;
-          // Shift absolute control points of connected edges proportionally
-          if(ddx !== 0 || ddy !== 0) {
-            edges.forEach(edge => {
-              if(edge.cp1x == null) return;
-              if(edge.from === doff.id) {
-                edge.cp1x += ddx; edge.cp1y += ddy;
-              }
-              if(edge.to === doff.id) {
-                edge.cp2x += ddx; edge.cp2y += ddy;
-              }
-            });
-          }
+          if(ddx !== 0 || ddy !== 0) deltas.set(doff.id, {dx: ddx, dy: ddy});
+          
           const el = document.getElementById('nd'+doff.id);
           if(el){el.style.left=n.x+'px';el.style.top=n.y+'px';}
           const elBg = document.getElementById('gb'+doff.id);
           if(elBg){elBg.style.left=n.x+'px';elBg.style.top=n.y+'px';}
         });
-        renderEdgesOnly();
-        // Highlight edges for drop-target AFTER renderEdgesOnly,
-        // because renderEdgesOnly recreates all SVG edge groups
+
+        // Collect edges to optimize rendering: O(affected_edges) instead of O(total_edges)
+        const affectedEdgeIds = [];
+        edges.forEach(edge => {
+          if (deltas.has(edge.from) || deltas.has(edge.to)) {
+            affectedEdgeIds.push(edge.id);
+            if (edge.cp1x != null) {
+              const fromDelta = deltas.get(edge.from), toDelta = deltas.get(edge.to);
+              if (fromDelta) { edge.cp1x += fromDelta.dx; edge.cp1y += fromDelta.dy; }
+              if (toDelta) { edge.cp2x += toDelta.dx; edge.cp2y += toDelta.dy; }
+            }
+          }
+        });
+        
+        renderEdgesOnly(affectedEdgeIds);
+        // Highlight edges for drop-target AFTER renderEdgesOnly
         if(ms.dragOffsets.length===1 && !selNSet.size){
           const dn=gN(ms.dragOffsets[0].id);
           const dnEl=document.getElementById('nd'+dn.id);
@@ -327,10 +431,8 @@ window.addEventListener('mousemove',ev=>{
             let bestEid = null;
             edges.forEach(e=>{
               if(e.from===dn.id||e.to===dn.id||e.collapsed)return;
-              // Ignore internal lines of group
               if(dn.type === 'group' && dn.nodes && dn.nodes.includes(e.from) && dn.nodes.includes(e.to)) return;
               
-              // Fast AABB pre-filter: skip edges whose bounding box is nowhere near the node
               const {fx, fy, tx, ty} = getEdgePts(e);
               let minX = Math.min(fx, tx) - 30, maxX = Math.max(fx, tx) + 30;
               let minY = Math.min(fy, ty) - 30, maxY = Math.max(fy, ty) + 30;
@@ -387,6 +489,7 @@ window.addEventListener('mousemove',ev=>{
             });
           }
         }
+        if (typeof renderAllMapBgs === 'function') renderAllMapBgs();
       }
     }
     return;
@@ -403,6 +506,13 @@ window.addEventListener('mousemove',ev=>{
       sb.style.width=Math.abs(dx)+'px';
       sb.style.height=Math.abs(dy)+'px';
     }
+  }
+}
+
+window.addEventListener('mousemove',ev=>{
+  pendingMouseEv = ev;
+  if (rafId === null) {
+    rafId = requestAnimationFrame(onRaf);
   }
 });
 
