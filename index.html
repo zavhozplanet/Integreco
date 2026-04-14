@@ -357,6 +357,7 @@
         <span style="font-size:16px;font-weight:600">🗑️</span>
       </div>
       <div id="t-actions" style="display:none;align-items:center;gap:12px;margin-left:16px">
+        <button id="t-restore-bulk-btn" onclick="tAction('restore')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--grn)" title="Восстановить">📦</button>
         <button id="t-cut-btn" onclick="tAction('cut')" style="background:none;border:none;font-size:18px;cursor:pointer" title="Вырезать">✂️</button>
         <button id="t-copy-btn" onclick="tAction('copy')" style="background:none;border:none;font-size:18px;cursor:pointer" title="Копировать">📋</button>
         
@@ -378,7 +379,10 @@
         
         <button onclick="tAction('delete')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--red)" title="Удалить">❌</button>
       </div>
-      <button onclick="closeTrash()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-left:auto">✕</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+        <button id="t-clear-btn" onclick="tAction('clear-all')" style="background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;color:var(--red);display:none">🗑️ Очистить всё</button>
+        <button onclick="closeTrash()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu)">✕</button>
+      </div>
     </div>
     <div id="tlist"></div>
   </div>

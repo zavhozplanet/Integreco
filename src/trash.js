@@ -64,13 +64,16 @@ function renderTrash(){
   
   if(!trash.length){
     list.innerHTML='<div class="ti-empty">Корзина пуста</div>';
-    document.getElementById('t-select-all').checked = false;
-    document.getElementById('t-select-all').disabled = true;
+    if(document.getElementById('t-select-all')) {
+      document.getElementById('t-select-all').checked = false;
+      document.getElementById('t-select-all').disabled = true;
+    }
+    if(document.getElementById('t-clear-btn')) document.getElementById('t-clear-btn').style.display = 'none';
     return;
   }
   
-  document.getElementById('t-select-all').disabled = false;
-  document.getElementById('t-select-all').checked = false;
+  if(document.getElementById('t-select-all')) document.getElementById('t-select-all').disabled = false;
+  if(document.getElementById('t-clear-btn')) document.getElementById('t-clear-btn').style.display = 'inline-block';
   
   trash.forEach((item, idx)=>{
     const div=document.createElement('div');
@@ -82,8 +85,11 @@ function renderTrash(){
     div.innerHTML=`
       <input type="checkbox" class="t-checkbox" data-idx="${idx}" onchange="toggleTrashItem(${idx}, this.checked)" style="width:18px;height:18px;cursor:pointer" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;gap:10px;flex:1;${isMap?'cursor:default':''}" ${clickAction}>
-        <span>${icon}</span> <span>${item.label || (isMap ? item.filename : '+')}</span>
-        ${isMap ? '<button class="ti-restore-btn" onclick="tAction(\'restore\','+idx+')" title="Восстановить">📦</button>' : ''}
+        <span style="font-size:18px">${icon}</span> 
+        <div style="display:flex;flex-direction:column">
+          <span style="font-weight:600">${item.label || (isMap ? item.filename : '+')}</span>
+          <span style="font-size:10px;color:var(--mu)">${new Date(item.deletedAt || item.time).toLocaleString()}</span>
+        </div>
       </div>
     `;
     list.appendChild(div);
@@ -95,7 +101,7 @@ function toggleTrashItem(idx, isChecked) {
   else selectedTrashItems.delete(idx);
   
   const allChecked = selectedTrashItems.size === trash.length && trash.length > 0;
-  document.getElementById('t-select-all').checked = allChecked;
+  if(document.getElementById('t-select-all')) document.getElementById('t-select-all').checked = allChecked;
   
   updateTrashActions();
 }
@@ -114,6 +120,7 @@ function toggleAllTrash(isChecked) {
 
 function updateTrashActions() {
   const actionsDiv = document.getElementById('t-actions');
+  if(!actionsDiv) return;
   if(selectedTrashItems.size > 0) {
     actionsDiv.style.display = 'flex';
     const canCopyCut = selectedTrashItems.size === 1;
@@ -123,8 +130,8 @@ function updateTrashActions() {
     document.getElementById('t-copy-btn').style.pointerEvents = canCopyCut ? 'auto' : 'none';
   } else {
     actionsDiv.style.display = 'none';
-    document.getElementById('t-share-sub').style.display = 'none';
-    document.getElementById('t-dl-sub').style.display = 'none';
+    if(document.getElementById('t-share-sub')) document.getElementById('t-share-sub').style.display = 'none';
+    if(document.getElementById('t-dl-sub')) document.getElementById('t-dl-sub').style.display = 'none';
   }
 }
 
@@ -142,31 +149,71 @@ function toggleTDlMenu(ev) {
 
 function tAction(action, singleIdx = null) {
   const indices = (singleIdx !== null) ? [singleIdx] : Array.from(selectedTrashItems).sort((a,b) => b - a);
+  
+  if(action === 'clear-all') {
+    if(confirm('Очистить корзину полностью? Это действие необратимо.')) {
+      (async () => {
+        for(let item of trash) {
+          await deleteTrashFromFS(item);
+        }
+        trash = [];
+        updateTrashBadge();
+        if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+        renderTrash();
+      })();
+    }
+    return;
+  }
+
   if(indices.length === 0) return;
   
   if(action === 'restore') {
      (async () => {
+       let restoredCount = 0;
        for(let idx of indices) {
          const item = trash[idx];
          if(item.kind === 'map') {
             if(window.storageAPI && window.storageAPI.dirHandle) {
               const ok = await window.storageAPI.saveData(item.data, item.filename);
               if(ok) {
-                toast('Карта «' + item.filename + '» восстановлена');
                 await deleteTrashFromFS(item);
                 trash.splice(idx, 1);
-              } else {
-                toast('Ошибка восстановления «' + item.filename + '»');
+                restoredCount++;
               }
             }
          } else {
-            // Re-creating nodes from trash is complex, mainly maps for now.
+            // Restore object (note text)
+            const n = gN(item.id);
+            if(!n) {
+               toast('Узел для восстановления заметки не найден', 3000);
+               continue;
+            }
+            // Constraint: Object restoration only if no new objects were moved/created
+            if(lastMapMutationTime > (item.deletedAt + 1000)) { // 1s buffer for deletion mutation
+               toast('Карта была изменена. Восстановление узла «'+(n.label||n.id)+'» невозможно.', 3000);
+               continue;
+            }
+            // Constraint: Note restoration only if parent text wasn't edited
+            if(n.updatedAt > item.deletedAt) {
+               toast('Текст узла «'+(n.label||n.id)+'» был изменен. Восстановление заметки невозможно.', 3000);
+               continue;
+            }
+
+            sh();
+            n.note = item.note;
+            await deleteTrashFromFS(item);
+            trash.splice(idx, 1);
+            restoredCount++;
          }
        }
-       updateTrashBadge();
-       if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
-       renderTrash();
-       if(typeof refreshCatalog === 'function') refreshCatalog();
+       if(restoredCount > 0) {
+         toast('Восстановлено объектов: ' + restoredCount);
+         updateTrashBadge();
+         if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+         renderTrash();
+         if(typeof refreshCatalog === 'function') refreshCatalog();
+         render();
+       }
      })();
      return;
   }
@@ -193,10 +240,11 @@ function tAction(action, singleIdx = null) {
     });
     if(navigator.share && combinedText){
       navigator.share({text:combinedText.trim()}).catch(()=>{});
-    } else {
-      toast('Скопируйте адрес из строки браузера');
+    } else if(combinedText) {
+      navigator.clipboard.writeText(combinedText.trim());
+      toast('Текст скопирован в буфер обмена');
     }
-    document.getElementById('t-share-sub').style.display = 'none';
+    if(document.getElementById('t-share-sub')) document.getElementById('t-share-sub').style.display = 'none';
   } else if(action === 'dl-txt' || action === 'dl-md') {
     let combinedText = '';
     indices.forEach(idx => {
@@ -213,7 +261,7 @@ function tAction(action, singleIdx = null) {
     a.download=`trash-notes.${fmt}`;
     a.click();
     URL.revokeObjectURL(url);
-    document.getElementById('t-dl-sub').style.display = 'none';
+    if(document.getElementById('t-dl-sub')) document.getElementById('t-dl-sub').style.display = 'none';
   } else if(action === 'delete') {
     if(confirm(`Удалить выбранные объекты (${indices.length}) навсегда?`)) {
       (async () => {

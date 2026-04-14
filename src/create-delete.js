@@ -32,7 +32,7 @@ function mkEdge(fromId,toId,isLink){
 
 function mkNode(x,y,label,pid,isLink,type='node', customStyle=null){
   const id=nid();
-  const node = {id,x,y,label:label||'+',col:false,note:'',type,locked:false};
+  const node = {id,x,y,label:label||'+',col:false,note:'',type,locked:false,updatedAt:Date.now()};
   if(customStyle) node.style = customStyle;
   else if(type==='node') node.style = JSON.parse(JSON.stringify(nodeDefaults.style));
   else if(type==='note') {

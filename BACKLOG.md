@@ -60,7 +60,7 @@ Upon saving, the map retains its position and scale relative to the map backgrou
   - Disabling the toggle reverts the current map to default styles.
   - If any manual style change is made after copying, the toggle becomes inactive (styles cannot be reverted via toggle anymore).
 
-- **Recycle Bin Overhaul:**
+- ✅ **Recycle Bin Overhaul:**
   - Replace individual restore buttons with a single global "Restore" button.
   - Add checkboxes to every map/object card, and a "Select All" checkbox in the header.
   - "Restore" button recovers checked items to the catalog. *Constraint:* Object restoration is only allowed if no new objects were moved/created on the map. Note restoration is only allowed if the parent object's text wasn't edited.

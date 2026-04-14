@@ -12,6 +12,7 @@ let lastCanvClick=0, lastCenterClick=0;
 let canvDblMenu = document.getElementById('canv-dbl-menu');
 let idC=0;
 let zoom=1, panX=0, panY=0;
+let lastMapMutationTime = Date.now();
 let hasUnsavedChanges = false;
 let gls='straight', gld='solid'; // kept for legacy mobile sheet
 // Default settings for newly created edges

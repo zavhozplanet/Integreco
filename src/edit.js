@@ -33,6 +33,7 @@ function editNode(id, isNew=false){
       if(!isNew) sh();
       else hasUnsavedChanges = true; // Mark as modified even if skipping history
       n.label = val;
+      n.updatedAt = Date.now();
       saveToLocalStorage(); // ensure label persists even if render is skipped
       // Auto-name the map file when first title is set for a root node on a new map
       if(n.type === 'root' && typeof autoNameMapFile === 'function') {
