@@ -308,6 +308,7 @@ function onRaf() {
   rafId = null;
 
   const rc=wrap.getBoundingClientRect();
+  if(typeof posState !== 'undefined' && posState.active) return;
   if(groupResize.active){updateGroupResize(ev);return}
   if(ms.drgCreate){updateDragCreate(ev.clientX-rc.left,ev.clientY-rc.top);return}
   if(plusDrag.active){updatePlusDrag(ev);return}

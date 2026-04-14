@@ -148,9 +148,7 @@ function toggleMapBgSwitch(enabled) {
   syncMapBgUI();
 }
 
-function openMapBgPositioning() {
-  // To be implemented in task 3
-}
+
 
 function openMapBgRootSelector() {
   const overlay = document.getElementById('mapbg-root-overlay');
@@ -554,63 +552,51 @@ function renderMapBgPos() {
   bg.style.width = w + 'px';
   bg.style.height = h + 'px';
 
-  // Map position relative to background center
-  // root is at (0,0) relative to image center + offset
-  // In the pos-view, center is (vw/2, vh/2)
-  const mx = vw / 2 - mb.imgOffsetX * s;
-  const my = vh / 2 - mb.imgOffsetY * s;
-
-  mapLayer.style.left = mx + 'px';
-  mapLayer.style.top = my + 'px';
+  // Map is fixed at center
+  mapLayer.style.left = (vw / 2) + 'px';
+  mapLayer.style.top = (vh / 2) + 'px';
   mapLayer.style.transform = `scale(${s})`;
 
-  // Render static map stubs
-  mapLayer.innerHTML = '';
-  const branchNodes = [];
-  const visited = new Set([root.id]);
-  const queue = [root.id];
-  while(queue.length > 0) {
-    const id = queue.shift();
-    const n = gN(id); if (n) branchNodes.push(n);
-    if(typeof gCh === 'function') {
-      gCh(id).forEach(cid => { if(!visited.has(cid)){visited.add(cid); queue.push(cid);} });
-    }
-  }
+  // Background moves based on offsets
+  bg.style.left = (vw / 2 + mb.imgOffsetX * s) + 'px';
+  bg.style.top = (vh / 2 + mb.imgOffsetY * s) + 'px';
 
-  // Edges first
+  // Render all map objects
+  mapLayer.innerHTML = '';
+  
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.style.cssText = 'position:absolute;overflow:visible;pointer-events:none;';
   mapLayer.appendChild(svg);
 
+  // All edges
   edges.forEach(e => {
-    if (visited.has(e.from) && visited.has(e.to)) {
-      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute('class', 'ed-stub');
-      // getEdgePts/edgePt might not be available easily or might depend on zoom/pan
-      // We need absolute-ish paths relative to root.
-      const f = gN(e.from), t = gN(e.to);
-      if (f && t) {
-        // Simple straight line for stub if needed, or follow real path
-        const d = `M ${f.x-root.x} ${f.y-root.y} L ${t.x-root.x} ${t.y-root.y}`;
-        path.setAttribute('d', d);
-        svg.appendChild(path);
-      }
-    }
+    const f = gN(e.from), t = gN(e.to);
+    if (!f || !t) return;
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute('class', 'ed-stub');
+    // Simple straight line for blueprint view
+    path.setAttribute('d', `M ${f.x-root.x} ${f.y-root.y} L ${t.x-root.x} ${t.y-root.y}`);
+    svg.appendChild(path);
   });
 
-  branchNodes.forEach(n => {
+  // All nodes (standard, groups, notes)
+  nodes.forEach(n => {
     const div = document.createElement('div');
-    div.className = 'nd-stub';
+    div.className = 'nd-stub' + (n.type==='group'?' group-stub':'');
     const nw = n.width || 120, nh = n.height || 40;
     div.style.cssText = `width:${nw}px;height:${nh}px;left:${n.x-root.x-nw/2}px;top:${n.y-root.y-nh/2}px;`;
-    if (n.id === root.id) div.style.borderColor = 'var(--ac)';
+    if (n.id === root.id) {
+       div.style.boxShadow = '0 0 12px 2px #39ff14';
+       div.style.zIndex = '10';
+    }
     div.textContent = n.label || '';
     mapLayer.appendChild(div);
   });
 }
 
 // Interaction
-(function(){
+// Interaction
+function initMapBgPosEvents() {
   const view = document.getElementById('mapbg-pos-view');
   if(!view) return;
   view.onmousedown = (e) => {
@@ -627,7 +613,6 @@ function renderMapBgPos() {
     const dy = e.clientY - posState.sy;
     
     // We need to know the 's' scale used in renderMapBgPos to move correctly
-    // Calculating it again or storing it
     const baseW = posState.mb.baseW || window.innerWidth;
     const baseH = posState.mb.baseH || window.innerHeight;
     const s = Math.min((view.clientWidth * 0.9) / baseW, (view.clientHeight * 0.9) / baseH);
@@ -644,4 +629,11 @@ function renderMapBgPos() {
     e.preventDefault();
     mapBgPosZoom(e.deltaY < 0 ? 1 : -1);
   }, {passive:false});
-})();
+}
+
+// Call init on load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMapBgPosEvents);
+} else {
+  initMapBgPosEvents();
+}

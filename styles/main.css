@@ -1005,10 +1005,13 @@ body.edge-selected .multi-side-sensor { pointer-events: none!important; display:
   position: absolute; pointer-events: none;
 }
 #mapbg-pos-map .nd-stub {
-  position: absolute; border: 1px solid rgba(0,0,0,0.3); background: rgba(255,255,255,0.7);
-  border-radius: 6px; font-size: 8px; display: flex; align-items: center; justify-content: center;
-  color: #333; overflow: hidden;
+  position: absolute; border: 1.5px solid #000; background: #fff;
+  border-radius: 4px; font-size: 8px; display: flex; align-items: center; justify-content: center;
+  color: #000; overflow: hidden; font-weight: 700; opacity: 1;
+}
+#mapbg-pos-map .nd-stub.group-stub {
+  border-color: #39ff14; background: rgba(57, 255, 20, 0.15); color: #39ff14;
 }
 #mapbg-pos-map .ed-stub {
-  position: absolute; stroke: rgba(0,0,0,0.2); stroke-width: 1px; fill: none;
+  position: absolute; stroke: #39ff14; stroke-width: 1.5px; fill: none; opacity: 1;
 }
