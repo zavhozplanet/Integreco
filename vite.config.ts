@@ -87,6 +87,7 @@ function integrecoBundle(): Plugin {
 }
 
 export default defineConfig({
+  base: '/Integreco/',
   plugins: [integrecoBundle()],
   server: {
     port: 8080,
