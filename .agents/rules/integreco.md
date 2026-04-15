@@ -10,7 +10,7 @@ trigger: always_on
 
 ## WORKFLOW RULES
 - **Confirmation protocol:** `+` at the start of a user message = success confirmed. `-` = failure or no change.
-- **Task completion:** Do not delete tasks or move them to other files. When the user confirms the task with the "+" sign, simply replace the initial marker (`-`) with a checkmark emoji (`✅`) in `BACKLOG.md`. The user will handle file cleanup manually.
+- **Task completion:** It is prohibited to mark tasks in `BACKLOG.md` as completed on your own. When the user confirms the task with the "+" sign, simply replace the initial marker (`-`) with a checkmark emoji (`✅`) in `BACKLOG.md`. The user will handle file cleanup manually.
 - The final success criterion is the user's test — not your conclusions or the assistant's browser check.
 - Never write a text history of the project (Git handles that).
 - **Edit files surgically. Never rewrite a module from scratch.**
