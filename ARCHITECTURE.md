@@ -10,15 +10,16 @@ is an interactive offline-first mind map for visual thinking, concept building, 
 I want to create a tool that works stably on any device, both online and offline.
 
 ## 2. Stack & File Structure
-- **Vanilla JS + SVG.** No frameworks, no bundlers.
-- `index.html` — minimal shell. `styles/main.css` — all styles.
+- **TypeScript + SVG.** Bundled via Vite with a concatenation plugin that merges all `.ts` files into a single scope.
+- `index.html` — app shell. `styles/main.css` — all styles. `src/main.ts` — single entry point.
 - Nodes: `<div class="node">` absolutely positioned on `#canvas` (8000×8000px).
 - Edges: SVG `#svgl` behind node divs, `pointer-events:none`.
 - Transform: `canvas.style.transform = translate(panX,panY) scale(zoom)`, `transform-origin:0 0`.
-- ⚠️ `package.json` / `vite.config.ts` are AI Studio artifacts. React and Tailwind are **not used**.
+- Type definitions: `src/types/graph.ts`. Type-checking: `tsc --noEmit` with `module: "None"`.
+- All source files have `@ts-nocheck` — types are opt-in per file during gradual migration.
 
-### Module load order (`src/`):
-`storage.js` → `state.js` → `utils.js` → `create-delete.js` → `smart-placement.js` → `layout.js` → `geometry.js` → `selection.js` → `edit.js` → `drag.js` → `input-mouse.js` → `input-touch.js` → `menus.js` → `link-mode.js` → `branch-view.js` → `mobile-rename.js` → `notes.js` → `trash.js` → `line-panel.js` → `ui.js` → `catalog.js` → `menu.js` → `map-bg.js` → `init.js`
+### Module load order (`src/`) — concatenated by vite.config.ts plugin:
+`storage.ts` → `state.ts` → `utils.ts` → `create-delete.ts` → `smart-placement.ts` → `layout.ts` → `geometry.ts` → `selection.ts` → `edit.ts` → `drag.ts` → `input-mouse.ts` → `input-touch.ts` → `menus.ts` → `link-mode.ts` → `branch-view.ts` → `mobile-rename.ts` → `notes.ts` → `trash.ts` → `line-panel.ts` → `ui.ts` → `catalog.ts` → `menu.ts` → `map-bg.ts` → `init.ts`
 
 ## 3. Data Structures
 

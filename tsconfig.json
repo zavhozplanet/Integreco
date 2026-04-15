@@ -1,26 +1,49 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
-    "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "module": "None",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": false,
+    "noEmit": true,
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noImplicitAny": false,
+    "allowUnreachableCode": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": false
+  },
+  "include": [
+    "src/types/**/*.ts",
+    "src/storage.ts",
+    "src/state.ts",
+    "src/utils.ts",
+    "src/create-delete.ts",
+    "src/smart-placement.ts",
+    "src/layout.ts",
+    "src/geometry.ts",
+    "src/selection.ts",
+    "src/edit.ts",
+    "src/drag.ts",
+    "src/input-mouse.ts",
+    "src/input-touch.ts",
+    "src/menus.ts",
+    "src/link-mode.ts",
+    "src/branch-view.ts",
+    "src/mobile-rename.ts",
+    "src/notes.ts",
+    "src/trash.ts",
+    "src/line-panel.ts",
+    "src/ui.ts",
+    "src/catalog.ts",
+    "src/menu.ts",
+    "src/map-bg.ts",
+    "src/init.ts",
+    "src/expose-globals.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/main.ts"
+  ]
 }
