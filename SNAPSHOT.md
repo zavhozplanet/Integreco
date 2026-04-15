@@ -2,23 +2,21 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Task (0): TypeScript + Vite migration — COMPLETED, pending user verification
+* Post-migration stabilization and GitHub Pages deployment configuration.
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Migrated from Vanilla JS to Vite + TypeScript build pipeline
-* All 24 src/*.js files renamed to .ts with @ts-nocheck (gradual typing)
-* Created src/types/graph.ts with typed interfaces for Node, Edge, BgSettings, etc.
+* Fixed broken HTML handlers by bridging module-scoped functions to `window` via `src/expose-globals.ts`.
+* Configured GitHub Pages deployment: added `base: '/Integreco/'` and created a GitHub Actions workflow.
+* Consolidated PWA assets (sw.js, manifest.json) and cleaned up building artifacts.
 
 ## 🏗️ Migration Details
-* Vite concatenation plugin merges all .ts files into single scope (preserves global architecture)
-* `npm run dev` → working (Vite dev server on :8080)
-* `npm run build` → 0 errors, dist/ produced (135KB JS, 41KB CSS)
-* PWA files in public/ (sw.js v4, manifest.json)
-* package.json cleaned: only vite + typescript remain
+* Build pipeline: Vite + TypeScript (concatenation plugin preserves global scope).
+* Deployment: Automatic via `.github/workflows/deploy.yml` on push to `main`.
+* Assets: Hashed JS/CSS in `dist/assets/`, static files in `public/`.
 
 ## 🚧 Known Issues / Blockers
-* All source files have @ts-nocheck — strict typing is deferred
-* Old sw.js in project root is stale (active copy in public/)
+* Type safety: Most files still use `@ts-nocheck`; type coverage needs gradual improvement.
+* PWA: Service worker upgraded to v4, needs testing in production environment.
 
 ## ⏭️ Next Step (From BACKLOG.md)
-* Gradual type annotation: remove @ts-nocheck per file, add proper types
+* Gradual type annotation: remove `@ts-nocheck` per file and apply interfaces from `graph.ts`.
