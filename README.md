@@ -1,6 +1,10 @@
 # Integreco 🧠
 
 **Integreco** is an interactive offline-first mind map for visual thinking, concept building, and relationship graphs. Inspired by Mindomo and Obsidian, with a focus on minimal UI and maximum use of icons over text.
+This is not just a mind map; it is planned as a visual thinking tool for displaying and constructing interconnected information, which will also be used to convey a conceptual vision to AI models.
+That is, I want to create a tool through which AI can understand what I represent using a mind map, where nodes can be not only notes but also other mind maps, people, physical objects, processes, and much more, including information about them.
+And possibly build a social network displayed as a 3D mind map.
+I want to create a tool that works stably on any device, both online and offline.
 
 ## ✨ Key Features
 

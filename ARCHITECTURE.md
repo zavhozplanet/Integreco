@@ -5,7 +5,9 @@
 ## 1. Project Concept
 **Integreco** — interactive offline-first mind map for visual thinking and concept graphs.
 - Desktop + touchscreen. Minimal text UI — icons and symbols over words.
-- Local storage via File System Access API + IndexedDB (`storage.js`). Inspired by Mindomo and Obsidian.
+- Local storage via File System Access API + IndexedDB (`storage.js`).
+is an interactive offline-first mind map for visual thinking, concept building, and relationship graphs. Inspired by Mindomo and Obsidian, with a focus on minimal UI and maximum use of icons over text.
+I want to create a tool that works stably on any device, both online and offline.
 
 ## 2. Stack & File Structure
 - **Vanilla JS + SVG.** No frameworks, no bundlers.
