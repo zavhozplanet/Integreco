@@ -2,12 +2,12 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Resolving branch collapse logic conflicts with connection lines (links).
+* Refining UI visual consistency and structural hierarchy manipulation via connecting lines.
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Isolated connecting lines from structural hierarchy traversals (`gCh`, `gPar`, `isBaseVisible`).
-* Refined link collapse previews to show only direct targets without recursive branch thumbnails.
-* Prepared detailed hand-off report regarding unresolved line behavior for the next AI session.
+* Synchronized branch thumbnails (previews) with actual node, group, and multi-node visual styles (shapes, colors, borders).
+* Implemented "Hierarchy Lock" for lines, allowing hierarchy flipping (parent-child swap) by changing arrow direction.
+* Fixed hierarchy resolution for bidirectional/arrowless lines using a root-proximity algorithm (`getDepthFromRoot`).
 
 ## 🏗️ Migration Details
 * Build pipeline: Vite + TypeScript (concatenation plugin preserves global scope).
@@ -15,7 +15,7 @@
 * Assets: Hashed JS/CSS in `dist/assets/`, static files in `public/`.
 
 ## 🚧 Known Issues / Blockers
-* Connecting line behaviors (collapse states and visibility impacts) appear unchanged in the user's browser, potentially due to Vite HMR caching or edge-case data structure definitions.
+* No blockers identified. UI and hierarchy manipulation features are stable and confirmed by user.
 
 ## ⏭️ Next Step (From BACKLOG.md)
-* Hand over the connection line collapse issue to the next AI session or proceed with gradual type annotation.
+* Implement "Map Background smart zoom" mode (pinned objects behavior).
