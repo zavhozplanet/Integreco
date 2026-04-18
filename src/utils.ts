@@ -37,17 +37,26 @@ function isBaseVisible(id){
     return false;
   }
   
-  let c=id;
-  for(let i=0;i<200;i++){
-    const n=gN(c);
-    if(!n||n.type==='root') return true;
-    const p=gPar(c);
-    if(p==null) return true; // floating node is visible
+  // Iterative check for any open path to a root
+  let q = [id];
+  let visited = new Set();
+  while(q.length > 0) {
+    let cur = q.shift();
+    const n = gN(cur);
+    if(!n || n.type === 'root') return true;
+    if(visited.has(cur)) continue;
+    visited.add(cur);
+    if(visited.size > 200) break; // cycle/depth limit
+
+    // Consider ALL incoming edges so that secondary lines ("связки") keep the node visible
+    const parents = edges.filter(e => e.to === cur);
+    if(parents.length === 0) return true; // floating node is visible
     
-    // find main structural edge from parent to c
-    const e=edges.find(x=>x.from===p&&x.to===c&&x.dash!=='link');
-    if(e&&e.collapsed) return false;
-    c=p;
+    for(const e of parents) {
+      if(!e.collapsed) {
+        q.push(e.from);
+      }
+    }
   }
   return false;
 }
