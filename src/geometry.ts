@@ -608,12 +608,20 @@ function addExpandCircle(grp,ex,fromId,eid, isGroupCollapseOverride){
            if (sketch) sketch.classList.add('active');
         }
     } else {
-        const origCol = e.collapsed;
-        try {
-          e.collapsed=false;
-          renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
-        } finally {
-          e.collapsed=origCol;
+        const isLink = e.isLink || e.dash === 'link';
+        const hidden = !isVisible(e.from) || !isVisible(e.to);
+        const collapsed = isCollapsedNode(e.from) || isCollapsedNode(e.to);
+
+        if (isLink && (hidden || collapsed)) {
+          // Do nothing
+        } else {
+          const origCol = e.collapsed;
+          try {
+            e.collapsed=false;
+            renderBranchPreview(e.to,previewGrp,{x:cx,y:cy},e);
+          } finally {
+            e.collapsed=origCol;
+          }
         }
     }
     svgl.insertBefore(previewGrp,glLink);
@@ -640,6 +648,63 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
   const nodeElems=[];  // collect node boxes + labels
   const previewNodeIds = new Set();
 
+  function applyNodeStyle(n, rect, label) {
+    const isRoot = !gPar(n.id);
+    const isNote = n.type === 'note';
+    const isGroup = n.type === 'group';
+    const isMulti = n.type === 'multi';
+    const st = n.style || {};
+
+    // Shape
+    const {hw, hh} = nodeHalfExtents(n.id);
+    let rx = hh, ry = hh; // pill default
+    if (isGroup) { rx = 12; ry = 12; }
+    else if (isMulti) { rx = 8; ry = 8; }
+    else if (st.shape === 'round') { rx = 8; ry = 8; }
+    else if (st.shape === 'rect') { rx = 0; ry = 0; }
+    rect.setAttribute('rx', String(rx)); rect.setAttribute('ry', String(ry));
+
+    // Colors
+    let bg = isRoot ? '#3d3b38' : (isNote ? '#fffdf0' : '#ffffff');
+    let bc = '#d8d4ce';
+    let bw = 1.5;
+    let op = st.opacity != null ? st.opacity : 1;
+
+    if (isGroup) {
+      bg = (n.bg && n.bg.color) || '#ffffff';
+      bc = (n.bg && n.bg.color) || '#aaa';
+      op = (n.bg && n.bg.opacity != null) ? n.bg.opacity : 0.1;
+      bw = 2;
+    } else {
+      if (st.backgroundColor) bg = st.backgroundColor;
+      if (st.borderColor) bc = st.borderColor;
+      if (st.borderWidth != null) bw = st.borderWidth;
+    }
+
+    rect.setAttribute('fill', bg);
+    rect.setAttribute('stroke', bc);
+    rect.setAttribute('stroke-width', String(bw));
+
+    if (!isGroup) {
+      if (st.borderType === 'dashed') rect.setAttribute('stroke-dasharray', '5,5');
+      else if (st.borderType === 'dotted') rect.setAttribute('stroke-dasharray', '2,2');
+      else if (st.borderType === 'none') rect.setAttribute('stroke-width', '0');
+    } else {
+      rect.setAttribute('stroke-dasharray', '8,4');
+    }
+
+    // Opacity
+    rect.setAttribute('fill-opacity', String(op));
+    rect.setAttribute('stroke-opacity', String(isGroup ? op * 2 : op));
+
+    // Label color
+    label.setAttribute('fill', getContrastColor(bg));
+    if (isGroup) {
+      label.setAttribute('y', String(n.y - hh + 18));
+      label.setAttribute('font-weight', '600');
+    }
+  }
+
   // Stub line from button to root node
   if(fromPt&&rootN){
     const d=initialEdge?mkPathD(initialEdge):`M${fromPt.x},${fromPt.y}L${rootN.x},${rootN.y}`;
@@ -647,7 +712,7 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
     stub.setAttribute('d',d);
     stub.setAttribute('fill', 'none');
     stub.setAttribute('stroke', (initialEdge&&initialEdge.color)||LCOLS[0]);
-    stub.setAttribute('stroke-width','1.5');
+    stub.setAttribute('stroke-width', (initialEdge && initialEdge.width) || '1.5');
     stub.style.pointerEvents='none';lineElems.push(stub);
   }
 
@@ -656,15 +721,14 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
     previewNodeIds.add(rootId);
     const{hw,hh}=nodeHalfExtents(rootId);
     const rect=mkSVG('rect');
-    rect.setAttribute('x',rootN.x-hw);rect.setAttribute('y',rootN.y-hh);
-    rect.setAttribute('width',hw*2);rect.setAttribute('height',hh*2);
-    rect.setAttribute('rx',hh);rect.setAttribute('ry',hh);
-    rect.setAttribute('fill','#fff');rect.setAttribute('stroke','#d8d4ce');rect.setAttribute('stroke-width','1.5');
+    rect.setAttribute('x',String(rootN.x-hw));rect.setAttribute('y',String(rootN.y-hh));
+    rect.setAttribute('width',String(hw*2));rect.setAttribute('height',String(hh*2));
     const label=mkSVG('text');
-    label.setAttribute('x',rootN.x);label.setAttribute('y',rootN.y);
+    label.setAttribute('x',String(rootN.x));label.setAttribute('y',String(rootN.y));
     label.setAttribute('text-anchor','middle');label.setAttribute('dominant-baseline','central');
-    label.setAttribute('font-size','13');label.setAttribute('fill','#2c2a27');label.style.pointerEvents='none';
+    label.setAttribute('font-size','13');label.style.pointerEvents='none';
     label.textContent=rootN.label||'';
+    applyNodeStyle(rootN, rect, label);
     nodeElems.push(rect,label);
   }
 
@@ -672,28 +736,43 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
   function collectNode(id){
     if(visited.has(id)) return;
     visited.add(id);
+    // If it's a connection line (link), do not recursively show descendants
+    const isLink = initialEdge && (initialEdge.isLink || initialEdge.dash === 'link');
+    if (isLink) return;
+
     gCh(id).forEach(cid=>{
       const par=gN(id),chi=gN(cid);if(!par||!chi)return;
       previewNodeIds.add(cid);
       const pe=edges.find(x=>x.from===id&&x.to===cid);
+      const isCurLink = pe && (pe.isLink || pe.dash === 'link');
+
       const clr=(pe&&pe.color)||LCOLS[0];
       const d=pe?mkPathD(pe):`M${par.x},${par.y}L${chi.x},${chi.y}`;
       const line=mkSVG('path');line.setAttribute('d',d);line.setAttribute('fill','none');
-      line.setAttribute('stroke',clr);line.setAttribute('stroke-width','1.5');line.style.pointerEvents='none';
+      line.setAttribute('stroke',clr);
+      line.setAttribute('stroke-width', (pe && pe.width) || '1.5');
+      line.style.pointerEvents='none';
+      if(pe && pe.dash === 'dashed') line.setAttribute('stroke-dasharray','5,5');
+      else if(pe && pe.dash === 'dotted') line.setAttribute('stroke-dasharray','2,2');
+      else if(isCurLink) line.setAttribute('stroke-dasharray','4,3');
       lineElems.push(line);
+
       const{hw,hh}=nodeHalfExtents(cid);
       const rect=mkSVG('rect');
-      rect.setAttribute('x',chi.x-hw);rect.setAttribute('y',chi.y-hh);
-      rect.setAttribute('width',hw*2);rect.setAttribute('height',hh*2);
-      rect.setAttribute('rx',hh);rect.setAttribute('ry',hh);
-      rect.setAttribute('fill','#fff');rect.setAttribute('stroke','#d8d4ce');rect.setAttribute('stroke-width','1.5');
+      rect.setAttribute('x',String(chi.x-hw));rect.setAttribute('y',String(chi.y-hh));
+      rect.setAttribute('width',String(hw*2));rect.setAttribute('height',String(hh*2));
       const label=mkSVG('text');
-      label.setAttribute('x',chi.x);label.setAttribute('y',chi.y);
+      label.setAttribute('x',String(chi.x));label.setAttribute('y',String(chi.y));
       label.setAttribute('text-anchor','middle');label.setAttribute('dominant-baseline','central');
-      label.setAttribute('font-size','13');label.setAttribute('fill','#2c2a27');label.style.pointerEvents='none';
+      label.setAttribute('font-size','13');label.style.pointerEvents='none';
       label.textContent=chi.label||'';
+      applyNodeStyle(chi, rect, label);
       nodeElems.push(rect,label);
-      collectNode(cid);
+
+      // Recurse only if it's a structural line
+      if (!isCurLink) {
+        collectNode(cid);
+      }
     });
   }
   collectNode(rootId);
@@ -707,14 +786,21 @@ function renderBranchPreview(rootId,g,fromPt,initialEdge){
     });
     if(hasAnyInPreview) {
       const rect = mkSVG('rect');
-      rect.setAttribute('x', gr.x - gr.width/2);
-      rect.setAttribute('y', gr.y - gr.height/2);
-      rect.setAttribute('width', gr.width);
-      rect.setAttribute('height', gr.height);
-      rect.setAttribute('fill', 'rgba(200,200,200,0.1)');
-      rect.setAttribute('stroke', '#aaa');
+      rect.setAttribute('x', String(gr.x - gr.width/2));
+      rect.setAttribute('y', String(gr.y - gr.height/2));
+      rect.setAttribute('width', String(gr.width));
+      rect.setAttribute('height', String(gr.height));
+      rect.setAttribute('rx', '12'); rect.setAttribute('ry', '12');
+      
+      const bg = (gr.bg && gr.bg.color) || '#aaaaaa';
+      const op = (gr.bg && gr.bg.opacity != null) ? gr.bg.opacity : 0.1;
+      
+      rect.setAttribute('fill', bg);
+      rect.setAttribute('fill-opacity', String(op));
+      rect.setAttribute('stroke', bg);
+      rect.setAttribute('stroke-opacity', String(op * 2));
       rect.setAttribute('stroke-width', '2');
-      rect.setAttribute('stroke-dasharray', '5,5');
+      rect.setAttribute('stroke-dasharray', '8,4');
       groupElems.push(rect);
     }
   });
@@ -789,9 +875,11 @@ function render(){
     // Outgoing from a hidden group -> entirely invisible
     if (f.type === 'group' && f.collapsed) return;
     
-    // Incoming to a hidden group -> effectively collapsed
+    const isLink = e.dash === 'link' || e.isLink;
     const effGroupCollapsed = (t.type === 'group' && t.collapsed);
-    const effCollapsed = e.collapsed || effGroupCollapsed;
+    
+    // Links effectively collapse if their target is hidden
+    let effCollapsed = e.collapsed || effGroupCollapsed || (isLink && !isVisible(e.to));
     
     // Skip edges whose TO node is invisible due to an ancestor being collapsed
     // (but NOT if this specific edge is effectively collapsed — we still need it for the expand circle)

@@ -2,12 +2,12 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Post-migration stabilization and GitHub Pages deployment configuration.
+* Resolving branch collapse logic conflicts with connection lines (links).
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Fixed broken HTML handlers by bridging module-scoped functions to `window` via `src/expose-globals.ts`.
-* Configured GitHub Pages deployment: added `base: '/Integreco/'` and created a GitHub Actions workflow.
-* Consolidated PWA assets (sw.js, manifest.json) and cleaned up building artifacts.
+* Isolated connecting lines from structural hierarchy traversals (`gCh`, `gPar`, `isBaseVisible`).
+* Refined link collapse previews to show only direct targets without recursive branch thumbnails.
+* Prepared detailed hand-off report regarding unresolved line behavior for the next AI session.
 
 ## 🏗️ Migration Details
 * Build pipeline: Vite + TypeScript (concatenation plugin preserves global scope).
@@ -15,8 +15,7 @@
 * Assets: Hashed JS/CSS in `dist/assets/`, static files in `public/`.
 
 ## 🚧 Known Issues / Blockers
-* Type safety: Most files still use `@ts-nocheck`; type coverage needs gradual improvement.
-* PWA: Service worker upgraded to v4, needs testing in production environment.
+* Connecting line behaviors (collapse states and visibility impacts) appear unchanged in the user's browser, potentially due to Vite HMR caching or edge-case data structure definitions.
 
 ## ⏭️ Next Step (From BACKLOG.md)
-* Gradual type annotation: remove `@ts-nocheck` per file and apply interfaces from `graph.ts`.
+* Hand over the connection line collapse issue to the next AI session or proceed with gradual type annotation.

@@ -27,6 +27,7 @@ Object.assign(window, {
   setEP, setDefault, deleteSelectedEdge,
   toggleFixedEndpoint, insertObjectOnEdge,
   applyColorToBranch, togglePlusSub, closeLp,
+  toggleHierLock,
 
   // ── Line panel (mobile) ──
   setGLSM, setGLDM, setEPM, closeLSheet, showLSheet,

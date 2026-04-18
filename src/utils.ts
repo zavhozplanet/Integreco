@@ -5,11 +5,11 @@
 function nid(){return++idC}
 function gN(id){return nodes.find(n=>n.id===id)}
 function gE(id){return edges.find(e=>e.id===id)}
-function gCh(id){return edges.filter(e=>e.from===id).map(e=>e.to)}
+function gCh(id){return edges.filter(e=>e.from===id && e.dash !== 'link' && !e.isLink).map(e=>e.to)}
 function gPar(id) {
   const n = gN(id);
   if (n && n.type === 'root') return null;
-  const e = edges.find(e => e.to === id && e.dash !== 'link');
+  const e = edges.find(e => e.to === id && e.dash !== 'link' && !e.isLink);
   return e ? e.from : null;
 }
 function isMob(){return window.innerWidth<768||('ontouchstart' in window)}
@@ -48,9 +48,9 @@ function isBaseVisible(id){
     visited.add(cur);
     if(visited.size > 200) break; // cycle/depth limit
 
-    // Consider ALL incoming edges so that secondary lines ("связки") keep the node visible
-    const parents = edges.filter(e => e.to === cur);
-    if(parents.length === 0) return true; // floating node is visible
+    // Consider only non-link incoming edges for tree visibility
+    const parents = edges.filter(e => e.to === cur && e.dash !== 'link' && !e.isLink);
+    if(parents.length === 0) return true; // floating node or root is visible
     
     for(const e of parents) {
       if(!e.collapsed) {
@@ -59,6 +59,36 @@ function isBaseVisible(id){
     }
   }
   return false;
+}
+
+function isCollapsedNode(id) {
+  const n = gN(id);
+  if (!n) return false;
+  if (n.type === 'group') return !!n.collapsed;
+  const treeEdges = edges.filter(e => e.from === id && e.dash !== 'link' && !e.isLink);
+  if (treeEdges.length === 0) return false;
+  return treeEdges.every(e => e.collapsed);
+}
+
+function getDepthFromRoot(id, ignoreEdgeId) {
+  let depth = 0;
+  let cur = id;
+  const visited = new Set();
+  while (cur != null) {
+    const n = gN(cur);
+    if (!n) return 999;
+    if (n.type === 'root') return depth;
+    if (visited.has(cur)) return 999; // cycle
+    visited.add(cur);
+    
+    const e = edges.find(e => e.to === cur && e.dash !== 'link' && !e.isLink && e.id !== ignoreEdgeId);
+    if (!e) return 1000; // floating
+    
+    cur = e.from;
+    depth++;
+    if (depth > 200) return 1000;
+  }
+  return 1000;
 }
 
 function sh(){hasUnsavedChanges=true;hist.push(JSON.stringify({nodes,edges,bgSettings}));if(hist.length>100)hist.shift();fut=[]; lastMapMutationTime = Date.now();}

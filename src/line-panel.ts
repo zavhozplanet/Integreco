@@ -31,6 +31,7 @@ function syncLP(e){
   const isLink = e.dash === 'link' || e.isLink;
   document.getElementById('ep-purpose-main')?.classList.toggle('on', !isLink);
   document.getElementById('ep-purpose-link')?.classList.toggle('on', isLink);
+  document.getElementById('ep-hier-lock')?.classList.toggle('on', !!e.hierLocked);
 
   ['straight','bezier','elbow'].forEach(s=>document.getElementById('ep-'+s)?.classList.toggle('on',(e.shape||gls)===s));
   const dashVal = e.dash === 'link' ? 'dashed' : (e.dash || 'solid');
@@ -48,6 +49,14 @@ function syncLP(e){
   syncPinBtns();
   // Reset branch button when switching to a different edge
   updateBranchBtn(null);
+}
+function toggleHierLock(btn) {
+  const e = gE(selE); if (!e) return;
+  sh();
+  e.hierLocked = !e.hierLocked;
+  if (e.hierLocked) resolveEdgeHierarchy(e);
+  syncLP(e);
+  render();
 }
 function syncPinBtns(){
   const e=gE(selE);
@@ -70,9 +79,46 @@ function setEP(prop,val,btn){
     syncLP(e);
   }
   else if(prop==='shape'){e.shape=val;e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null}
-  else if(prop==='dash')e.dash=val;else if(prop==='width')e.width=val;else if(prop==='dir')e.dir=val;
+  else if(prop==='dash')e.dash=val;else if(prop==='width')e.width=val;
+  else if(prop==='dir') {
+    if (e.hierLocked) {
+      if (val === 'backward') {
+        flipEdge(e);
+        e.dir = 'forward';
+      } else if (val === 'forward') {
+        e.dir = 'forward';
+      } else {
+        e.dir = val;
+        resolveEdgeHierarchy(e);
+      }
+    } else {
+      e.dir=val;
+    }
+  }
   btn.closest('.lpr2').querySelectorAll('.lpb2').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
   syncPinBtns();render();
+}
+function resolveEdgeHierarchy(e) {
+  // Finds which of from/to is "more parent" (closer to root) and ensures it is e.from
+  const d1 = getDepthFromRoot(e.from, e.id);
+  const d2 = getDepthFromRoot(e.to, e.id);
+  if (d2 < d1) {
+    flipEdge(e);
+  }
+}
+function flipEdge(e) {
+  const tmp = e.from; e.from = e.to; e.to = tmp;
+  const tmpF = e.fromFixed; e.fromFixed = e.toFixed; e.toFixed = tmpF;
+  const tmpS = e.fromSide; e.fromSide = e.toSide; e.toSide = tmpS;
+  const tmpO = e.fromOffset; e.fromOffset = e.toOffset; e.toOffset = tmpO;
+  
+  // Swap bezier control points if they exist
+  const tx1 = e.cp1x; e.cp1x = e.cp2x; e.cp2x = tx1;
+  const ty1 = e.cp1y; e.cp1y = e.cp2y; e.cp2y = ty1;
+
+  // Visually, flip arrow if it was directional
+  if (e.dir === 'forward') e.dir = 'backward';
+  else if (e.dir === 'backward') e.dir = 'forward';
 }
 function setDefault(prop){
   const e=gE(selE);if(!e)return;
@@ -232,16 +278,31 @@ function setEPM(prop,val,btn,pfx){const e=gE(selE);if(!e)return;sh();
   if(prop==='shape'){e.shape=val;e.cp1x=null;e.cp1y=null;e.cp2x=null;e.cp2y=null}
   else if(prop==='dash')e.dash=val;
   else if(prop==='width')e.width=val;
-  else if(prop==='dir')e.dir=val;
+  else if(prop==='dir'){
+    if (e.hierLocked) {
+      if (val === 'backward') {
+        flipEdge(e);
+        e.dir = 'forward';
+      } else if (val === 'forward') {
+        e.dir = 'forward';
+      } else {
+        e.dir = val;
+        resolveEdgeHierarchy(e);
+      }
+    } else {
+      e.dir=val;
+    }
+  }
   // Use correct defaults
   const d=(e.dash==='link'||e.isLink)?linkDefaults:glDefaults;
   if(prop==='shape')d.shape=val;
   else if(prop==='dash')d.dash=val;
   else if(prop==='width')d.width=val;
-  else if(prop==='dir')d.dir=val;
+  else if(prop==='dir')d.dir=e.dir; // use updated dir
   saveToLocalStorage();
   render();
   document.querySelectorAll('[id^='+pfx+'-]').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  if (e.hierLocked) showLSheet(); // refresh to show updated arrow states
 }
 
 /* ================================================================
