@@ -28,6 +28,8 @@ function editNode(id, isNew=false){
   // Apply manual styles if present
   if(n.style) {
     if(n.style.fontFamily) ta.style.fontFamily = n.style.fontFamily;
+    if(n.style.fontWeight) ta.style.fontWeight = n.style.fontWeight;
+    if(n.style.fontStyle) ta.style.fontStyle = n.style.fontStyle;
     if(n.style.fontSize) ta.style.fontSize = n.style.fontSize + 'px';
     if(n.style.color) ta.style.color = n.style.color;
     if(n.style.textAlign) ta.style.textAlign = n.style.textAlign;
@@ -178,6 +180,8 @@ function editEdge(eid){
   // Apply manual styles
   if(e.style) {
     if(e.style.fontFamily) ta.style.fontFamily = e.style.fontFamily;
+    if(e.style.fontWeight) ta.style.fontWeight = e.style.fontWeight;
+    if(e.style.fontStyle) ta.style.fontStyle = e.style.fontStyle;
     if(e.style.fontSize) ta.style.fontSize = e.style.fontSize + 'px';
     if(e.style.color) ta.style.color = e.style.color;
     if(e.style.textAlign) ta.style.textAlign = e.style.textAlign;

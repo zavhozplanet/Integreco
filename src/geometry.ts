@@ -271,13 +271,14 @@ function nodeHalfExtents(nodeId){
 
   const isRoot=gPar(nodeId)==null;
   const fs=n.style && n.style.fontSize ? n.style.fontSize : (isRoot?15:14);
-  const fw=n.style && n.style.fontWeight ? n.style.fontWeight : (isRoot?'600':'400');
-  const fst=n.style && n.style.fontStyle ? n.style.fontStyle : 'normal';
-  const ff=n.style && n.style.fontFamily ? n.style.fontFamily : 'Inter,sans-serif';
+  const ff = n.style && n.style.fontFamily ? n.style.fontFamily : 'Inter,sans-serif';
+  const fw = (n.style && n.style.fontWeight === 'bold') ? 'bold ' : (isRoot ? '600 ' : '400 ');
+  const fst = (n.style && n.style.fontStyle === 'italic') ? 'italic ' : '';
+  
   const pv=n.style && n.style.padding != null ? n.style.padding : (isRoot?14:10);
   const ph=n.style && n.style.padding != null ? n.style.padding * 2.2 : (isRoot?26:22);
   const minW=isRoot?0:88,maxW=isRoot?Infinity:210;
-  _mtx.font=fst + ' ' + fw + ' ' + fs + 'px ' + ff;
+  _mtx.font=fst+fw+fs+'px '+ff;
   const tw=_mtx.measureText(n.label||'').width;
   const w=Math.max(minW,Math.min(maxW,tw+ph*2));
   const h=fs*1.45+pv*2;
@@ -928,9 +929,9 @@ function render(){
         const span=document.createElement('span');span.textContent=e.label;
         if(e.style) {
           if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
-          if(e.style.fontSize) span.style.fontSize = e.style.fontSize + 'px';
           if(e.style.fontWeight) span.style.fontWeight = e.style.fontWeight;
           if(e.style.fontStyle) span.style.fontStyle = e.style.fontStyle;
+          if(e.style.fontSize) span.style.fontSize = e.style.fontSize + 'px';
           if(e.style.color) span.style.color = e.style.color;
           if(e.style.textAlign) div.style.textAlign = e.style.textAlign;
         }
@@ -1295,9 +1296,9 @@ function render(){
 
     if(n.style) {
       if(n.style.fontFamily) sp.style.fontFamily = n.style.fontFamily;
-      if(n.style.fontSize) sp.style.fontSize = n.style.fontSize + 'px';
       if(n.style.fontWeight) sp.style.fontWeight = n.style.fontWeight;
       if(n.style.fontStyle) sp.style.fontStyle = n.style.fontStyle;
+      if(n.style.fontSize) sp.style.fontSize = n.style.fontSize + 'px';
       if(n.style.textAlign) ni.style.textAlign = n.style.textAlign;
     }
 
@@ -1424,6 +1425,8 @@ function renderEdgesOnly(specificEdgeIds){
         const span=document.createElement('span');span.textContent=e.label;
         if(e.style) {
           if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
+          if(e.style.fontWeight) span.style.fontWeight = e.style.fontWeight;
+          if(e.style.fontStyle) span.style.fontStyle = e.style.fontStyle;
           if(e.style.fontSize) span.style.fontSize = e.style.fontSize + 'px';
           if(e.style.color) span.style.color = e.style.color;
           if(e.style.textAlign) div.style.textAlign = e.style.textAlign;

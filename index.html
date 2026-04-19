@@ -683,18 +683,23 @@
 
 <!-- Text Formatting Context Menu -->
 <div id="text-fmt-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3500;width:200px;padding:8px;flex-direction:column;gap:8px;" onclick="event.stopPropagation()">
-  <!-- Font Family -->
+  <!-- Font Variant -->
   <div class="bg-group">
-    <div style="font-size:11px; color:var(--mu); padding:2px 6px;">ШРИФТ</div>
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>НАЧЕРТАНИЕ</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-variant" onchange="toggleTextDefault('variant', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
     <div class="bg-patterns" style="padding:4px;">
-      <div class="bg-pat-btn" id="tf-font-sans" onclick="updateTextStyle('fontFamily','Inter, sans-serif')" title="Sans" style="font-family:Inter, sans-serif; font-size:14px; width:40px;">Aa</div>
-      <div class="bg-pat-btn" id="tf-font-serif" onclick="updateTextStyle('fontFamily','Georgia, serif')" title="Serif" style="font-family:Georgia, serif; font-size:14px; width:40px;">Aa</div>
-      <div class="bg-pat-btn" id="tf-font-mono" onclick="updateTextStyle('fontFamily','monospace')" title="Mono" style="font-family:monospace; font-size:14px; width:40px;">Aa</div>
+      <div class="bg-pat-btn" id="tf-var-bold" onclick="toggleWeight()" title="Жирный" style="font-size:14px; font-weight:bold; width:40px;">B</div>
+      <div class="bg-pat-btn" id="tf-var-italic" onclick="toggleFontStyle()" title="Курсив" style="font-size:14px; font-style:italic; width:40px;">I</div>
     </div>
   </div>
   <!-- Font Size -->
   <div class="bg-group">
-    <div style="font-size:11px; color:var(--mu); padding:2px 6px;">РАЗМЕР</div>
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>РАЗМЕР</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-size" onchange="toggleTextDefault('size', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
     <div class="bg-sliders" style="padding:4px 8px 8px;">
       <div class="slider-row">
         <span>📏</span>
@@ -704,7 +709,10 @@
   </div>
   <!-- Alignment -->
   <div class="bg-group">
-    <div style="font-size:11px; color:var(--mu); padding:2px 6px;">ВЫРАВНИВАНИЕ</div>
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>ВЫРАВНИВАНИЕ</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-align" onchange="toggleTextDefault('align', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
     <div class="bg-patterns" style="padding:4px;">
       <div class="bg-pat-btn" id="tf-align-left" onclick="updateTextStyle('textAlign','left')" title="Слева">⬅️</div>
       <div class="bg-pat-btn" id="tf-align-center" onclick="updateTextStyle('textAlign','center')" title="Центр">↔️</div>
@@ -713,7 +721,10 @@
   </div>
   <!-- Color -->
   <div class="bg-group">
-    <div style="font-size:11px; color:var(--mu); padding:2px 6px;">ЦВЕТ ТЕКСТА</div>
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>ЦВЕТ ТЕКСТА</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-color" onchange="toggleTextDefault('color', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
     <div class="bg-colors" id="tf-colors-list" style="padding:4px; display:flex; flex-wrap:wrap; gap:4px;">
       <!-- populated by JS -->
     </div>
@@ -724,10 +735,6 @@
   </div>
   <!-- Actions -->
   <div class="ctx-sep"></div>
-  <label class="gc-item" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-    <input type="checkbox" id="tf-default-toggle" onchange="toggleTextDefault(this.checked)" style="width:16px; height:16px;">
-    <span style="font-size:13px; font-weight:600;">По умолчанию</span>
-  </label>
   <div id="tf-apply-all-row" style="display:none;">
     <button class="gc-item" id="tf-apply-all-btn" onclick="applyTextStyleToSelected()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
       ✨ Применить к выбранным

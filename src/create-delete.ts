@@ -9,7 +9,7 @@ function mkEdge(fromId,toId,isLink){
   
   if(isToNote || isFromNote) {
     const branchColor = fromN ? (fromN.color || LCOLS[0]) : LCOLS[0];
-    return {id:nid(),from:fromId,to:toId,shape:'straight',dash:'dotted',width:1.5,dir:'none',color:branchColor,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null, style: { fontFamily: glDefaults.fontFamily, fontSize: glDefaults.fontSize, fontWeight: glDefaults.fontWeight, fontStyle: glDefaults.fontStyle, textAlign: glDefaults.textAlign }};
+    return {id:nid(),from:fromId,to:toId,shape:'straight',dash:'dotted',width:1.5,dir:'none',color:branchColor,cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null, style: { fontFamily: glDefaults.fontFamily, fontSize: glDefaults.fontSize, textAlign: glDefaults.textAlign }};
   }
   
   if(isLink){
@@ -19,7 +19,7 @@ function mkEdge(fromId,toId,isLink){
       width:linkDefaults.width||1,
       dir:linkDefaults.dir||'none',
       color:linkDefaults.color||LCOLS[0],
-      style: { fontFamily: linkDefaults.fontFamily, fontSize: linkDefaults.fontSize, fontWeight: linkDefaults.fontWeight, fontStyle: linkDefaults.fontStyle, textAlign: linkDefaults.textAlign },
+      style: { fontFamily: linkDefaults.fontFamily, fontSize: linkDefaults.fontSize, textAlign: linkDefaults.textAlign },
       cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,isLink:true,fromSide:null,toSide:null};
   }
   
@@ -29,7 +29,7 @@ function mkEdge(fromId,toId,isLink){
     color:glDefaults.color||LCOLS[0],
     width:glDefaults.width||1.5,
     dir:glDefaults.dir||'forward',
-    style: { fontFamily: glDefaults.fontFamily, fontSize: glDefaults.fontSize, fontWeight: glDefaults.fontWeight, fontStyle: glDefaults.fontStyle, textAlign: glDefaults.textAlign },
+    style: { fontFamily: glDefaults.fontFamily, fontSize: glDefaults.fontSize, textAlign: glDefaults.textAlign },
     cp1x:null,cp1y:null,cp2x:null,cp2y:null,collapsed:false,fromSide:null,toSide:null};
 }
 

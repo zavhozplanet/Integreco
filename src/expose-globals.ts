@@ -21,6 +21,7 @@ Object.assign(window, {
   // ── Text Formatting ──
   updateTextStyle, showTextFmtCtx,
   openNoteTitleFmt, openNoteTextFmt,
+  toggleWeight, toggleFontStyle,
   toggleTextDefault, applyTextStyleToSelected,
 
   // ── Background / Canvas context menu ──
