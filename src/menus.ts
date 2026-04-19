@@ -747,11 +747,12 @@ function syncTextFmtUI() {
   else if(ctxTextType === 'note-text') s = item.noteStyle || {};
   else s = item.style || {};
   
-  // Sync Font Family
-  const ff = s.fontFamily || (ctxTextType === 'edge' ? 'Inter, sans-serif' : 'Inter, sans-serif');
-  document.getElementById('tf-font-sans').classList.toggle('on', ff === 'Inter, sans-serif');
-  document.getElementById('tf-font-serif').classList.toggle('on', ff === 'Georgia, serif');
-  document.getElementById('tf-font-mono').classList.toggle('on', ff === 'monospace');
+  // Sync Font Weight / Style
+  const fw = s.fontWeight || '400';
+  const fst = s.fontStyle || 'normal';
+  document.getElementById('tf-font-normal').classList.toggle('on', fw === '400' && fst === 'normal');
+  document.getElementById('tf-font-bold').classList.toggle('on', fw === '700');
+  document.getElementById('tf-font-italic').classList.toggle('on', fst === 'italic');
   
   // Sync Font Size
   let fs = s.fontSize;
@@ -770,12 +771,25 @@ function syncTextFmtUI() {
   document.getElementById('tf-align-center').classList.toggle('on', ta === 'center');
   document.getElementById('tf-align-right').classList.toggle('on', ta === 'right');
   
+  // Sync Defaults Toggles
+  const syncDef = (id, cat) => {
+    const el = document.getElementById(id);
+    if(el) {
+      const defs = (ctxTextType.startsWith('note-')) ? noteDefaults : nodeDefaults;
+      el.checked = defs['use' + cat + 'Default'] || false;
+      el.parentElement.style.display = (ctxTextType === 'edge') ? 'none' : 'flex';
+    }
+  };
+  syncDef('tf-def-font', 'Font');
+  syncDef('tf-def-size', 'Size');
+  syncDef('tf-def-align', 'Align');
+  syncDef('tf-def-color', 'Color');
+  
   // Sync Colors
   const list = document.getElementById('tf-colors-list');
   const activeColor = s.color || (ctxTextType.startsWith('note-') ? '#2c2a27' : '');
   if(list) {
     list.innerHTML = '';
-    // Use some standard colors for text
     ['#2c2a27','#ffffff','#888888','#ff4757','#2ed573','#1e90ff','#ffa502','#5352ed'].forEach(c => {
       const swatch = document.createElement('div');
       swatch.className = 'bg-swatch' + (activeColor === c ? ' active' : '');
@@ -784,16 +798,6 @@ function syncTextFmtUI() {
       swatch.onclick = () => updateTextStyle('color', c, true);
       list.appendChild(swatch);
     });
-  }
-
-  // Sync Defaults Toggle
-  const defToggle = document.getElementById('tf-default-toggle');
-  if(defToggle) {
-    if(ctxTextType === 'node') defToggle.checked = nodeDefaults.useTextAsDefault;
-    else if(ctxTextType === 'note-title') defToggle.checked = noteDefaults.useTitleAsDefault;
-    else if(ctxTextType === 'note-text') defToggle.checked = noteDefaults.useTextAsDefault;
-    else defToggle.checked = false;
-    defToggle.parentElement.style.display = (ctxTextType === 'edge') ? 'none' : 'flex';
   }
 
   // Sync Apply to Selected
@@ -822,24 +826,22 @@ function updateTextStyle(key, val, commit=true) {
   
   if(commit) sh();
   
-  let targetStyleObj;
-  if(ctxTextType === 'note-title') {
-    if(!item.titleStyle) item.titleStyle = {};
-    targetStyleObj = item.titleStyle;
-  } else if(ctxTextType === 'note-text') {
-    if(!item.noteStyle) item.noteStyle = {};
-    targetStyleObj = item.noteStyle;
-  } else {
-    if(!item.style) item.style = {};
-    targetStyleObj = item.style;
-  }
+  let targetStyleObj = (ctxTextType === 'note-title') ? (item.titleStyle = item.titleStyle || {}) : 
+                       (ctxTextType === 'note-text') ? (item.noteStyle = item.noteStyle || {}) : 
+                       (item.style = item.style || {});
   
+  // Toggling Bold / Italic
+  if(key === 'fontWeight' && val === '700' && targetStyleObj.fontWeight === '700') val = '400';
+  if(key === 'fontStyle' && val === 'italic' && targetStyleObj.fontStyle === 'italic') val = 'normal';
+
   targetStyleObj[key] = val;
   
   // Update live editors
   if(ctxTextType === 'note-title') {
     const el = document.getElementById('ntitle');
     if(el) {
+      if(key === 'fontWeight') el.style.fontWeight = val;
+      if(key === 'fontStyle') el.style.fontStyle = val;
       if(key === 'fontFamily') el.style.fontFamily = val;
       if(key === 'fontSize') el.style.fontSize = val + 'px';
       if(key === 'color') el.style.color = val;
@@ -849,6 +851,8 @@ function updateTextStyle(key, val, commit=true) {
     const el = document.getElementById('narea');
     const rend = document.getElementById('nrendered');
     if(el) {
+      if(key === 'fontWeight') { el.style.fontWeight = val; if(rend) rend.style.fontWeight = val; }
+      if(key === 'fontStyle') { el.style.fontStyle = val; if(rend) rend.style.fontStyle = val; }
       if(key === 'fontFamily') { el.style.fontFamily = val; if(rend) rend.style.fontFamily = val; }
       if(key === 'fontSize') { el.style.fontSize = val + 'px'; if(rend) rend.style.fontSize = val + 'px'; }
       if(key === 'color') { el.style.color = val; if(rend) rend.style.color = val; }
@@ -857,20 +861,26 @@ function updateTextStyle(key, val, commit=true) {
   } else {
     const ta = document.querySelector('.nedit, .edge-edit');
     if(ta) {
+      if(key === 'fontWeight') ta.style.fontWeight = val;
+      if(key === 'fontStyle') ta.style.fontStyle = val;
       if(key === 'fontFamily') ta.style.fontFamily = val;
       if(key === 'fontSize') ta.style.fontSize = val + 'px';
       if(key === 'color') ta.style.color = val;
       if(key === 'textAlign') ta.style.textAlign = val;
     }
   }
-  
+
   // Update defaults if enabled
-  if(ctxTextType === 'node' && nodeDefaults.useTextAsDefault) {
-    nodeDefaults.style[key] = val;
-  } else if(ctxTextType === 'note-title' && noteDefaults.useTitleAsDefault) {
-    noteDefaults.title[key] = val;
-  } else if(ctxTextType === 'note-text' && noteDefaults.useTextAsDefault) {
-    noteDefaults.text[key] = val;
+  const defs = (ctxTextType.startsWith('note-')) ? noteDefaults : nodeDefaults;
+  let cat = null;
+  if(key === 'fontWeight' || key === 'fontStyle') cat = 'Font';
+  else if(key === 'fontSize') cat = 'Size';
+  else if(key === 'textAlign') cat = 'Align';
+  else if(key === 'color') cat = 'Color';
+  
+  if(cat && defs['use' + cat + 'Default']) {
+    const target = (ctxTextType === 'node') ? nodeDefaults.style : (ctxTextType === 'note-title' ? noteDefaults.title : noteDefaults.text);
+    target[key] = val;
   }
   
   syncTextFmtUI();
@@ -882,10 +892,9 @@ function updateTextStyle(key, val, commit=true) {
 function openNoteTitleFmt(ev) { showTextFmtCtx(ev, 'note-title', noteNodeId); }
 function openNoteTextFmt(ev) { showTextFmtCtx(ev, 'note-text', noteNodeId); }
 
-function toggleTextDefault(checked) {
-  if(ctxTextType === 'node') nodeDefaults.useTextAsDefault = checked;
-  else if(ctxTextType === 'note-title') noteDefaults.useTitleAsDefault = checked;
-  else if(ctxTextType === 'note-text') noteDefaults.useTextAsDefault = checked;
+function toggleTextDefault(cat, checked) {
+  const defs = (ctxTextType.startsWith('note-')) ? noteDefaults : nodeDefaults;
+  defs['use' + cat + 'Default'] = checked;
   
   if(checked) {
     const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
@@ -895,9 +904,18 @@ function toggleTextDefault(checked) {
       else if(ctxTextType === 'note-text') s = item.noteStyle || {};
       else s = item.style || {};
       
-      if(ctxTextType === 'node') Object.assign(nodeDefaults.style, s);
-      else if(ctxTextType === 'note-title') Object.assign(noteDefaults.title, s);
-      else if(ctxTextType === 'note-text') Object.assign(noteDefaults.text, s);
+      const keys = { 'Font':['fontWeight','fontStyle'], 'Size':['fontSize'], 'Align':['textAlign'], 'Color':['color'] }[cat];
+      const target = (ctxTextType === 'node') ? nodeDefaults.style : (ctxTextType === 'note-title' ? noteDefaults.title : noteDefaults.text);
+      keys.forEach(k => {
+        if(s[k]) target[k] = s[k];
+        else {
+          if(k === 'fontWeight') target[k] = (ctxTextType === 'note-title' ? '600' : '400');
+          if(k === 'fontStyle') target[k] = 'normal';
+          if(k === 'fontSize') target[k] = (ctxTextType === 'note-title' ? 15 : 14);
+          if(k === 'textAlign') target[k] = (ctxTextType.startsWith('note-') ? 'left' : 'center');
+          if(k === 'color') target[k] = '#2c2a27';
+        }
+      });
     }
   }
 }
@@ -920,6 +938,8 @@ function applyTextStyleToSelected() {
     if(!t.style) t.style = {};
     if(s.fontFamily) t.style.fontFamily = s.fontFamily;
     if(s.fontSize) t.style.fontSize = s.fontSize;
+    if(s.fontWeight) t.style.fontWeight = s.fontWeight;
+    if(s.fontStyle) t.style.fontStyle = s.fontStyle;
     if(s.color) t.style.color = s.color;
     if(s.textAlign) t.style.textAlign = s.textAlign;
   });

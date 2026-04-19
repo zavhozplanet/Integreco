@@ -64,17 +64,28 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     el.style.color = '';
     el.style.textAlign = '';
   };
-  resetStyles(titleInput);
-  resetStyles(areaInput);
-  
+  const isLabelEmpty = n.label === '+' || !n.label;
+  const isNoteEmpty = !n.note;
+
+  if (isLabelEmpty && !n.titleStyle) {
+    n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
+  }
+  if (isNoteEmpty && !n.noteStyle) {
+    n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
+  }
+
   const ts = n.titleStyle;
   if (ts) {
     if(ts.fontFamily) titleInput.style.fontFamily = ts.fontFamily;
     if(ts.fontSize) titleInput.style.fontSize = ts.fontSize + 'px';
+    if(ts.fontWeight) titleInput.style.fontWeight = ts.fontWeight;
+    if(ts.fontStyle) titleInput.style.fontStyle = ts.fontStyle;
     if(ts.color) titleInput.style.color = ts.color;
     if(ts.textAlign) titleInput.style.textAlign = ts.textAlign;
   } else {
     titleInput.style.fontSize = '15px';
+    titleInput.style.fontWeight = '600';
+    titleInput.style.fontStyle = 'normal';
     titleInput.style.textAlign = 'left';
     titleInput.style.color = '#2c2a27';
   }
@@ -83,10 +94,14 @@ function openNote(id, mode='edit', fromTrashIndex=null){
   if (ns) {
     if(ns.fontFamily) areaInput.style.fontFamily = ns.fontFamily;
     if(ns.fontSize) areaInput.style.fontSize = ns.fontSize + 'px';
+    if(ns.fontWeight) areaInput.style.fontWeight = ns.fontWeight;
+    if(ns.fontStyle) areaInput.style.fontStyle = ns.fontStyle;
     if(ns.color) areaInput.style.color = ns.color;
     if(ns.textAlign) areaInput.style.textAlign = ns.textAlign;
   } else {
     areaInput.style.fontSize = '14px';
+    areaInput.style.fontWeight = '400';
+    areaInput.style.fontStyle = 'normal';
     areaInput.style.textAlign = 'left';
     areaInput.style.color = '#2c2a27';
   }

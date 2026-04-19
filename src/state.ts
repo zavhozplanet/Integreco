@@ -17,13 +17,15 @@ let lastMapMutationTime = Date.now();
 let hasUnsavedChanges = false;
 let gls='straight', gld='solid'; // kept for legacy mobile sheet
 // Default settings for newly created edges
-let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, textAlign: 'center'};
-let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, textAlign: 'center'};
+let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: '400', fontStyle: 'normal', textAlign: 'center'};
+let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, fontWeight: '400', fontStyle: 'normal', textAlign: 'center'};
 let noteDefaults = {
-  title: { fontSize: 15, fontFamily: 'Inter, sans-serif', textAlign: 'left', color: '#2c2a27' },
-  text: { fontSize: 14, fontFamily: 'Inter, sans-serif', textAlign: 'left', color: '#2c2a27' },
-  useTitleAsDefault: false,
-  useTextAsDefault: false
+  title: { fontSize: 15, fontFamily: 'Inter, sans-serif', fontWeight: '600', fontStyle: 'normal', textAlign: 'left', color: '#2c2a27' },
+  text: { fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: '400', fontStyle: 'normal', textAlign: 'left', color: '#2c2a27' },
+  useFontDefault: false,
+  useSizeDefault: false,
+  useAlignDefault: false,
+  useColorDefault: false
 };
 let pendingInsert = null; // {nodeId, edgeId}
 let bgSettings = {
@@ -70,11 +72,16 @@ let nodeDefaults = {
     backgroundColor: null,
     fontFamily: 'Inter, sans-serif',
     fontSize: 14,
+    fontWeight: '400',
+    fontStyle: 'normal',
     color: '#2c2a27',
     textAlign: 'center'
   },
   recentColors: [],
-  useTextAsDefault: false
+  useFontDefault: false,
+  useSizeDefault: false,
+  useAlignDefault: false,
+  useColorDefault: false
 };
 let groupDefaults = {
   bg: {
