@@ -17,6 +17,11 @@ Object.assign(window, {
   ctxExec, ctxExecMulti,
   setNsColorTarget, toggleNodePin,
   applyNodeStyleToSelection, updateNodeStyle,
+  
+  // ── Text Formatting ──
+  updateTextStyle, showTextFmtCtx,
+  openNoteTitleFmt, openNoteTextFmt,
+  toggleTextDefault, applyTextStyleToSelected,
 
   // ── Background / Canvas context menu ──
   updateBg, updateBgColorManual, setBgColorTarget,

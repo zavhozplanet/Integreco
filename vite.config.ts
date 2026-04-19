@@ -92,7 +92,7 @@ export default defineConfig({
   server: {
     port: 8080,
     host: '0.0.0.0',
-    hmr: false,       // full reload on change (consistent with concatenation)
+    // hmr: false was disabling the client websocket, preventing full-reload
   },
   build: {
     target: 'es2022',

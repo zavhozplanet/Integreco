@@ -660,6 +660,17 @@ window.addEventListener('click',ev=>{
 // Right-click on edge → select + show line panel, NO bezier handles
 svgl.addEventListener('contextmenu',ev=>{
   ev.preventDefault();ev.stopPropagation();
+  const labelEl = ev.target.closest('.edge-label-v3');
+  if(labelEl) {
+    const grpEl = labelEl.closest('.edge-group');
+    if(grpEl) {
+      const eid = parseInt(grpEl.dataset.eid);
+      if(eid) {
+        showTextFmtCtx(ev, 'edge', eid);
+        return;
+      }
+    }
+  }
   const grpEl=ev.target.closest('.edge-group');
   if(grpEl){
     const eid=parseInt(grpEl.dataset.eid);if(!eid)return;
@@ -667,7 +678,12 @@ svgl.addEventListener('contextmenu',ev=>{
   }
 });
 window.addEventListener('contextmenu',ev=>{
-  if(ev.target.isContentEditable||['INPUT','TEXTAREA'].includes(ev.target.tagName))return;
+  if(ev.target.isContentEditable||['INPUT','TEXTAREA'].includes(ev.target.tagName)){
+    ev.preventDefault();
+    ev.stopPropagation();
+    showTextFieldCtx(ev, ev.target);
+    return;
+  }
   ev.preventDefault();
 });
 

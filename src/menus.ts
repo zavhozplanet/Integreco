@@ -212,6 +212,7 @@ function showNodeCtx(cx,cy,id){
         else openNote(id, 'edit');
       }},
       {icon:'➕',title:'Добавить дочерний узел',action:()=>{hideCtxMenu();addChild(id)}},
+      {icon:'🖋️',title:'Форматирование текста',action:(ev)=>{hideCtxMenu();showTextFmtCtx(ev,'node',id)}},
       {icon:'🔗',title:'Связать (пунктирная линия)',action:()=>{hideCtxMenu();startLinkMode(id)}},
       {icon:'<div class="cdm-preview group"></div>',title:'Добавить в группу',action:()=>{hideCtxMenu();addToGroup()}},
       {icon:'✂️',title:'Вырезать',action:()=>{ openSubmenu('ctx-cut-sub'); }},
@@ -249,6 +250,7 @@ function showGroupCtx(cx,cy,id){
   
   const rows = [
     {icon:'📝',title:'Открыть заголовок/заметку',action:()=>{hideCtxMenu();openNote(id,'edit')}},
+    {icon:'🖋️',title:'Форматирование текста',action:(ev)=>{hideCtxMenu();showTextFmtCtx(ev,'node',id)}},
     {icon:'📋',title:'Копировать данные группы',action:()=>{hideCtxMenu();copyNodeToClip(id,false)}},
     {icon:'📌',title:'Вставить в группу',action:()=>{hideCtxMenu();ctxExec('paste')}},
     {icon:'<div class="cdm-preview group"></div>',title:'Добавить в другую группу',action:()=>{hideCtxMenu();addToGroup()}},
@@ -713,6 +715,309 @@ function updateBg(key, val, commit=true){
   if(isGroup) render(); else applyBg();
   if(commit) { sh(); renderCanvCtx(); }
 }
+
+/* ================================================================
+   TEXT FORMATTING CONTEXT MENU
+   ================================================================ */
+let ctxTextId = null;
+let ctxTextType = 'node'; // 'node' or 'edge'
+
+function showTextFmtCtx(ev, type, id) {
+  ev.preventDefault();
+  ev.stopPropagation();
+  hideAllMenus();
+  
+  ctxTextId = id;
+  ctxTextType = type;
+  
+  const menu = document.getElementById('text-fmt-ctx');
+  if(!menu) return;
+  
+  menu.style.display = 'flex';
+  posMenu(menu, ev.clientX, ev.clientY);
+  syncTextFmtUI();
+}
+
+function syncTextFmtUI() {
+  const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
+  if(!item) return;
+  
+  let s = {};
+  if(ctxTextType === 'note-title') s = item.titleStyle || {};
+  else if(ctxTextType === 'note-text') s = item.noteStyle || {};
+  else s = item.style || {};
+  
+  // Sync Font Family
+  const ff = s.fontFamily || (ctxTextType === 'edge' ? 'Inter, sans-serif' : 'Inter, sans-serif');
+  document.getElementById('tf-font-sans').classList.toggle('on', ff === 'Inter, sans-serif');
+  document.getElementById('tf-font-serif').classList.toggle('on', ff === 'Georgia, serif');
+  document.getElementById('tf-font-mono').classList.toggle('on', ff === 'monospace');
+  
+  // Sync Font Size
+  let fs = s.fontSize;
+  if(!fs) {
+    if(ctxTextType === 'note-title') fs = 15;
+    else if(ctxTextType === 'note-text') fs = 14;
+    else if(ctxTextType === 'node') fs = (gPar(ctxTextId) == null ? 15 : 14);
+    else fs = 13;
+  }
+  const fsIn = document.getElementById('tf-font-size');
+  if(fsIn) fsIn.value = fs;
+  
+  // Sync Alignment
+  const ta = s.textAlign || (ctxTextType.startsWith('note-') ? 'left' : 'center');
+  document.getElementById('tf-align-left').classList.toggle('on', ta === 'left');
+  document.getElementById('tf-align-center').classList.toggle('on', ta === 'center');
+  document.getElementById('tf-align-right').classList.toggle('on', ta === 'right');
+  
+  // Sync Colors
+  const list = document.getElementById('tf-colors-list');
+  const activeColor = s.color || (ctxTextType.startsWith('note-') ? '#2c2a27' : '');
+  if(list) {
+    list.innerHTML = '';
+    // Use some standard colors for text
+    ['#2c2a27','#ffffff','#888888','#ff4757','#2ed573','#1e90ff','#ffa502','#5352ed'].forEach(c => {
+      const swatch = document.createElement('div');
+      swatch.className = 'bg-swatch' + (activeColor === c ? ' active' : '');
+      swatch.style.backgroundColor = c;
+      if(c==='#ffffff') swatch.style.border='1px solid #ddd';
+      swatch.onclick = () => updateTextStyle('color', c, true);
+      list.appendChild(swatch);
+    });
+  }
+
+  // Sync Defaults Toggle
+  const defToggle = document.getElementById('tf-default-toggle');
+  if(defToggle) {
+    if(ctxTextType === 'node') defToggle.checked = nodeDefaults.useTextAsDefault;
+    else if(ctxTextType === 'note-title') defToggle.checked = noteDefaults.useTitleAsDefault;
+    else if(ctxTextType === 'note-text') defToggle.checked = noteDefaults.useTextAsDefault;
+    else defToggle.checked = false;
+    defToggle.parentElement.style.display = (ctxTextType === 'edge') ? 'none' : 'flex';
+  }
+
+  // Sync Apply to Selected
+  const applyRow = document.getElementById('tf-apply-all-row');
+  if(applyRow) {
+    const canApply = (ctxTextType === 'node' || ctxTextType === 'edge');
+    applyRow.style.display = canApply ? 'block' : 'none';
+    if(canApply) {
+      const btn = document.getElementById('tf-apply-all-btn');
+      if(btn) {
+        if(ctxTextType === 'node') {
+          const isSelected = selNSet.has(ctxTextId);
+          const sameTypeCount = isSelected ? [...selNSet].filter(id => id !== ctxTextId && gN(id)?.type === item.type).length : 0;
+          btn.disabled = sameTypeCount === 0;
+        } else {
+          btn.disabled = true; // Edges not yet multi-selectable
+        }
+      }
+    }
+  }
+}
+
+function updateTextStyle(key, val, commit=true) {
+  const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
+  if(!item) return;
+  
+  if(commit) sh();
+  
+  let targetStyleObj;
+  if(ctxTextType === 'note-title') {
+    if(!item.titleStyle) item.titleStyle = {};
+    targetStyleObj = item.titleStyle;
+  } else if(ctxTextType === 'note-text') {
+    if(!item.noteStyle) item.noteStyle = {};
+    targetStyleObj = item.noteStyle;
+  } else {
+    if(!item.style) item.style = {};
+    targetStyleObj = item.style;
+  }
+  
+  targetStyleObj[key] = val;
+  
+  // Update live editors
+  if(ctxTextType === 'note-title') {
+    const el = document.getElementById('ntitle');
+    if(el) {
+      if(key === 'fontFamily') el.style.fontFamily = val;
+      if(key === 'fontSize') el.style.fontSize = val + 'px';
+      if(key === 'color') el.style.color = val;
+      if(key === 'textAlign') el.style.textAlign = val;
+    }
+  } else if(ctxTextType === 'note-text') {
+    const el = document.getElementById('narea');
+    const rend = document.getElementById('nrendered');
+    if(el) {
+      if(key === 'fontFamily') { el.style.fontFamily = val; if(rend) rend.style.fontFamily = val; }
+      if(key === 'fontSize') { el.style.fontSize = val + 'px'; if(rend) rend.style.fontSize = val + 'px'; }
+      if(key === 'color') { el.style.color = val; if(rend) rend.style.color = val; }
+      if(key === 'textAlign') { el.style.textAlign = val; if(rend) rend.style.textAlign = val; }
+    }
+  } else {
+    const ta = document.querySelector('.nedit, .edge-edit');
+    if(ta) {
+      if(key === 'fontFamily') ta.style.fontFamily = val;
+      if(key === 'fontSize') ta.style.fontSize = val + 'px';
+      if(key === 'color') ta.style.color = val;
+      if(key === 'textAlign') ta.style.textAlign = val;
+    }
+  }
+  
+  // Update defaults if enabled
+  if(ctxTextType === 'node' && nodeDefaults.useTextAsDefault) {
+    nodeDefaults.style[key] = val;
+  } else if(ctxTextType === 'note-title' && noteDefaults.useTitleAsDefault) {
+    noteDefaults.title[key] = val;
+  } else if(ctxTextType === 'note-text' && noteDefaults.useTextAsDefault) {
+    noteDefaults.text[key] = val;
+  }
+  
+  syncTextFmtUI();
+  if(ctxTextType !== 'note-title' && ctxTextType !== 'note-text') {
+    render();
+  }
+}
+
+function openNoteTitleFmt(ev) { showTextFmtCtx(ev, 'note-title', noteNodeId); }
+function openNoteTextFmt(ev) { showTextFmtCtx(ev, 'note-text', noteNodeId); }
+
+function toggleTextDefault(checked) {
+  if(ctxTextType === 'node') nodeDefaults.useTextAsDefault = checked;
+  else if(ctxTextType === 'note-title') noteDefaults.useTitleAsDefault = checked;
+  else if(ctxTextType === 'note-text') noteDefaults.useTextAsDefault = checked;
+  
+  if(checked) {
+    const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
+    if(item) {
+      let s = {};
+      if(ctxTextType === 'note-title') s = item.titleStyle || {};
+      else if(ctxTextType === 'note-text') s = item.noteStyle || {};
+      else s = item.style || {};
+      
+      if(ctxTextType === 'node') Object.assign(nodeDefaults.style, s);
+      else if(ctxTextType === 'note-title') Object.assign(noteDefaults.title, s);
+      else if(ctxTextType === 'note-text') Object.assign(noteDefaults.text, s);
+    }
+  }
+}
+
+function applyTextStyleToSelected() {
+  if(ctxTextType !== 'node') return;
+  const primaryId = ctxTextId;
+  const primaryNode = gN(primaryId);
+  if(!primaryNode) return;
+  
+  const targets = [...selNSet].filter(id => id !== primaryId)
+                             .map(id => gN(id))
+                             .filter(n => n && n.type === primaryNode.type);
+                             
+  if(targets.length === 0) return;
+  sh();
+  
+  const s = primaryNode.style || {};
+  targets.forEach(t => {
+    if(!t.style) t.style = {};
+    if(s.fontFamily) t.style.fontFamily = s.fontFamily;
+    if(s.fontSize) t.style.fontSize = s.fontSize;
+    if(s.color) t.style.color = s.color;
+    if(s.textAlign) t.style.textAlign = s.textAlign;
+  });
+  
+  const btn = document.getElementById('tf-apply-all-btn');
+  if(btn) {
+    btn.classList.add('apply-btn-flash');
+    setTimeout(() => btn.classList.remove('apply-btn-flash'), 600);
+  }
+  
+  render();
+}
+
+/* ================================================================
+   TEXT FIELD CONTEXT MENU
+   ================================================================ */
+let activeTextField = null;
+
+function showTextFieldCtx(ev, el) {
+  hideAllMenus();
+  activeTextField = el;
+  const menu = document.getElementById('text-field-ctx');
+  if(!menu) return;
+  
+  menu.style.display = 'flex';
+  posMenu(menu, ev.clientX, ev.clientY);
+  
+  // Set up formatting submenu trigger
+  const fmtBtn = document.getElementById('tfc-fmt');
+  if(fmtBtn) {
+    fmtBtn.onclick = (e) => {
+      e.stopPropagation();
+      menu.style.display = 'none';
+      // Determine what we are editing to pass to showTextFmtCtx
+      if(el.id === 'ntitle') showTextFmtCtx(e, 'note-title', noteNodeId);
+      else if(el.id === 'narea') showTextFmtCtx(e, 'note-text', noteNodeId);
+      else if(el.classList.contains('nedit')) {
+        // Node edit
+        const sp = el.nextElementSibling;
+        if(sp) {
+           const ni = sp.parentElement;
+           if(ni) {
+             const nd = ni.parentElement;
+             if(nd && nd.id && nd.id.startsWith('nd')) {
+               showTextFmtCtx(e, 'node', parseInt(nd.id.substring(2)));
+             }
+           }
+        }
+      }
+      else if(el.classList.contains('edge-edit')) {
+        // Edge edit
+        const eid = parseInt(el.dataset.eid);
+        if(eid) showTextFmtCtx(e, 'edge', eid);
+      }
+    };
+  }
+  
+  // Set up standard actions
+  const cutBtn = document.getElementById('tfc-cut');
+  if(cutBtn) cutBtn.onclick = () => { if(activeTextField) { activeTextField.focus(); document.execCommand('cut'); } menu.style.display='none'; };
+  
+  const copyBtn = document.getElementById('tfc-copy');
+  if(copyBtn) copyBtn.onclick = () => { if(activeTextField) { activeTextField.focus(); document.execCommand('copy'); } menu.style.display='none'; };
+  
+  const pasteBtn = document.getElementById('tfc-paste');
+  if(pasteBtn) pasteBtn.onclick = async () => { 
+    if(activeTextField) {
+      activeTextField.focus();
+      try {
+        const text = await navigator.clipboard.readText();
+        document.execCommand('insertText', false, text);
+      } catch(e) {
+        console.error('Paste failed', e);
+      }
+    } 
+    menu.style.display='none'; 
+  };
+  
+  const delBtn = document.getElementById('tfc-del');
+  if(delBtn) delBtn.onclick = () => { if(activeTextField) { activeTextField.focus(); document.execCommand('delete'); } menu.style.display='none'; };
+  
+  const selAllBtn = document.getElementById('tfc-selall');
+  if(selAllBtn) selAllBtn.onclick = () => { if(activeTextField) { activeTextField.focus(); activeTextField.select(); } menu.style.display='none'; };
+}
+
+// Global init for hiding menus
+window.addEventListener('load', () => {
+  document.addEventListener('click', (ev) => {
+    if(!ev.target.closest('#text-fmt-ctx')) {
+      const menu = document.getElementById('text-fmt-ctx');
+      if(menu) menu.style.display = 'none';
+    }
+    if(!ev.target.closest('#text-field-ctx')) {
+      const menu = document.getElementById('text-field-ctx');
+      if(menu) menu.style.display = 'none';
+    }
+  });
+});
 
 function updateBgColor(c, commit=true){
   const primaryId = activeBgGroupId;

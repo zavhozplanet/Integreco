@@ -56,6 +56,41 @@ function openNote(id, mode='edit', fromTrashIndex=null){
 
   titleInput.value = n.label === '+' ? '' : (n.label || '');
   areaInput.value = n.note || '';
+
+  // Apply styles
+  const resetStyles = (el) => {
+    el.style.fontFamily = '';
+    el.style.fontSize = '';
+    el.style.color = '';
+    el.style.textAlign = '';
+  };
+  resetStyles(titleInput);
+  resetStyles(areaInput);
+  
+  const ts = n.titleStyle;
+  if (ts) {
+    if(ts.fontFamily) titleInput.style.fontFamily = ts.fontFamily;
+    if(ts.fontSize) titleInput.style.fontSize = ts.fontSize + 'px';
+    if(ts.color) titleInput.style.color = ts.color;
+    if(ts.textAlign) titleInput.style.textAlign = ts.textAlign;
+  } else {
+    titleInput.style.fontSize = '15px';
+    titleInput.style.textAlign = 'left';
+    titleInput.style.color = '#2c2a27';
+  }
+  
+  const ns = n.noteStyle;
+  if (ns) {
+    if(ns.fontFamily) areaInput.style.fontFamily = ns.fontFamily;
+    if(ns.fontSize) areaInput.style.fontSize = ns.fontSize + 'px';
+    if(ns.color) areaInput.style.color = ns.color;
+    if(ns.textAlign) areaInput.style.textAlign = ns.textAlign;
+  } else {
+    areaInput.style.fontSize = '14px';
+    areaInput.style.textAlign = 'left';
+    areaInput.style.color = '#2c2a27';
+  }
+
   noteTab(mode, false); // pass false so noteTab doesn't instantly focus narea
   document.getElementById('nmod').classList.add('show');
   
@@ -95,12 +130,23 @@ function closeNoteAndOpenTrash() {
 function noteTab(mode, autoFocus=true){
   if(mode==='view'){
     const txt=document.getElementById('narea').value;
-    document.getElementById('nrendered').innerHTML=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(https?:\/\/[^\s<>"]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
-    document.getElementById('narea').style.display='none';document.getElementById('nrendered').style.display='block';
+    const rend = document.getElementById('nrendered');
+    rend.innerHTML=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/(https?:\/\/[^\s<>"]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+    
+    // Copy styles from area
+    const area = document.getElementById('narea');
+    rend.style.fontFamily = area.style.fontFamily;
+    rend.style.fontSize = area.style.fontSize;
+    rend.style.color = area.style.color;
+    rend.style.textAlign = area.style.textAlign;
+    
+    area.style.display='none';rend.style.display='block';
     document.getElementById('ntab-v').classList.add('on');document.getElementById('ntab-e').classList.remove('on');
+    document.getElementById('n-fmt-text-btn').style.display='none';
   } else {
     document.getElementById('narea').style.display='block';document.getElementById('nrendered').style.display='none';
     document.getElementById('ntab-e').classList.add('on');document.getElementById('ntab-v').classList.remove('on');
+    document.getElementById('n-fmt-text-btn').style.display='block';
     if(autoFocus) document.getElementById('narea').focus();
   }
 }

@@ -17,8 +17,14 @@ let lastMapMutationTime = Date.now();
 let hasUnsavedChanges = false;
 let gls='straight', gld='solid'; // kept for legacy mobile sheet
 // Default settings for newly created edges
-let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null};
-let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null};
+let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, textAlign: 'center'};
+let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontSize: 13, textAlign: 'center'};
+let noteDefaults = {
+  title: { fontSize: 15, fontFamily: 'Inter, sans-serif', textAlign: 'left', color: '#2c2a27' },
+  text: { fontSize: 14, fontFamily: 'Inter, sans-serif', textAlign: 'left', color: '#2c2a27' },
+  useTitleAsDefault: false,
+  useTextAsDefault: false
+};
 let pendingInsert = null; // {nodeId, edgeId}
 let bgSettings = {
   color: '#f0ede8',
@@ -61,9 +67,14 @@ let nodeDefaults = {
     opacity: 1,
     blur: 0,
     borderColor: null,
-    backgroundColor: null
+    backgroundColor: null,
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 14,
+    color: '#2c2a27',
+    textAlign: 'center'
   },
-  recentColors: []
+  recentColors: [],
+  useTextAsDefault: false
 };
 let groupDefaults = {
   bg: {

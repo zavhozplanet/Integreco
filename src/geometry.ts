@@ -270,11 +270,12 @@ function nodeHalfExtents(nodeId){
   if(n.type === 'group' || n.type === 'multi') return {hw: (n.width||300)/2, hh: (n.height||200)/2};
 
   const isRoot=gPar(nodeId)==null;
-  const fs=isRoot?15:14;
+  const fs=n.style && n.style.fontSize ? n.style.fontSize : (isRoot?15:14);
+  const ff=n.style && n.style.fontFamily ? n.style.fontFamily : 'Inter,sans-serif';
   const pv=n.style && n.style.padding != null ? n.style.padding : (isRoot?14:10);
   const ph=n.style && n.style.padding != null ? n.style.padding * 2.2 : (isRoot?26:22);
   const minW=isRoot?0:88,maxW=isRoot?Infinity:210;
-  _mtx.font=(isRoot?'600 ':'400 ')+fs+'px Inter,sans-serif';
+  _mtx.font=(isRoot?'600 ':'400 ')+fs+'px '+ff;
   const tw=_mtx.measureText(n.label||'').width;
   const w=Math.max(minW,Math.min(maxW,tw+ph*2));
   const h=fs*1.45+pv*2;
@@ -923,6 +924,12 @@ function render(){
         const div=document.createElement('div');
         div.className='edge-label-v3';
         const span=document.createElement('span');span.textContent=e.label;
+        if(e.style) {
+          if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
+          if(e.style.fontSize) span.style.fontSize = e.style.fontSize + 'px';
+          if(e.style.color) span.style.color = e.style.color;
+          if(e.style.textAlign) div.style.textAlign = e.style.textAlign;
+        }
         div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
       }
       grp.appendChild(ep);
@@ -1281,12 +1288,21 @@ function render(){
     sp.setAttribute('draggable', 'false');
     sp.ondragstart = () => false;
     sp.textContent=n.label||(n.id===selN?'':'+');
+
+    if(n.style) {
+      if(n.style.fontFamily) sp.style.fontFamily = n.style.fontFamily;
+      if(n.style.fontSize) sp.style.fontSize = n.style.fontSize + 'px';
+      if(n.style.textAlign) ni.style.textAlign = n.style.textAlign;
+    }
+
     if(!n.label)sp.style.color='var(--mu)';
     if(!isMob()){sp.style.cursor='text';sp.addEventListener('click',ev=>{ev.stopPropagation();editNode(n.id)})}
     ni.appendChild(sp);
     
     // Adaptive text color for contrast
-    if(n.style && n.style.backgroundColor) {
+    if(n.style && n.style.color) {
+      sp.style.color = n.style.color;
+    } else if(n.style && n.style.backgroundColor) {
       sp.style.color = getContrastColor(n.style.backgroundColor);
     } else if (isRoot) {
       sp.style.color = '#ffffff';
@@ -1400,6 +1416,12 @@ function renderEdgesOnly(specificEdgeIds){
         const div=document.createElement('div');
         div.className='edge-label-v3';
         const span=document.createElement('span');span.textContent=e.label;
+        if(e.style) {
+          if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
+          if(e.style.fontSize) span.style.fontSize = e.style.fontSize + 'px';
+          if(e.style.color) span.style.color = e.style.color;
+          if(e.style.textAlign) div.style.textAlign = e.style.textAlign;
+        }
         div.appendChild(span);fo.appendChild(div);grp.appendChild(fo);
       }
 

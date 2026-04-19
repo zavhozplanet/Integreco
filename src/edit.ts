@@ -24,6 +24,15 @@ function editNode(id, isNew=false){
   if(sourceEl) {
     ta.style.color = window.getComputedStyle(sourceEl).color;
   }
+
+  // Apply manual styles if present
+  if(n.style) {
+    if(n.style.fontFamily) ta.style.fontFamily = n.style.fontFamily;
+    if(n.style.fontSize) ta.style.fontSize = n.style.fontSize + 'px';
+    if(n.style.color) ta.style.color = n.style.color;
+    if(n.style.textAlign) ta.style.textAlign = n.style.textAlign;
+  }
+
   targetContainer.insertBefore(ta,sp);ta.focus();ta.select();
   let isDone = false;
   const done=()=>{
@@ -165,6 +174,14 @@ function editEdge(eid){
   
   const container = document.getElementById('wrap') || document.body;
   container.appendChild(ta);
+
+  // Apply manual styles
+  if(e.style) {
+    if(e.style.fontFamily) ta.style.fontFamily = e.style.fontFamily;
+    if(e.style.fontSize) ta.style.fontSize = e.style.fontSize + 'px';
+    if(e.style.color) ta.style.color = e.style.color;
+    if(e.style.textAlign) ta.style.textAlign = e.style.textAlign;
+  }
   
   setTimeout(()=>{
     ta.focus();
