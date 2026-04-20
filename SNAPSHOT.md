@@ -2,20 +2,20 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Refining UI visual consistency and structural hierarchy manipulation via connecting lines.
+* Implementing granular text formatting controls and per-selection formatting logic.
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Synchronized branch thumbnails (previews) with actual node, group, and multi-node visual styles (shapes, colors, borders).
-* Implemented "Hierarchy Lock" for lines, allowing hierarchy flipping (parent-child swap) by changing arrow direction.
-* Fixed hierarchy resolution for bidirectional/arrowless lines using a root-proximity algorithm (`getDepthFromRoot`).
+* Implemented granular formatting defaults (variant, size, align, color) with per-block toggles.
+* Switched to independent Bold/Italic toggles and added formatting buttons to node/multi-select menus.
+* Added logic to apply text defaults specifically to new/empty text categories in existing objects.
 
 ## 🏗️ Migration Details
 * Build pipeline: Vite + TypeScript (concatenation plugin preserves global scope).
 * Deployment: Automatic via `.github/workflows/deploy.yml` on push to `main`.
-* Assets: Hashed JS/CSS in `dist/assets/`, static files in `public/`.
+* Text styles: Moved from `textVariant` to separate `fontWeight` and `fontStyle` properties.
 
 ## 🚧 Known Issues / Blockers
-* No blockers identified. UI and hierarchy manipulation features are stable and confirmed by user.
+* Architectural decision pending: How to implement rich text (formatting selected text) in plain text fields.
 
 ## ⏭️ Next Step (From BACKLOG.md)
-* Implement "Map Background smart zoom" mode (pinned objects behavior).
+* Implement formatting for selected text (Rich Text support) following architectural decision.

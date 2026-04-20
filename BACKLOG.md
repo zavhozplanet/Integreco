@@ -26,7 +26,7 @@ By default, if the map has its own background, the smart zoom toggle is enabled.
   - If any manual style change is made after copying, the toggle becomes inactive (styles cannot be reverted via toggle anymore).
 
 (2)
-- **Text Formatting Menu:** - Right-click (RMB) on a text field opens standard options: font size/family, color, alignment.
+- **Text Formatting Menu:** ✅ Right-click (RMB) on a text field opens standard options: font size/family, color, alignment.
 
 (3)
 - **Expand Frame Options:** - Add more frame types (inspired by other mind-map tools) to the settings menu. Implement scrolling. Keep the current 3 types at the top.
