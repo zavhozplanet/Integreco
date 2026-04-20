@@ -52,8 +52,6 @@ Object.assign(window, {
   cutNote, copyNote, pasteNote,
   shareNote, downloadNote,
   toggleNBurger, toggleNDlSub, noteTab,
-  renderNoteTitleView, editNoteTitle,
-  renderNoteAreaView, editNoteArea,
 
   // ── Trash ──
   openTrash, closeTrash, tAction,

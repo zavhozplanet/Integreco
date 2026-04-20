@@ -555,8 +555,8 @@
   <div id="nbox">
     <div id="nbox-hdr">
       <button id="n-back-btn" onclick="closeNoteAndOpenTrash()" style="display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-right:8px" title="Назад">🔙</button>
-      <input id="ntitle" placeholder="+" style="display:none;" onblur="renderNoteTitleView()">
-      <div id="ntitle-view" tabindex="0" style="flex:1; cursor:text; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;" onclick="editNoteTitle()"></div>
+      <input id="ntitle" placeholder="+" style="display:none;">
+      <div id="ntitle-view" style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;"></div>
       <button id="n-fmt-title-btn" onmousedown="event.preventDefault()" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
       <button id="n-done-btn" onclick="closeNote()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--grn);margin-right:8px" title="Готово">✅</button>
       <div id="n-burger" onclick="toggleNBurger(event)">☰</div>
@@ -574,12 +574,12 @@
         <div id="n-del-btn" class="nmi danger" onclick="deleteNote()" title="Удалить">❌</div>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:12px">
-      <textarea id="narea" placeholder="+" style="display:none;" onblur="renderNoteAreaView()"></textarea>
-      <div id="nrendered" tabindex="0" style="flex:1; overflow-y:auto; cursor:text; word-break:break-word;" onclick="editNoteArea()"></div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+      <textarea id="narea" placeholder="+"></textarea>
+      <div id="nrendered"></div>
     </div>
     <div id="nfooter">
-      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
+      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px">🖋️</button>
       <button class="ntab on" id="ntab-e" onclick="noteTab('edit')">📝</button>
       <button class="ntab" id="ntab-v" onclick="noteTab('view')">👁️</button>
     </div>

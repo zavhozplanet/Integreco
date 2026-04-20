@@ -738,7 +738,18 @@ function showTextFmtCtx(ev, type, id, selection) {
   if(!menu) return;
   
   menu.style.display = 'flex';
-  posMenu(menu, ev.clientX, ev.clientY);
+  
+  if (type === 'note-title' || type === 'note-text') {
+    const nbox = document.getElementById('nbox');
+    if (nbox) {
+      const rect = nbox.getBoundingClientRect();
+      posMenu(menu, rect.right + 8, rect.top);
+    } else {
+      posMenu(menu, ev.clientX, ev.clientY);
+    }
+  } else {
+    posMenu(menu, ev.clientX, ev.clientY);
+  }
   syncTextFmtUI();
 }
 

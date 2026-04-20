@@ -106,14 +106,13 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     areaInput.style.color = '#2c2a27';
   }
 
-  renderNoteTitleView();
-  renderNoteAreaView();
+  noteTab(mode, false);
   document.getElementById('nmod').classList.add('show');
   
   setTimeout(()=>{
     if(mode==='edit' && fromTrashIndex === null) {
-      if(isLabelEmpty) editNoteTitle();
-      else editNoteArea();
+      if(isLabelEmpty) titleInput.focus();
+      else areaInput.focus();
     }
   }, 200);
 }
@@ -153,133 +152,61 @@ function closeNoteAndOpenTrash() {
   closeNote();
   openTrash();
 }
-function updateNoteTabUI() {
+function noteTab(mode, autoFocus=true){
   const ntitle = document.getElementById('ntitle');
+  const ntitleView = document.getElementById('ntitle-view');
   const narea = document.getElementById('narea');
-  const isEditing = (ntitle && ntitle.style.display !== 'none') || (narea && narea.style.display !== 'none');
-  const eb = document.getElementById('ntab-e');
-  const vb = document.getElementById('ntab-v');
-  if(eb) eb.classList.toggle('on', isEditing);
-  if(vb) vb.classList.toggle('on', !isEditing);
-}
+  const nrendered = document.getElementById('nrendered');
+  
+  if(mode==='view'){
+    // Render Title
+    const ttxt = ntitle.value.trim();
+    ntitleView.innerHTML = ttxt ? parseMd(ttxt) : '<span style="color:var(--mu)">+</span>';
+    ntitleView.style.fontFamily = ntitle.style.fontFamily;
+    ntitleView.style.fontWeight = ntitle.style.fontWeight;
+    ntitleView.style.fontStyle = ntitle.style.fontStyle;
+    ntitleView.style.fontSize = ntitle.style.fontSize;
+    ntitleView.style.color = ntitle.style.color;
+    ntitleView.style.textAlign = ntitle.style.textAlign;
+    ntitle.style.display = 'none';
+    ntitleView.style.display = 'block';
 
-function noteTab(mode) {
-  if (mode === 'edit') {
-    editNoteTitle();
-    editNoteArea();
+    // Render Area
+    const txt = narea.value;
+    nrendered.innerHTML = txt.trim() ? parseMd(txt) : '<span style="color:var(--mu)">+</span>';
+    nrendered.style.fontFamily = narea.style.fontFamily;
+    nrendered.style.fontWeight = narea.style.fontWeight;
+    nrendered.style.fontStyle = narea.style.fontStyle;
+    nrendered.style.fontSize = narea.style.fontSize;
+    nrendered.style.color = narea.style.color;
+    nrendered.style.textAlign = narea.style.textAlign;
+    narea.style.display='none';
+    nrendered.style.display='block';
+
+    const vb = document.getElementById('ntab-v');
+    const eb = document.getElementById('ntab-e');
+    if(vb) vb.classList.add('on');
+    if(eb) eb.classList.remove('on');
+    const fmtBtn = document.getElementById('n-fmt-text-btn');
+    if(fmtBtn) fmtBtn.style.display='none';
   } else {
-    renderNoteTitleView();
-    renderNoteAreaView();
-  }
-  updateNoteTabUI();
-}
-
-function renderNoteTitleView() {
-  const ntitle = document.getElementById('ntitle');
-  const ntitleView = document.getElementById('ntitle-view');
-  if(!ntitle || !ntitleView) return;
-  const txt = ntitle.value.trim();
-  ntitleView.innerHTML = txt ? parseMd(txt) : '<span style="color:var(--mu)">+</span>';
-  
-  ntitleView.style.fontFamily = ntitle.style.fontFamily;
-  ntitleView.style.fontWeight = ntitle.style.fontWeight;
-  ntitleView.style.fontStyle = ntitle.style.fontStyle;
-  ntitleView.style.fontSize = ntitle.style.fontSize;
-  ntitleView.style.color = ntitle.style.color;
-  ntitleView.style.textAlign = ntitle.style.textAlign;
-  
-  ntitle.style.display = 'none';
-  ntitleView.style.display = 'block';
-  
-  // Also save changes to node if different
-  if (noteNodeId) {
-    const n = gN(noteNodeId);
-    if (n && n.label !== txt) {
-      sh();
-      const wasEmpty = !n.label || String(n.label).trim() === '' || n.label === '+' || n.label === 'Группа';
-      n.label = txt;
-      if (wasEmpty && !n.titleStyle && txt) {
-        n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
-        const ts = n.titleStyle;
-        if(ts.fontFamily) ntitleView.style.fontFamily = ntitle.style.fontFamily = ts.fontFamily;
-        if(ts.fontWeight) ntitleView.style.fontWeight = ntitle.style.fontWeight = ts.fontWeight;
-        if(ts.fontStyle) ntitleView.style.fontStyle = ntitle.style.fontStyle = ts.fontStyle;
-        if(ts.fontSize) ntitleView.style.fontSize = ntitle.style.fontSize = ts.fontSize + 'px';
-        if(ts.color) ntitleView.style.color = ntitle.style.color = ts.color;
-        if(ts.textAlign) ntitleView.style.textAlign = ntitle.style.textAlign = ts.textAlign;
-      }
-      render();
-      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
-    }
-  }
-  updateNoteTabUI();
-}
-
-function editNoteTitle() {
-  const ntitle = document.getElementById('ntitle');
-  const ntitleView = document.getElementById('ntitle-view');
-  if(ntitle && ntitleView && !ntitle.readOnly) {
-    ntitleView.style.display = 'none';
     ntitle.style.display = 'block';
-    ntitle.focus();
-    updateNoteTabUI();
-  }
-}
-
-function renderNoteAreaView() {
-  const narea = document.getElementById('narea');
-  const nrendered = document.getElementById('nrendered');
-  const fmtBtn = document.getElementById('n-fmt-text-btn');
-  if(!narea || !nrendered) return;
-  
-  const txt = narea.value;
-  nrendered.innerHTML = txt.trim() ? parseMd(txt) : '<span style="color:var(--mu)">+</span>';
-  
-  nrendered.style.fontFamily = narea.style.fontFamily;
-  nrendered.style.fontWeight = narea.style.fontWeight;
-  nrendered.style.fontStyle = narea.style.fontStyle;
-  nrendered.style.fontSize = narea.style.fontSize;
-  nrendered.style.color = narea.style.color;
-  nrendered.style.textAlign = narea.style.textAlign;
-  
-  narea.style.display = 'none';
-  nrendered.style.display = 'block';
-  if(fmtBtn) fmtBtn.style.display = 'none';
-  
-  // Save changes
-  if (noteNodeId) {
-    const n = gN(noteNodeId);
-    if (n && n.note !== txt.trim()) {
-      sh();
-      const wasEmpty = !n.note || String(n.note).trim() === '';
-      n.note = txt.trim();
-      if (wasEmpty && !n.noteStyle && txt.trim()) {
-        n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
-        const ns = n.noteStyle;
-        if(ns.fontFamily) nrendered.style.fontFamily = narea.style.fontFamily = ns.fontFamily;
-        if(ns.fontWeight) nrendered.style.fontWeight = narea.style.fontWeight = ns.fontWeight;
-        if(ns.fontStyle) nrendered.style.fontStyle = narea.style.fontStyle = ns.fontStyle;
-        if(ns.fontSize) nrendered.style.fontSize = narea.style.fontSize = ns.fontSize + 'px';
-        if(ns.color) nrendered.style.color = narea.style.color = ns.color;
-        if(ns.textAlign) nrendered.style.textAlign = narea.style.textAlign = ns.textAlign;
-      }
-      render();
-      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+    ntitleView.style.display = 'none';
+    narea.style.display='block';
+    nrendered.style.display='none';
+    
+    const eb = document.getElementById('ntab-e');
+    const vb = document.getElementById('ntab-v');
+    if(eb) eb.classList.add('on');
+    if(vb) vb.classList.remove('on');
+    const fmtBtn = document.getElementById('n-fmt-text-btn');
+    if(fmtBtn) fmtBtn.style.display='block';
+    
+    if(autoFocus) {
+      const isTitleEmpty = !ntitle.value.trim();
+      if(isTitleEmpty) ntitle.focus();
+      else narea.focus();
     }
-  }
-  updateNoteTabUI();
-}
-
-function editNoteArea() {
-  const narea = document.getElementById('narea');
-  const nrendered = document.getElementById('nrendered');
-  const fmtBtn = document.getElementById('n-fmt-text-btn');
-  if(narea && nrendered && !narea.readOnly) {
-    nrendered.style.display = 'none';
-    narea.style.display = 'block';
-    if(fmtBtn) fmtBtn.style.display = 'block';
-    narea.focus();
-    updateNoteTabUI();
   }
 }
 function toggleNBurger(ev){
