@@ -153,6 +153,27 @@ function closeNoteAndOpenTrash() {
   closeNote();
   openTrash();
 }
+function updateNoteTabUI() {
+  const ntitle = document.getElementById('ntitle');
+  const narea = document.getElementById('narea');
+  const isEditing = (ntitle && ntitle.style.display !== 'none') || (narea && narea.style.display !== 'none');
+  const eb = document.getElementById('ntab-e');
+  const vb = document.getElementById('ntab-v');
+  if(eb) eb.classList.toggle('on', isEditing);
+  if(vb) vb.classList.toggle('on', !isEditing);
+}
+
+function noteTab(mode) {
+  if (mode === 'edit') {
+    editNoteTitle();
+    editNoteArea();
+  } else {
+    renderNoteTitleView();
+    renderNoteAreaView();
+  }
+  updateNoteTabUI();
+}
+
 function renderNoteTitleView() {
   const ntitle = document.getElementById('ntitle');
   const ntitleView = document.getElementById('ntitle-view');
@@ -191,6 +212,7 @@ function renderNoteTitleView() {
       if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
     }
   }
+  updateNoteTabUI();
 }
 
 function editNoteTitle() {
@@ -200,6 +222,7 @@ function editNoteTitle() {
     ntitleView.style.display = 'none';
     ntitle.style.display = 'block';
     ntitle.focus();
+    updateNoteTabUI();
   }
 }
 
@@ -244,6 +267,7 @@ function renderNoteAreaView() {
       if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
     }
   }
+  updateNoteTabUI();
 }
 
 function editNoteArea() {
@@ -255,6 +279,7 @@ function editNoteArea() {
     narea.style.display = 'block';
     if(fmtBtn) fmtBtn.style.display = 'block';
     narea.focus();
+    updateNoteTabUI();
   }
 }
 function toggleNBurger(ev){

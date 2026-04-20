@@ -51,7 +51,7 @@ Object.assign(window, {
   trashNote, deleteNote,
   cutNote, copyNote, pasteNote,
   shareNote, downloadNote,
-  toggleNBurger, toggleNDlSub,
+  toggleNBurger, toggleNDlSub, noteTab,
   renderNoteTitleView, editNoteTitle,
   renderNoteAreaView, editNoteArea,
 
