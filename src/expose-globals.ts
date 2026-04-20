@@ -21,8 +21,9 @@ Object.assign(window, {
   // ── Text Formatting ──
   updateTextStyle, showTextFmtCtx,
   openNoteTitleFmt, openNoteTextFmt,
-  toggleWeight, toggleFontStyle,
+  toggleWeight, toggleFontStyle, toggleStrike,
   toggleTextDefault, applyTextStyleToSelected,
+  applyDefaultsToSelection,
   mdWrap,
 
   // ── Background / Canvas context menu ──
@@ -50,7 +51,9 @@ Object.assign(window, {
   trashNote, deleteNote,
   cutNote, copyNote, pasteNote,
   shareNote, downloadNote,
-  noteTab, toggleNBurger, toggleNDlSub,
+  toggleNBurger, toggleNDlSub,
+  renderNoteTitleView, editNoteTitle,
+  renderNoteAreaView, editNoteArea,
 
   // ── Trash ──
   openTrash, closeTrash, tAction,

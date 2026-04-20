@@ -555,8 +555,9 @@
   <div id="nbox">
     <div id="nbox-hdr">
       <button id="n-back-btn" onclick="closeNoteAndOpenTrash()" style="display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-right:8px" title="Назад">🔙</button>
-      <input id="ntitle" placeholder="+">
-      <button id="n-fmt-title-btn" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
+      <input id="ntitle" placeholder="+" style="display:none;" onblur="renderNoteTitleView()">
+      <div id="ntitle-view" tabindex="0" style="flex:1; cursor:text; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;" onclick="editNoteTitle()"></div>
+      <button id="n-fmt-title-btn" onmousedown="event.preventDefault()" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
       <button id="n-done-btn" onclick="closeNote()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--grn);margin-right:8px" title="Готово">✅</button>
       <div id="n-burger" onclick="toggleNBurger(event)">☰</div>
       <div id="n-burger-menu" onclick="event.stopPropagation()">
@@ -573,14 +574,12 @@
         <div id="n-del-btn" class="nmi danger" onclick="deleteNote()" title="Удалить">❌</div>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
-      <textarea id="narea" placeholder="+"></textarea>
-      <div id="nrendered"></div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:12px">
+      <textarea id="narea" placeholder="+" style="display:none;" onblur="renderNoteAreaView()"></textarea>
+      <div id="nrendered" tabindex="0" style="flex:1; overflow-y:auto; cursor:text; word-break:break-word;" onclick="editNoteArea()"></div>
     </div>
     <div id="nfooter">
-      <button id="n-fmt-text-btn" class="ntab" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px">🖋️</button>
-      <button class="ntab on" id="ntab-e" onclick="noteTab('edit')">📝</button>
-      <button class="ntab" id="ntab-v" onclick="noteTab('view')">👁️</button>
+      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
     </div>
   </div>
 </div>
@@ -678,31 +677,36 @@
 
 <!-- Text Field Context Menu -->
 <div id="text-field-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3400;width:180px;padding:6px;flex-direction:column;gap:4px;" onclick="event.stopPropagation()">
-  <div class="gc-item" id="tfc-fmt">🖋️ Формат текста <span style="margin-left:auto;font-size:10px;">▶</span></div>
+  <div class="gc-item" id="tfc-fmt" onmousedown="event.preventDefault()">🖋️ Формат текста <span style="margin-left:auto;font-size:10px;">▶</span></div>
   <div class="ctx-sep"></div>
-  <div class="gc-item" id="tfc-cut">✂️ Вырезать</div>
-  <div class="gc-item" id="tfc-copy">📋 Копировать</div>
-  <div class="gc-item" id="tfc-paste">📌 Вставить</div>
-  <div class="gc-item" id="tfc-del" style="color:var(--red);">🗑️ Удалить</div>
+  <div class="gc-item" id="tfc-cut" onmousedown="event.preventDefault()">✂️ Вырезать</div>
+  <div class="gc-item" id="tfc-copy" onmousedown="event.preventDefault()">📋 Копировать</div>
+  <div class="gc-item" id="tfc-paste" onmousedown="event.preventDefault()">📌 Вставить</div>
+  <div class="gc-item" id="tfc-del" style="color:var(--red);" onmousedown="event.preventDefault()">🗑️ Удалить</div>
   <div class="ctx-sep"></div>
-  <div class="gc-item" id="tfc-selall">Выбрать всё</div>
+  <div class="gc-item" id="tfc-selall" onmousedown="event.preventDefault()">Выбрать всё</div>
 </div>
 
 <!-- Text Formatting Context Menu -->
 <div id="text-fmt-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3500;width:200px;padding:8px;flex-direction:column;gap:8px;" onclick="event.stopPropagation()">
+  <!-- Selection mode indicator (shown only when text is selected) -->
+  <div id="tf-sel-mode-row" style="display:none; background:#f0f7ff; border:1px solid #c0d8ff; border-radius:8px; padding:5px 8px; font-size:11px; color:#1e6fbf; align-items:center; gap:6px;">
+    <span>✦</span><span>Форматирование выделенного текста</span>
+  </div>
   <!-- Font Variant -->
-  <div class="bg-group">
+  <div class="bg-group" id="tf-group-variant">
     <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
       <span>НАЧЕРТАНИЕ</span>
       <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-variant" onchange="toggleTextDefault('variant', this.checked)" style="width:12px; height:12px;"> умолч.</label>
     </div>
     <div class="bg-patterns" style="padding:4px;">
-      <div class="bg-pat-btn" id="tf-var-bold" onclick="toggleWeight()" title="Жирный" style="font-size:14px; font-weight:bold; width:40px;">B</div>
-      <div class="bg-pat-btn" id="tf-var-italic" onclick="toggleFontStyle()" title="Курсив" style="font-size:14px; font-style:italic; width:40px;">I</div>
+      <div class="bg-pat-btn" id="tf-var-bold" onmousedown="event.preventDefault()" onclick="toggleWeight()" title="Жирный" style="font-size:14px; font-weight:bold; width:40px;">B</div>
+      <div class="bg-pat-btn" id="tf-var-italic" onmousedown="event.preventDefault()" onclick="toggleFontStyle()" title="Курсив" style="font-size:14px; font-style:italic; width:40px;">I</div>
+      <div class="bg-pat-btn" id="tf-var-strike" onmousedown="event.preventDefault()" onclick="toggleStrike()" title="Зачёркнутый" style="font-size:14px; text-decoration:line-through; width:40px;">S</div>
     </div>
   </div>
   <!-- Font Size -->
-  <div class="bg-group">
+  <div class="bg-group" id="tf-group-size">
     <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
       <span>РАЗМЕР</span>
       <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-size" onchange="toggleTextDefault('size', this.checked)" style="width:12px; height:12px;"> умолч.</label>
@@ -715,7 +719,7 @@
     </div>
   </div>
   <!-- Alignment -->
-  <div class="bg-group">
+  <div class="bg-group" id="tf-group-align">
     <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
       <span>ВЫРАВНИВАНИЕ</span>
       <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-align" onchange="toggleTextDefault('align', this.checked)" style="width:12px; height:12px;"> умолч.</label>
@@ -727,7 +731,7 @@
     </div>
   </div>
   <!-- Color -->
-  <div class="bg-group">
+  <div class="bg-group" id="tf-group-color">
     <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
       <span>ЦВЕТ ТЕКСТА</span>
       <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-color" onchange="toggleTextDefault('color', this.checked)" style="width:12px; height:12px;"> умолч.</label>
@@ -742,8 +746,13 @@
   </div>
   <!-- Actions -->
   <div class="ctx-sep"></div>
+  <div id="tf-apply-defaults-sel-row" style="display:none;">
+    <button class="gc-item" onmousedown="event.preventDefault()" onclick="applyDefaultsToSelection()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
+      ✦ Применить умолчания к выделенному
+    </button>
+  </div>
   <div id="tf-apply-all-row" style="display:none;">
-    <button class="gc-item" id="tf-apply-all-btn" onclick="applyTextStyleToSelected()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
+    <button class="gc-item" id="tf-apply-all-btn" onmousedown="event.preventDefault()" onclick="applyTextStyleToSelected()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
       ✨ Применить к выбранным
     </button>
   </div>

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>MindMap</title>
 <link rel="manifest" href="/Integreco/assets/manifest-Bq2qPf0l.json">
-  <script type="module" crossorigin src="/Integreco/assets/index-i9HiktzV.js"></script>
-  <link rel="stylesheet" crossorigin href="/Integreco/assets/index-CR1lpGFf.css">
+  <script type="module" crossorigin src="/Integreco/assets/index-CUp6GFc4.js"></script>
+  <link rel="stylesheet" crossorigin href="/Integreco/assets/index-s5rDLaja.css">
 </head>
 <body ondragstart="return false;">
 
@@ -479,6 +479,7 @@
       <div class="lpb2 on" id="ep-purpose-main" onclick="setEP('purpose','main',this)" title="🔗 Основная">🔗</div>
       <div class="lpb2" id="ep-purpose-link" onclick="setEP('purpose','link',this)" title="⛓️ Связующая">⛓️</div>
     </div>
+    <div class="lpb2" id="ep-hier-lock" onclick="toggleHierLock(this)" style="max-width:44px; margin-left:6px" title="🌳 Привязать иерархию к стрелке">🌳</div>
   </div>
   <!-- Shape -->
   <div class="lp-row lp-fix-row" id="lp-fix-row">
@@ -539,6 +540,7 @@
   <!-- Delete + Insert -->
   <div class="lpr2" style="position:relative;margin-top:2px">
     <div class="lpb2 del-btn" onclick="deleteSelectedEdge()" title="Удалить соединение">✕</div>
+    <div class="lpb2" onclick="showTextFmtCtx(event,'edge',selE)" title="Форматирование текста" style="font-size:16px">🖋️</div>
     <div class="lpb2" id="ep-plus-btn" onclick="togglePlusSub(event)" title="⊕ Вставить в разрыв" style="font-size:18px">⊕</div>
     <div id="lp-plus-sub" class="lp-plus-sub" style="display:none;position:absolute;bottom:calc(100% + 4px);right:0;background:#fff;border:1.5px solid var(--nbr);border-radius:10px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:100;min-width:110px">
       <div class="lp-si" onclick="insertObjectOnEdge(selE,'node')">⚪ Узел</div>
@@ -554,7 +556,9 @@
   <div id="nbox">
     <div id="nbox-hdr">
       <button id="n-back-btn" onclick="closeNoteAndOpenTrash()" style="display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-right:8px" title="Назад">🔙</button>
-      <input id="ntitle" placeholder="+">
+      <input id="ntitle" placeholder="+" style="display:none;" onblur="renderNoteTitleView()">
+      <div id="ntitle-view" tabindex="0" style="flex:1; cursor:text; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;" onclick="editNoteTitle()"></div>
+      <button id="n-fmt-title-btn" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
       <button id="n-done-btn" onclick="closeNote()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--grn);margin-right:8px" title="Готово">✅</button>
       <div id="n-burger" onclick="toggleNBurger(event)">☰</div>
       <div id="n-burger-menu" onclick="event.stopPropagation()">
@@ -571,13 +575,12 @@
         <div id="n-del-btn" class="nmi danger" onclick="deleteNote()" title="Удалить">❌</div>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
-      <textarea id="narea" placeholder="+"></textarea>
-      <div id="nrendered"></div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:12px">
+      <textarea id="narea" placeholder="+" style="display:none;" onblur="renderNoteAreaView()"></textarea>
+      <div id="nrendered" tabindex="0" style="flex:1; overflow-y:auto; cursor:text; word-break:break-word;" onclick="editNoteArea()"></div>
     </div>
     <div id="nfooter">
-      <button class="ntab on" id="ntab-e" onclick="noteTab('edit')">📝</button>
-      <button class="ntab" id="ntab-v" onclick="noteTab('view')">👁️</button>
+      <button id="n-fmt-text-btn" class="ntab" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
     </div>
   </div>
 </div>
@@ -652,6 +655,13 @@
   </div>
 </div>
 
+<!-- Inline Markdown formatting toolbar (shown during node/edge editing) -->
+<div id="md-toolbar" style="display:none;position:absolute;z-index:2500;background:#fff;border:1.5px solid var(--nbr);border-radius:8px;padding:3px 4px;box-shadow:0 4px 16px rgba(0,0,0,.12);gap:2px;" onclick="event.stopPropagation()">
+  <div class="md-tb-btn" onclick="mdWrap('**')" title="Жирный" style="font-weight:bold">B</div>
+  <div class="md-tb-btn" onclick="mdWrap('*')" title="Курсив" style="font-style:italic">I</div>
+  <div class="md-tb-btn" onclick="mdWrap('~~')" title="Зачёркнутый" style="text-decoration:line-through">S</div>
+</div>
+
 <!-- toast -->
 <div id="toast"></div>
 <div id="sel-box"></div>
@@ -663,6 +673,89 @@
 <!-- generic context menu for catalog/buttons -->
 <div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;">
   <div class="gc-item" id="gc-open-new-tab">🔗 Открыть в новой вкладке</div>
+</div>
+
+<!-- Text Field Context Menu -->
+<div id="text-field-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3400;width:180px;padding:6px;flex-direction:column;gap:4px;" onclick="event.stopPropagation()">
+  <div class="gc-item" id="tfc-fmt" onmousedown="event.preventDefault()">🖋️ Формат текста <span style="margin-left:auto;font-size:10px;">▶</span></div>
+  <div class="ctx-sep"></div>
+  <div class="gc-item" id="tfc-cut" onmousedown="event.preventDefault()">✂️ Вырезать</div>
+  <div class="gc-item" id="tfc-copy" onmousedown="event.preventDefault()">📋 Копировать</div>
+  <div class="gc-item" id="tfc-paste" onmousedown="event.preventDefault()">📌 Вставить</div>
+  <div class="gc-item" id="tfc-del" style="color:var(--red);" onmousedown="event.preventDefault()">🗑️ Удалить</div>
+  <div class="ctx-sep"></div>
+  <div class="gc-item" id="tfc-selall" onmousedown="event.preventDefault()">Выбрать всё</div>
+</div>
+
+<!-- Text Formatting Context Menu -->
+<div id="text-fmt-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3500;width:200px;padding:8px;flex-direction:column;gap:8px;" onclick="event.stopPropagation()">
+  <!-- Selection mode indicator (shown only when text is selected) -->
+  <div id="tf-sel-mode-row" style="display:none; background:#f0f7ff; border:1px solid #c0d8ff; border-radius:8px; padding:5px 8px; font-size:11px; color:#1e6fbf; align-items:center; gap:6px;">
+    <span>✦</span><span>Форматирование выделенного текста</span>
+  </div>
+  <!-- Font Variant -->
+  <div class="bg-group" id="tf-group-variant">
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>НАЧЕРТАНИЕ</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-variant" onchange="toggleTextDefault('variant', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
+    <div class="bg-patterns" style="padding:4px;">
+      <div class="bg-pat-btn" id="tf-var-bold" onmousedown="event.preventDefault()" onclick="toggleWeight()" title="Жирный" style="font-size:14px; font-weight:bold; width:40px;">B</div>
+      <div class="bg-pat-btn" id="tf-var-italic" onmousedown="event.preventDefault()" onclick="toggleFontStyle()" title="Курсив" style="font-size:14px; font-style:italic; width:40px;">I</div>
+      <div class="bg-pat-btn" id="tf-var-strike" onmousedown="event.preventDefault()" onclick="toggleStrike()" title="Зачёркнутый" style="font-size:14px; text-decoration:line-through; width:40px;">S</div>
+    </div>
+  </div>
+  <!-- Font Size -->
+  <div class="bg-group" id="tf-group-size">
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>РАЗМЕР</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-size" onchange="toggleTextDefault('size', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
+    <div class="bg-sliders" style="padding:4px 8px 8px;">
+      <div class="slider-row">
+        <span>📏</span>
+        <input type="range" id="tf-font-size" min="8" max="72" step="1" oninput="updateTextStyle('fontSize', parseInt(this.value), false)" onchange="updateTextStyle('fontSize', parseInt(this.value), true)">
+      </div>
+    </div>
+  </div>
+  <!-- Alignment -->
+  <div class="bg-group" id="tf-group-align">
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>ВЫРАВНИВАНИЕ</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-align" onchange="toggleTextDefault('align', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
+    <div class="bg-patterns" style="padding:4px;">
+      <div class="bg-pat-btn" id="tf-align-left" onclick="updateTextStyle('textAlign','left')" title="Слева">⬅️</div>
+      <div class="bg-pat-btn" id="tf-align-center" onclick="updateTextStyle('textAlign','center')" title="Центр">↔️</div>
+      <div class="bg-pat-btn" id="tf-align-right" onclick="updateTextStyle('textAlign','right')" title="Справа">➡️</div>
+    </div>
+  </div>
+  <!-- Color -->
+  <div class="bg-group" id="tf-group-color">
+    <div style="font-size:11px; color:var(--mu); padding:2px 6px; display:flex; justify-content:space-between;">
+      <span>ЦВЕТ ТЕКСТА</span>
+      <label style="cursor:pointer; display:flex; align-items:center; gap:4px;"><input type="checkbox" id="tf-def-color" onchange="toggleTextDefault('color', this.checked)" style="width:12px; height:12px;"> умолч.</label>
+    </div>
+    <div class="bg-colors" id="tf-colors-list" style="padding:4px; display:flex; flex-wrap:wrap; gap:4px;">
+      <!-- populated by JS -->
+    </div>
+    <div class="bg-colors" style="padding-top:0">
+      <div class="bg-custom-btn" onclick="document.getElementById('tf-custom-input').click()" title="Выбрать цвет" style="margin-left:auto">🖌️</div>
+      <input type="color" id="tf-custom-input" style="width:0;height:0;visibility:hidden;position:absolute" onchange="updateTextStyle('color', this.value, true)">
+    </div>
+  </div>
+  <!-- Actions -->
+  <div class="ctx-sep"></div>
+  <div id="tf-apply-defaults-sel-row" style="display:none;">
+    <button class="gc-item" onmousedown="event.preventDefault()" onclick="applyDefaultsToSelection()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
+      ✦ Применить умолчания к выделенному
+    </button>
+  </div>
+  <div id="tf-apply-all-row" style="display:none;">
+    <button class="gc-item" id="tf-apply-all-btn" onmousedown="event.preventDefault()" onclick="applyTextStyleToSelected()" style="width:100%; text-align:left; border:none; background:none; font-family:inherit;">
+      ✨ Применить к выбранным
+    </button>
+  </div>
 </div>
 
 <!-- IMG CATALOG OVERLAY -->

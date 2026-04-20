@@ -721,15 +721,18 @@ function updateBg(key, val, commit=true){
    TEXT FORMATTING CONTEXT MENU
    ================================================================ */
 let ctxTextId = null;
-let ctxTextType = 'node'; // 'node' or 'edge'
+let ctxTextType = 'node'; // 'node', 'edge', 'note-title', 'note-text'
+// Captured textarea selection before the menu opened: {el, start, end} or null
+let ctxTextSelection = null;
 
-function showTextFmtCtx(ev, type, id) {
+function showTextFmtCtx(ev, type, id, selection) {
   ev.preventDefault();
   ev.stopPropagation();
   hideAllMenus();
   
   ctxTextId = id;
   ctxTextType = type;
+  ctxTextSelection = selection || null;
   
   const menu = document.getElementById('text-fmt-ctx');
   if(!menu) return;
@@ -811,6 +814,46 @@ function syncTextFmtUI() {
     if (tColor) tColor.parentElement.style.display = 'none';
   }
 
+  // Selection mode UI
+  const inSelMode = !!(ctxTextSelection && ctxTextSelection.start !== ctxTextSelection.end);
+  const selRow = document.getElementById('tf-sel-mode-row');
+  if(selRow) selRow.style.display = inSelMode ? 'flex' : 'none';
+  
+  const selDefRow = document.getElementById('tf-apply-defaults-sel-row');
+  if(selDefRow) selDefRow.style.display = inSelMode ? 'block' : 'none';
+
+  // Strikethrough button: only meaningful in selection mode (whole-node strike not supported by CSS here)
+  const strikeBtn = document.getElementById('tf-var-strike');
+  if(strikeBtn) strikeBtn.style.display = inSelMode ? 'flex' : 'none';
+
+  // Hide size, align, and color groups when in selection mode
+  const grpSize = document.getElementById('tf-group-size');
+  const grpAlign = document.getElementById('tf-group-align');
+  const grpColor = document.getElementById('tf-group-color');
+  if(grpSize) grpSize.style.display = inSelMode ? 'none' : 'block';
+  if(grpAlign) grpAlign.style.display = inSelMode ? 'none' : 'block';
+  if(grpColor) grpColor.style.display = inSelMode ? 'none' : 'block';
+
+  // In selection mode, show Bold/Italic state from Markdown markers in selected text
+  if(inSelMode) {
+    const { el, start, end } = ctxTextSelection;
+    const sel = el.value.substring(start, end);
+    // Check if the selection is wrapped in markers (detect outermost)
+    const outerBold = el.value.substring(Math.max(0, start-2), start) === '**' &&
+                      el.value.substring(end, end+2) === '**';
+    const outerItalic = !outerBold &&
+                        el.value.substring(Math.max(0, start-1), start) === '*' &&
+                        el.value.substring(end, end+1) === '*';
+    const outerStrike = el.value.substring(Math.max(0, start-2), start) === '~~' &&
+                        el.value.substring(end, end+2) === '~~';
+    document.getElementById('tf-var-bold').classList.toggle('on', outerBold);
+    document.getElementById('tf-var-italic').classList.toggle('on', outerItalic);
+    if(strikeBtn) strikeBtn.classList.toggle('on', outerStrike);
+    // Hide whole-node controls that don't apply to selection
+    document.getElementById('tf-apply-all-row').style.display = 'none';
+    return; // Skip the rest of syncTextFmtUI (whole-node state)
+  }
+
   // Sync Apply to Selected
   const applyRow = document.getElementById('tf-apply-all-row');
   if(applyRow) {
@@ -824,7 +867,7 @@ function syncTextFmtUI() {
           const sameTypeCount = isSelected ? [...selNSet].filter(id => id !== ctxTextId && gN(id)?.type === item.type).length : 0;
           btn.disabled = sameTypeCount === 0;
         } else {
-          btn.disabled = true; // Edges not yet multi-selectable
+          btn.disabled = true;
         }
       }
     }
@@ -892,8 +935,21 @@ function updateTextStyle(key, val, commit=true) {
   }
 }
 
-function openNoteTitleFmt(ev) { showTextFmtCtx(ev, 'note-title', noteNodeId); }
-function openNoteTextFmt(ev) { showTextFmtCtx(ev, 'note-text', noteNodeId); }
+function openNoteTitleFmt(ev) {
+  // Capture selection from ntitle before the menu steals focus
+  const ntitle = document.getElementById('ntitle');
+  const sel = (ntitle && ntitle.selectionStart !== ntitle.selectionEnd)
+    ? { el: ntitle, start: ntitle.selectionStart, end: ntitle.selectionEnd }
+    : null;
+  showTextFmtCtx(ev, 'note-title', noteNodeId, sel);
+}
+function openNoteTextFmt(ev) {
+  const narea = document.getElementById('narea');
+  const sel = (narea && narea.selectionStart !== narea.selectionEnd)
+    ? { el: narea, start: narea.selectionStart, end: narea.selectionEnd }
+    : null;
+  showTextFmtCtx(ev, 'note-text', noteNodeId, sel);
+}
 
 function toggleTextDefault(flagKey, checked) {
   const defMap = {
@@ -926,6 +982,15 @@ function toggleTextDefault(flagKey, checked) {
 }
 
 function toggleWeight() {
+  // Selection mode: wrap with Markdown **
+  if(ctxTextSelection && ctxTextSelection.el) {
+    wrapSelectionMd(ctxTextSelection.el, '**', '**');
+    // Update stored selection after wrap
+    ctxTextSelection.start = ctxTextSelection.el.selectionStart;
+    ctxTextSelection.end = ctxTextSelection.el.selectionEnd;
+    syncTextFmtUI();
+    return;
+  }
   const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
   if(!item) return;
   let s = {};
@@ -937,6 +1002,14 @@ function toggleWeight() {
 }
 
 function toggleFontStyle() {
+  // Selection mode: wrap with Markdown *
+  if(ctxTextSelection && ctxTextSelection.el) {
+    wrapSelectionMd(ctxTextSelection.el, '*', '*');
+    ctxTextSelection.start = ctxTextSelection.el.selectionStart;
+    ctxTextSelection.end = ctxTextSelection.el.selectionEnd;
+    syncTextFmtUI();
+    return;
+  }
   const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
   if(!item) return;
   let s = {};
@@ -945,6 +1018,37 @@ function toggleFontStyle() {
   else s = item.style || {};
   const current = s.fontStyle || 'normal';
   updateTextStyle('fontStyle', current === 'italic' ? 'normal' : 'italic');
+}
+
+function toggleStrike() {
+  // Only available in selection mode
+  if(!ctxTextSelection || !ctxTextSelection.el) return;
+  wrapSelectionMd(ctxTextSelection.el, '~~', '~~');
+  ctxTextSelection.start = ctxTextSelection.el.selectionStart;
+  ctxTextSelection.end = ctxTextSelection.el.selectionEnd;
+  syncTextFmtUI();
+}
+
+function applyDefaultsToSelection() {
+  // Wraps the selected text in Markdown markers based on current defaults
+  if(!ctxTextSelection || !ctxTextSelection.el) return;
+  const el = ctxTextSelection.el;
+  const defStyle = ctxTextType === 'note-title' ? noteDefaults.title
+                 : ctxTextType === 'note-text' ? noteDefaults.text
+                 : nodeDefaults.style;
+  if(!defStyle) return;
+  // Apply bold and/or italic as Markdown markers
+  if(defStyle.fontWeight === 'bold') {
+    wrapSelectionMd(el, '**', '**');
+    ctxTextSelection.start = el.selectionStart;
+    ctxTextSelection.end = el.selectionEnd;
+  }
+  if(defStyle.fontStyle === 'italic') {
+    wrapSelectionMd(el, '*', '*');
+    ctxTextSelection.start = el.selectionStart;
+    ctxTextSelection.end = el.selectionEnd;
+  }
+  syncTextFmtUI();
 }
 
 function applyTextStyleToSelected() {
@@ -995,6 +1099,11 @@ function showTextFieldCtx(ev, el) {
   menu.style.display = 'flex';
   posMenu(menu, ev.clientX, ev.clientY);
   
+  // Capture selection NOW (before anything can clear it)
+  const _capturedSel = (el.selectionStart !== el.selectionEnd)
+    ? { el, start: el.selectionStart, end: el.selectionEnd }
+    : null;
+
   // Set up formatting submenu trigger
   const fmtBtn = document.getElementById('tfc-fmt');
   if(fmtBtn) {
@@ -1002,8 +1111,8 @@ function showTextFieldCtx(ev, el) {
       e.stopPropagation();
       menu.style.display = 'none';
       // Determine what we are editing to pass to showTextFmtCtx
-      if(el.id === 'ntitle') showTextFmtCtx(e, 'note-title', noteNodeId);
-      else if(el.id === 'narea') showTextFmtCtx(e, 'note-text', noteNodeId);
+      if(el.id === 'ntitle') showTextFmtCtx(e, 'note-title', noteNodeId, _capturedSel);
+      else if(el.id === 'narea') showTextFmtCtx(e, 'note-text', noteNodeId, _capturedSel);
       else if(el.classList.contains('nedit')) {
         // Node edit
         const sp = el.nextElementSibling;
@@ -1012,7 +1121,7 @@ function showTextFieldCtx(ev, el) {
            if(ni) {
              const nd = ni.parentElement;
              if(nd && nd.id && nd.id.startsWith('nd')) {
-               showTextFmtCtx(e, 'node', parseInt(nd.id.substring(2)));
+               showTextFmtCtx(e, 'node', parseInt(nd.id.substring(2)), _capturedSel);
              }
            }
         }
@@ -1020,7 +1129,7 @@ function showTextFieldCtx(ev, el) {
       else if(el.classList.contains('edge-edit')) {
         // Edge edit
         const eid = parseInt(el.dataset.eid);
-        if(eid) showTextFmtCtx(e, 'edge', eid);
+        if(eid) showTextFmtCtx(e, 'edge', eid, _capturedSel);
       }
     };
   }
