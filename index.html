@@ -655,6 +655,13 @@
   </div>
 </div>
 
+<!-- Inline Markdown formatting toolbar (shown during node/edge editing) -->
+<div id="md-toolbar" style="display:none;position:absolute;z-index:2500;background:#fff;border:1.5px solid var(--nbr);border-radius:8px;padding:3px 4px;box-shadow:0 4px 16px rgba(0,0,0,.12);gap:2px;" onclick="event.stopPropagation()">
+  <div class="md-tb-btn" onclick="mdWrap('**')" title="Жирный" style="font-weight:bold">B</div>
+  <div class="md-tb-btn" onclick="mdWrap('*')" title="Курсив" style="font-style:italic">I</div>
+  <div class="md-tb-btn" onclick="mdWrap('~~')" title="Зачёркнутый" style="text-decoration:line-through">S</div>
+</div>
+
 <!-- toast -->
 <div id="toast"></div>
 <div id="sel-box"></div>

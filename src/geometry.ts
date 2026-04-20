@@ -279,7 +279,7 @@ function nodeHalfExtents(nodeId){
   const ph=n.style && n.style.padding != null ? n.style.padding * 2.2 : (isRoot?26:22);
   const minW=isRoot?0:88,maxW=isRoot?Infinity:210;
   _mtx.font=fst+fw+fs+'px '+ff;
-  const tw=_mtx.measureText(n.label||'').width;
+  const tw=_mtx.measureText(stripMd(n.label||'')).width;
   const w=Math.max(minW,Math.min(maxW,tw+ph*2));
   const h=fs*1.45+pv*2;
   return{hw:w/2,hh:h/2};
@@ -926,7 +926,7 @@ function render(){
         fo.setAttribute('style','overflow:visible;pointer-events:none');
         const div=document.createElement('div');
         div.className='edge-label-v3';
-        const span=document.createElement('span');span.textContent=e.label;
+        const span=document.createElement('span');span.innerHTML=parseMd(e.label);
         if(e.style) {
           if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
           if(e.style.fontWeight) span.style.fontWeight = e.style.fontWeight;
@@ -1075,7 +1075,7 @@ function render(){
     
     const title=document.createElement('div');
     title.className='group-title';
-    title.textContent=n.label;
+    title.innerHTML=parseMd(n.label);
     if(n.bg && n.bg.titleColor) {
       title.style.backgroundColor = hexToRgba(n.bg.titleColor, n.bg.titleOpacity ?? 0.95);
       title.style.color = getContrastColor(n.bg.titleColor);
@@ -1292,7 +1292,10 @@ function render(){
     const sp=document.createElement('span');
     sp.setAttribute('draggable', 'false');
     sp.ondragstart = () => false;
-    sp.textContent=n.label||(n.id===selN?'':'+');
+    const rawLabel = n.label||(n.id===selN?'':'+');
+    // Render inline Markdown for view mode; plain '+' stays as text
+    if(n.label) sp.innerHTML = parseMd(rawLabel);
+    else sp.textContent = rawLabel;
 
     if(n.style) {
       if(n.style.fontFamily) sp.style.fontFamily = n.style.fontFamily;
@@ -1422,7 +1425,7 @@ function renderEdgesOnly(specificEdgeIds){
         fo.setAttribute('style','overflow:visible;pointer-events:none');
         const div=document.createElement('div');
         div.className='edge-label-v3';
-        const span=document.createElement('span');span.textContent=e.label;
+        const span=document.createElement('span');span.innerHTML=parseMd(e.label);
         if(e.style) {
           if(e.style.fontFamily) span.style.fontFamily = e.style.fontFamily;
           if(e.style.fontWeight) span.style.fontWeight = e.style.fontWeight;

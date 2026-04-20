@@ -36,10 +36,15 @@ function editNode(id, isNew=false){
   }
 
   targetContainer.insertBefore(ta,sp);ta.focus();ta.select();
+  // Show inline Markdown toolbar above the textarea
+  _activeMdTextarea = ta;
+  _showMdToolbar(ta);
   let isDone = false;
   const done=()=>{
     if(isDone) return;
     isDone = true;
+    _hideMdToolbar();
+    _activeMdTextarea = null;
     const val = ta.value.trim();
     if(val !== n.label) {
       if(!isNew) sh();
@@ -54,8 +59,12 @@ function editNode(id, isNew=false){
     }
     if(!isRendering) render();
   };
-  ta.addEventListener('blur',done);
-  ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}if(ev.key==='Escape'){isDone=true;render();}if(ev.key==='Tab'){ev.preventDefault();done();setTimeout(()=>addChild(id),50)}});
+  ta.addEventListener('blur',(ev)=>{
+    // Don't close if clicking the toolbar
+    if(ev.relatedTarget && ev.relatedTarget.closest('#md-toolbar')) { ta.focus(); return; }
+    done();
+  });
+  ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}if(ev.key==='Escape'){isDone=true;_hideMdToolbar();_activeMdTextarea=null;render();}if(ev.key==='Tab'){ev.preventDefault();done();setTimeout(()=>addChild(id),50)}});
   ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px'});
 }
 
@@ -192,19 +201,27 @@ function editEdge(eid){
     ta.select();
     // Auto-resize
     ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
+    // Show inline Markdown toolbar
+    _activeMdTextarea = ta;
+    _showMdToolbar(ta);
   },50);
 
   let done=false;
   const finish=()=>{
     if(done)return;done=true;
+    _hideMdToolbar();
+    _activeMdTextarea = null;
     const val=ta.value.trim();
     if(val!==e.label){sh();e.label=val;saveToLocalStorage();}
     ta.remove();render();
   };
-  ta.addEventListener('blur',finish);
+  ta.addEventListener('blur',(ev)=>{
+    if(ev.relatedTarget && ev.relatedTarget.closest('#md-toolbar')) { ta.focus(); return; }
+    finish();
+  });
   ta.addEventListener('keydown',ev=>{
     if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}
-    if(ev.key==='Escape'){done=true;ta.remove();render()}
+    if(ev.key==='Escape'){done=true;_hideMdToolbar();_activeMdTextarea=null;ta.remove();render()}
   });
 }
 

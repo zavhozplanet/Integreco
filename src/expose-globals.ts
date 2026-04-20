@@ -23,6 +23,7 @@ Object.assign(window, {
   openNoteTitleFmt, openNoteTextFmt,
   toggleWeight, toggleFontStyle,
   toggleTextDefault, applyTextStyleToSelected,
+  mdWrap,
 
   // ── Background / Canvas context menu ──
   updateBg, updateBgColorManual, setBgColorTarget,

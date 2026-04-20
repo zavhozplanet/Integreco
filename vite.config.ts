@@ -14,6 +14,7 @@ const SRC_ORDER = [
   'src/create-delete.ts',
   'src/smart-placement.ts',
   'src/layout.ts',
+  'src/md-parse.ts',
   'src/geometry.ts',
   'src/selection.ts',
   'src/edit.ts',

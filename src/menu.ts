@@ -67,9 +67,10 @@ function exportFmt(fmt, customNodes, customEdges){
     expEdges.forEach(e=>{const f=expNodes.find(x=>x.id===e.from),t=expNodes.find(x=>x.id===e.to);if(!f||!t)return;ctx.strokeStyle=e.color||'#b0aba4';ctx.lineWidth=e.width*scale||1.5*scale;ctx.beginPath();ctx.moveTo(tx(f.x),ty(f.y));ctx.lineTo(tx(t.x),ty(t.y));ctx.stroke()});
     allN.forEach(n=>{
       const isRoot=gPar(n.id)==null;ctx.fillStyle=isRoot?'#3d3b38':'#fff';ctx.strokeStyle='#d8d4ce';ctx.lineWidth=scale;
-      const tw=ctx.measureText(n.label).width+24*scale,th=28*scale,rx=tx(n.x)-tw/2,ry=ty(n.y)-th/2;
+      const plainLabel = stripMd(n.label||'');
+      const tw=ctx.measureText(plainLabel).width+24*scale,th=28*scale,rx=tx(n.x)-tw/2,ry=ty(n.y)-th/2;
       ctx.beginPath();ctx.roundRect(rx,ry,tw,th,12*scale);ctx.fill();ctx.stroke();
-      ctx.fillStyle=isRoot?'#fff':'#2c2a27';ctx.font=`${13*scale}px Inter,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.label,tx(n.x),ty(n.y));
+      ctx.fillStyle=isRoot?'#fff':'#2c2a27';ctx.font=`${13*scale}px Inter,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(plainLabel,tx(n.x),ty(n.y));
     });
     c.toBlob(blob=>{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='mindmap.png';a.click();URL.revokeObjectURL(url)});
   }

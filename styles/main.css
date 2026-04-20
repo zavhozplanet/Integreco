@@ -373,6 +373,13 @@ body.is-resizing { cursor: nwse-resize !important; }
   border-color: #4a7cf7 !important;
   transition: background-color 0s !important;
 }
+/* Inline Markdown toolbar */
+#md-toolbar{display:flex}
+.md-tb-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--tx);border:1px solid transparent;transition:all .1s}
+.md-tb-btn:hover{background:#f0ede8;border-color:var(--nbr)}
+/* Inline markdown rendered elements inside node spans */
+.ni span a{color:var(--ac);text-decoration:underline;pointer-events:auto;cursor:pointer}
+.ni span b,.ni span i,.ni span s{font-family:inherit}
 .apply-btn-flash * { color: #fff !important; }
 .bg-sliders{padding:6px 8px 10px;display:flex;flex-direction:column;gap:12px}
 .slider-row{display:flex;align-items:center;gap:10px}
