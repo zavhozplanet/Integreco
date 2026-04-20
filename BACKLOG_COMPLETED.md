@@ -81,3 +81,6 @@ No UI frameworks (no React, Vue, etc.)
 No logic refactoring — only add types, rename files, fix the build pipeline
 No new features — those come in later steps
 Existing save files (JSON) must still load correctly after the migration
+
+
+- **Text Formatting Menu:** ✅ Right-click (RMB) on a text field opens standard options: font size/family, color, alignment.
