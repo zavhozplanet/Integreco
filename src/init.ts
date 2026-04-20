@@ -312,7 +312,7 @@ function saveToLocalStorage() {
   const data = {
     version: '1.0',
     nodes, edges, bgSettings, snapSettings,
-    glDefaults, linkDefaults, nodeDefaults, groupDefaults,
+    glDefaults, linkDefaults, nodeDefaults, noteDefaults, groupDefaults,
     lastUsedMapRootId, idC,
     filename: window.storageAPI?._currentFilename || 'map.json',
     hasUnsavedChanges
@@ -361,6 +361,15 @@ function applyData(data) {
       if (parsed.nodeDefaults) {
         nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
         if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;
+        if (parsed.nodeDefaults.defaultFlags) nodeDefaults.defaultFlags = {...nodeDefaults.defaultFlags, ...parsed.nodeDefaults.defaultFlags};
+      }
+      if (parsed.noteDefaults) {
+        noteDefaults.title = {...noteDefaults.title, ...parsed.noteDefaults.title};
+        noteDefaults.text = {...noteDefaults.text, ...parsed.noteDefaults.text};
+        if (parsed.noteDefaults.defaultFlags) {
+          if (parsed.noteDefaults.defaultFlags.title) noteDefaults.defaultFlags.title = {...noteDefaults.defaultFlags.title, ...parsed.noteDefaults.defaultFlags.title};
+          if (parsed.noteDefaults.defaultFlags.text) noteDefaults.defaultFlags.text = {...noteDefaults.defaultFlags.text, ...parsed.noteDefaults.defaultFlags.text};
+        }
       }
       if (parsed.groupDefaults) {
         groupDefaults.bg = {...groupDefaults.bg, ...parsed.groupDefaults.bg};
@@ -375,7 +384,7 @@ function applyData(data) {
       // Mirror to session storage so this tab 'owns' this data and stays independent on refresh
       const dataToSave = {
         version: '1.0', nodes, edges, bgSettings, snapSettings,
-        glDefaults, linkDefaults, nodeDefaults, groupDefaults,
+        glDefaults, linkDefaults, nodeDefaults, noteDefaults, groupDefaults,
         lastUsedMapRootId, idC,
         filename: window.storageAPI?._currentFilename || 'map.json',
         hasUnsavedChanges: false

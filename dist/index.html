@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>MindMap</title>
 <link rel="manifest" href="/Integreco/assets/manifest-Bq2qPf0l.json">
-  <script type="module" crossorigin src="/Integreco/assets/index-CUp6GFc4.js"></script>
+  <script type="module" crossorigin src="/Integreco/assets/index-GRq8ltjr.js"></script>
   <link rel="stylesheet" crossorigin href="/Integreco/assets/index-s5rDLaja.css">
 </head>
 <body ondragstart="return false;">
@@ -558,7 +558,7 @@
       <button id="n-back-btn" onclick="closeNoteAndOpenTrash()" style="display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-right:8px" title="Назад">🔙</button>
       <input id="ntitle" placeholder="+" style="display:none;" onblur="renderNoteTitleView()">
       <div id="ntitle-view" tabindex="0" style="flex:1; cursor:text; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;" onclick="editNoteTitle()"></div>
-      <button id="n-fmt-title-btn" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
+      <button id="n-fmt-title-btn" onmousedown="event.preventDefault()" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
       <button id="n-done-btn" onclick="closeNote()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--grn);margin-right:8px" title="Готово">✅</button>
       <div id="n-burger" onclick="toggleNBurger(event)">☰</div>
       <div id="n-burger-menu" onclick="event.stopPropagation()">
@@ -580,7 +580,7 @@
       <div id="nrendered" tabindex="0" style="flex:1; overflow-y:auto; cursor:text; word-break:break-word;" onclick="editNoteArea()"></div>
     </div>
     <div id="nfooter">
-      <button id="n-fmt-text-btn" class="ntab" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
+      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
     </div>
   </div>
 </div>

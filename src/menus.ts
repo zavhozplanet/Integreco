@@ -906,7 +906,9 @@ function updateTextStyle(key, val, commit=true) {
 
   if(ctxTextType === 'note-title') {
     const el = document.getElementById('ntitle');
+    const view = document.getElementById('ntitle-view');
     if(el) applyDOMStyle(el, key, val);
+    if(view) applyDOMStyle(view, key, val);
   } else if(ctxTextType === 'note-text') {
     const el = document.getElementById('narea');
     const rend = document.getElementById('nrendered');
@@ -926,7 +928,8 @@ function updateTextStyle(key, val, commit=true) {
   };
   const d = defMap[ctxTextType];
   if (d && d.flags[flagKey]) {
-    d.style[key] = val;
+    d.flags[flagKey] = false;
+    if(commit && typeof saveToLocalStorage === 'function') saveToLocalStorage();
   }
   
   syncTextFmtUI();
@@ -979,6 +982,7 @@ function toggleTextDefault(flagKey, checked) {
       }
     }
   }
+  if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
 }
 
 function toggleWeight() {

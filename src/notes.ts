@@ -54,6 +54,15 @@ function openNote(id, mode='edit', fromTrashIndex=null){
     else mode = 'view';
   }
 
+  if (fromTrashIndex === null) {
+    if (isLabelEmpty && !n.titleStyle) {
+      n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
+    }
+    if (isNoteEmpty && !n.noteStyle) {
+      n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
+    }
+  }
+
   titleInput.value = n.label === '+' ? '' : (n.label || '');
   areaInput.value = n.note || '';
 
@@ -116,9 +125,21 @@ function closeNote(){
       const newLabel = document.getElementById('ntitle').value.trim();
       if(n.note !== newNote || (newLabel && n.label !== newLabel)) {
         sh();
+        const wasLabelEmpty = !n.label || String(n.label).trim() === '' || n.label === '+' || n.label === 'Группа';
+        const wasNoteEmpty = !n.note || String(n.note).trim() === '';
+        
         n.note = newNote;
         if(newLabel) n.label = newLabel;
+        
+        if (wasLabelEmpty && !n.titleStyle && newLabel) {
+          n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
+        }
+        if (wasNoteEmpty && !n.noteStyle && newNote) {
+          n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
+        }
+        
         render();
+        if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
       }
     }
   }
@@ -154,8 +175,20 @@ function renderNoteTitleView() {
     const n = gN(noteNodeId);
     if (n && n.label !== txt) {
       sh();
+      const wasEmpty = !n.label || String(n.label).trim() === '' || n.label === '+' || n.label === 'Группа';
       n.label = txt;
+      if (wasEmpty && !n.titleStyle && txt) {
+        n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
+        const ts = n.titleStyle;
+        if(ts.fontFamily) ntitleView.style.fontFamily = ntitle.style.fontFamily = ts.fontFamily;
+        if(ts.fontWeight) ntitleView.style.fontWeight = ntitle.style.fontWeight = ts.fontWeight;
+        if(ts.fontStyle) ntitleView.style.fontStyle = ntitle.style.fontStyle = ts.fontStyle;
+        if(ts.fontSize) ntitleView.style.fontSize = ntitle.style.fontSize = ts.fontSize + 'px';
+        if(ts.color) ntitleView.style.color = ntitle.style.color = ts.color;
+        if(ts.textAlign) ntitleView.style.textAlign = ntitle.style.textAlign = ts.textAlign;
+      }
       render();
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
     }
   }
 }
@@ -195,8 +228,20 @@ function renderNoteAreaView() {
     const n = gN(noteNodeId);
     if (n && n.note !== txt.trim()) {
       sh();
+      const wasEmpty = !n.note || String(n.note).trim() === '';
       n.note = txt.trim();
+      if (wasEmpty && !n.noteStyle && txt.trim()) {
+        n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
+        const ns = n.noteStyle;
+        if(ns.fontFamily) nrendered.style.fontFamily = narea.style.fontFamily = ns.fontFamily;
+        if(ns.fontWeight) nrendered.style.fontWeight = narea.style.fontWeight = ns.fontWeight;
+        if(ns.fontStyle) nrendered.style.fontStyle = narea.style.fontStyle = ns.fontStyle;
+        if(ns.fontSize) nrendered.style.fontSize = narea.style.fontSize = ns.fontSize + 'px';
+        if(ns.color) nrendered.style.color = narea.style.color = ns.color;
+        if(ns.textAlign) nrendered.style.textAlign = narea.style.textAlign = ns.textAlign;
+      }
       render();
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
     }
   }
 }
