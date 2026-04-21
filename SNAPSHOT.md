@@ -2,20 +2,20 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Implementing granular text formatting controls and per-selection formatting logic.
+* Refining the Note Panel's Markdown-first workflow and ensuring robust cross-object style persistence.
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Implemented granular formatting defaults (variant, size, align, color) with per-block toggles.
-* Switched to independent Bold/Italic toggles and added formatting buttons to node/multi-select menus.
-* Added logic to apply text defaults specifically to new/empty text categories in existing objects.
+* Implemented selection-aware text formatting with a blue indicator and strikethrough support.
+* Refactored Note Panel to include manual View/Edit modes for both title and body with real-time Markdown rendering.
+* Implemented Markdown-aware copy/cut/paste that bundles titles as `# Headers` for seamless "Node = File" integration.
 
 ## 🏗️ Migration Details
 * Build pipeline: Vite + TypeScript (concatenation plugin preserves global scope).
-* Deployment: Automatic via `.github/workflows/deploy.yml` on push to `main`.
-* Text styles: Moved from `textVariant` to separate `fontWeight` and `fontStyle` properties.
+* State Persistence: Fixed saving/loading of `noteDefaults` and `defaultFlags` to local storage.
+* Global scope: Exposed new `noteTab` and formatting functions in `src/expose-globals.ts`.
 
 ## 🚧 Known Issues / Blockers
-* Architectural decision pending: How to implement rich text (formatting selected text) in plain text fields.
+* Need to ensure `parseMd` security remains robust against XSS when processing user-provided links.
 
 ## ⏭️ Next Step (From BACKLOG.md)
-* Implement formatting for selected text (Rich Text support) following architectural decision.
+* Implement the "Markdown Vault" structure: Map hierarchy as folders and `[[Node]]` semantic links within texts.
