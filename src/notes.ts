@@ -214,9 +214,75 @@ function toggleNBurger(ev){
   document.getElementById('n-burger-menu').classList.toggle('show');
 }
 function toggleNDlSub(){document.getElementById('n-dl-sub').classList.toggle('show')}
-function copyNote(){const txt=document.getElementById('narea').value;navigator.clipboard.writeText(txt);toast('Скопировано')}
-function cutNote(){const txt=document.getElementById('narea').value;navigator.clipboard.writeText(txt);document.getElementById('narea').value='';toast('Вырезано')}
-async function pasteNote(){const txt=await navigator.clipboard.readText();const area=document.getElementById('narea');const start=area.selectionStart;const end=area.selectionEnd;area.value=area.value.substring(0,start)+txt+area.value.substring(end);toast('Вставлено')}
+function copyNote(){
+  const title = document.getElementById('ntitle').value.trim();
+  const note = document.getElementById('narea').value;
+  const txt = title ? `# ${title}\n\n${note}` : note;
+  navigator.clipboard.writeText(txt);
+  toast('Скопировано');
+}
+function cutNote(){
+  const titleEl = document.getElementById('ntitle');
+  const noteEl = document.getElementById('narea');
+  const title = titleEl.value.trim();
+  const note = noteEl.value;
+  const txt = title ? `# ${title}\n\n${note}` : note;
+  navigator.clipboard.writeText(txt);
+  
+  sh();
+  titleEl.value = '';
+  noteEl.value = '';
+  if (noteNodeId) {
+    const n = gN(noteNodeId);
+    if (n) { n.label = ''; n.note = ''; render(); saveToLocalStorage(); }
+  }
+  noteTab('edit');
+  toast('Вырезано');
+}
+async function pasteNote(){
+  let txt = await navigator.clipboard.readText();
+  if(!txt) return;
+  
+  const titleEl = document.getElementById('ntitle');
+  const noteEl = document.getElementById('narea');
+  
+  if (txt.startsWith('# ')) {
+    const lines = txt.split('\n');
+    const title = lines[0].substring(2).trim();
+    const content = lines.slice(1).join('\n').trim();
+    
+    if (title) {
+      sh();
+      titleEl.value = title;
+      noteEl.value = content;
+      if (noteNodeId) {
+        const n = gN(noteNodeId);
+        if (n) {
+          n.label = title;
+          n.note = content;
+          if (!n.titleStyle) n.titleStyle = JSON.parse(JSON.stringify(noteDefaults.title));
+          if (!n.noteStyle) n.noteStyle = JSON.parse(JSON.stringify(noteDefaults.text));
+          render();
+          saveToLocalStorage();
+        }
+      }
+      noteTab('edit');
+      toast('Вставлено (Заголовок + Текст)');
+      return;
+    }
+  }
+  
+  sh();
+  const start = noteEl.selectionStart;
+  const end = noteEl.selectionEnd;
+  noteEl.value = noteEl.value.substring(0, start) + txt + noteEl.value.substring(end);
+  if (noteNodeId) {
+    const n = gN(noteNodeId);
+    if (n) { n.note = noteEl.value; render(); saveToLocalStorage(); }
+  }
+  noteTab('edit');
+  toast('Вставлено');
+}
 function shareNote(){const txt=document.getElementById('narea').value;if(navigator.share){navigator.share({text:txt}).catch(()=>{})}else{toast('Скопируйте адрес из строки браузера')}}
 function downloadNote(fmt){const txt=document.getElementById('narea').value;const blob=new Blob([txt],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`note-${noteNodeId||'trash'}.${fmt}`;a.click();URL.revokeObjectURL(url)}
 function trashNote(){

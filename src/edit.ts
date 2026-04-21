@@ -36,14 +36,11 @@ function editNode(id, isNew=false){
   }
 
   targetContainer.insertBefore(ta,sp);ta.focus();ta.select();
-  // Show inline Markdown toolbar above the textarea
   _activeMdTextarea = ta;
-  _showMdToolbar(ta);
   let isDone = false;
   const done=()=>{
     if(isDone) return;
     isDone = true;
-    _hideMdToolbar();
     _activeMdTextarea = null;
     const val = ta.value.trim();
     if(val !== n.label) {
@@ -60,11 +57,9 @@ function editNode(id, isNew=false){
     if(!isRendering) render();
   };
   ta.addEventListener('blur',(ev)=>{
-    // Don't close if clicking the toolbar
-    if(ev.relatedTarget && ev.relatedTarget.closest('#md-toolbar')) { ta.focus(); return; }
     done();
   });
-  ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}if(ev.key==='Escape'){isDone=true;_hideMdToolbar();_activeMdTextarea=null;render();}if(ev.key==='Tab'){ev.preventDefault();done();setTimeout(()=>addChild(id),50)}});
+  ta.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();ta.blur()}if(ev.key==='Escape'){isDone=true;_activeMdTextarea=null;render();}if(ev.key==='Tab'){ev.preventDefault();done();setTimeout(()=>addChild(id),50)}});
   ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px'});
 }
 
