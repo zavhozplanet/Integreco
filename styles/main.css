@@ -335,11 +335,13 @@ body.is-resizing { cursor: nwse-resize !important; }
   font-size:13px;z-index:310;display:none;white-space:nowrap}
 
 /* ── BRANCH VIEW banner ── */
-#branch-banner{position:fixed;top:14px;left:50%;transform:translateX(-50%);
+#branch-banner{position:fixed;top:-60px;left:50%;transform:translateX(-50%);
   background:rgba(255,255,255,.9);backdrop-filter:blur(8px);
   padding:6px 16px;border-radius:20px;border:1.5px solid var(--nbr);
-  z-index:500;font-size:13px;color:var(--tx);display:none;
-  box-shadow:0 4px 12px rgba(0,0,0,.1);pointer-events:none}
+  z-index:500;font-size:13px;color:var(--tx);display:none;opacity:0;
+  box-shadow:0 4px 12px rgba(0,0,0,.1);pointer-events:none;
+  transition:top .3s cubic-bezier(0.4, 0, 0.2, 1), opacity .3s ease}
+#branch-banner.show{top:14px;opacity:1}
 
 /* canvas context menu */
 #canvctx{position:fixed;z-index:700;background:rgba(255,255,255,var(--ui-menu-opa));border-radius:16px;padding:8px;
