@@ -17,8 +17,8 @@ let lastMapMutationTime = Date.now();
 let hasUnsavedChanges = false;
 let gls='straight', gld='solid'; // kept for legacy mobile sheet
 // Default settings for newly created edges
-let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center'};
-let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center'};
+let glDefaults={shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
+let linkDefaults={shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
 let noteDefaults = {
   title: { fontSize: 15, fontFamily: 'Inter, sans-serif', fontWeight: 'bold', fontStyle: 'normal', textAlign: 'left', color: '#2c2a27' },
   text: { fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', textAlign: 'left', color: '#2c2a27' },

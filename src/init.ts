@@ -134,8 +134,8 @@ function _initBlankMap() {
   selN = null; selE = null;
 
   // Reset settings defaults to factory values (preventing inheritance from previous map)
-  glDefaults = {shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null};
-  linkDefaults = {shape:'straight',dash:'link',width:1,dir:'none',color:null};
+  glDefaults = {shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
+  linkDefaults = {shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
   nodeDefaults = {
     style: {shape:'pill', borderType:'solid', borderWidth:1.5, padding:10, opacity:1, blur:0, borderColor:null, backgroundColor:null},
     recentColors: []
@@ -358,8 +358,16 @@ function applyData(data) {
       edges = parsed.edges;
       bgSettings = parsed.bgSettings;
       if (parsed.snapSettings) snapSettings = parsed.snapSettings;
-      if (parsed.glDefaults) glDefaults = parsed.glDefaults;
-      if (parsed.linkDefaults) linkDefaults = parsed.linkDefaults;
+      if (parsed.glDefaults) {
+        glDefaults = {...glDefaults, ...parsed.glDefaults};
+        if (parsed.glDefaults.defaultFlags) glDefaults.defaultFlags = {...glDefaults.defaultFlags, ...parsed.glDefaults.defaultFlags};
+        else glDefaults.defaultFlags = { variant: false, size: false, color: false };
+      }
+      if (parsed.linkDefaults) {
+        linkDefaults = {...linkDefaults, ...parsed.linkDefaults};
+        if (parsed.linkDefaults.defaultFlags) linkDefaults.defaultFlags = {...linkDefaults.defaultFlags, ...parsed.linkDefaults.defaultFlags};
+        else linkDefaults.defaultFlags = { variant: false, size: false, color: false };
+      }
       if (parsed.nodeDefaults) {
         nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};
         if (parsed.nodeDefaults.recentColors) nodeDefaults.recentColors = parsed.nodeDefaults.recentColors;

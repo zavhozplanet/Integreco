@@ -807,7 +807,8 @@ function syncTextFmtUI() {
   const defMap = {
     'node': nodeDefaults.defaultFlags,
     'note-title': noteDefaults.defaultFlags.title,
-    'note-text': noteDefaults.defaultFlags.text
+    'note-text': noteDefaults.defaultFlags.text,
+    'edge': (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags
   };
   const flags = defMap[ctxTextType];
   const tVariant = document.getElementById('tf-def-variant');
@@ -844,7 +845,7 @@ function syncTextFmtUI() {
   const grpAlign = document.getElementById('tf-group-align');
   const grpColor = document.getElementById('tf-group-color');
   if(grpSize) grpSize.style.display = inSelMode ? 'none' : 'block';
-  if(grpAlign) grpAlign.style.display = inSelMode ? 'none' : 'block';
+  if(grpAlign) grpAlign.style.display = (inSelMode || ctxTextType === 'edge') ? 'none' : 'block';
   if(grpColor) grpColor.style.display = inSelMode ? 'none' : 'block';
 
   // In selection mode, show Bold/Italic state from Markdown markers in selected text
@@ -870,7 +871,7 @@ function syncTextFmtUI() {
   // Sync Apply to Selected
   const applyRow = document.getElementById('tf-apply-all-row');
   if(applyRow) {
-    const canApply = (ctxTextType === 'node' || ctxTextType === 'edge');
+    const canApply = (ctxTextType === 'node');
     applyRow.style.display = canApply ? 'block' : 'none';
     if(canApply) {
       const btn = document.getElementById('tf-apply-all-btn');
@@ -937,7 +938,8 @@ function updateTextStyle(key, val, commit=true) {
   const defMap = {
     'node': { style: nodeDefaults.style, flags: nodeDefaults.defaultFlags },
     'note-title': { style: noteDefaults.title, flags: noteDefaults.defaultFlags.title },
-    'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text }
+    'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text },
+    'edge': { style: (item && item.dash === 'link') ? linkDefaults : glDefaults, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
   };
   const d = defMap[ctxTextType];
   if (d && d.flags[flagKey]) {
@@ -968,10 +970,12 @@ function openNoteTextFmt(ev) {
 }
 
 function toggleTextDefault(flagKey, checked) {
+  const item = (ctxTextType === 'node' || ctxTextType.startsWith('note-')) ? gN(ctxTextId) : gE(ctxTextId);
   const defMap = {
     'node': { style: nodeDefaults.style, flags: nodeDefaults.defaultFlags },
     'note-title': { style: noteDefaults.title, flags: noteDefaults.defaultFlags.title },
-    'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text }
+    'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text },
+    'edge': { style: (item && item.dash === 'link') ? linkDefaults : glDefaults, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
   };
   const d = defMap[ctxTextType];
   if (!d) return;

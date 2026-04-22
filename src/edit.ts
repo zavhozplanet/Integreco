@@ -194,7 +194,8 @@ function editEdge(eid){
   
   setTimeout(()=>{
     ta.focus();
-    ta.select();
+    const len = ta.value.length;
+    ta.setSelectionRange(len, len);
     // Auto-resize
     ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
     // Show inline Markdown toolbar (disabled for lines)
