@@ -41,7 +41,8 @@ Object.assign(window, {
   setGLSM, setGLDM, setEPM, closeLSheet, showLSheet,
 
   // ── Branch view ──
-  exitBranchView,
+  enterBranchView, exitBranchView,
+  toggleBranchSettings, toggleBranchGroups,
 
   // ── Mobile rename ──
   mobRnOk, mobRnCancel,
