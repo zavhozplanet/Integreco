@@ -8,7 +8,7 @@ function enterBranchView(id){
   branchViewId=id;
   const banner = document.getElementById('branch-banner');
   if (banner) {
-    banner.style.display = 'block';
+    banner.style.display = 'flex';
     banner.classList.add('show');
     if (branchBannerTimer) clearTimeout(branchBannerTimer);
     branchBannerTimer = setTimeout(() => {
