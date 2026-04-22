@@ -8,8 +8,12 @@ function enterBranchView(id){
   branchViewId=id;
   const banner = document.getElementById('branch-banner');
   if (banner) {
-    banner.classList.remove('show');
     banner.style.display = 'block';
+    banner.classList.add('show');
+    if (branchBannerTimer) clearTimeout(branchBannerTimer);
+    branchBannerTimer = setTimeout(() => {
+      banner.classList.remove('show');
+    }, 3000);
   }
   
   const btn = document.getElementById('btn-branch-back');
