@@ -170,6 +170,7 @@ function editEdge(eid){
   ta.id='edge-editor-active';
   ta.className='edge-edit';
   ta.value=e.label||'';
+  ta.dataset.eid=eid.toString();
   ta.placeholder='';
   ta.rows=1;
   
@@ -196,9 +197,9 @@ function editEdge(eid){
     ta.select();
     // Auto-resize
     ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';
-    // Show inline Markdown toolbar
+    // Show inline Markdown toolbar (disabled for lines)
     _activeMdTextarea = ta;
-    _showMdToolbar(ta);
+    // _showMdToolbar(ta); 
   },50);
 
   let done=false;
