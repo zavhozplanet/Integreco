@@ -547,9 +547,11 @@ async function restoreAndOpenSubmap(nodeId, filename) {
     const fileHandle = await trashHandle.getFileHandle(filename);
     const file = await fileHandle.getFile();
     const text = await file.text();
-    
+    const item = JSON.parse(text);
+    const mapData = item.kind === 'map' ? item.data : text;
+
     // Write to root
-    const ok = await window.storageAPI.saveData(text, filename);
+    const ok = await window.storageAPI.saveData(mapData, filename);
     if (ok) {
       // Remove from trash
       await trashHandle.removeEntry(filename);
