@@ -17,16 +17,16 @@ function s2c(sx,sy){return{x:(sx-panX)/zoom,y:(sy-panY)/zoom}}
 function c2s(cx,cy){return{x:cx*zoom+panX,y:cy*zoom+panY}}
 function isVisible(id){
   const n = gN(id);
-  if(n && n.type === 'group') {
-    const inGroup = nodes.filter(x => 
+  if(!n) return false;
+  if(n.type === 'group') {
+    if(isBaseVisible(id)) return true;
+    const hw = (n.width || 300)/2, hh = (n.height || 200)/2;
+    return nodes.some(x => 
       x.type !== 'group' && 
-      x.x >= n.x - n.width/2 && x.x <= n.x + n.width/2 && 
-      x.y >= n.y - n.height/2 && x.y <= n.y + n.height/2
+      x.x >= n.x - hw && x.x <= n.x + hw && 
+      x.y >= n.y - hh && x.y <= n.y + hh &&
+      isBaseVisible(x.id)
     );
-    if(inGroup.length > 0) {
-      const anyVisible = inGroup.some(x => isBaseVisible(x.id));
-      if(!anyVisible) return false;
-    }
   }
   return isBaseVisible(id);
 }
