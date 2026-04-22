@@ -44,6 +44,7 @@ let preAutoSnapshot=null; // saved positions before entering auto
 let clipboard=null; // {type:'node'|'branch', data}
 let linkMode=false, linkFromId=null;
 let branchViewId=null; // if set, only show this branch
+let branchShowGroups=true;
 let noteNodeId=null;
 let trash=[];
 let mobRnNodeId=null, mobRnIsNew=false;

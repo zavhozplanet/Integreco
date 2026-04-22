@@ -31,7 +31,18 @@
 <div id="link-hint">Выберите узел для связи</div>
 
 <!-- branch banner -->
-<div id="branch-banner">Ветка: <span id="branch-label"></span></div>
+<div id="branch-banner">
+  Ветка: <span id="branch-label"></span>
+  <div id="branch-gear" onclick="toggleBranchSettings(event)">⚙️</div>
+</div>
+
+<!-- branch settings menu -->
+<div id="branch-settings-menu" style="display:none;" onclick="event.stopPropagation()">
+  <div class="branch-menu-item" onclick="toggleBranchGroups()">
+    <span class="branch-menu-label">Показывать группы</span>
+    <input type="checkbox" id="branch-show-groups-check" checked onclick="event.stopPropagation(); toggleBranchGroups()">
+  </div>
+</div>
 
 <!-- floating buttons -->
 <div class="fb" id="btn-undo" onclick="undo()">↩</div>
