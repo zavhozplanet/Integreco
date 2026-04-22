@@ -939,7 +939,7 @@ function updateTextStyle(key, val, commit=true) {
     'node': { style: nodeDefaults.style, flags: nodeDefaults.defaultFlags },
     'note-title': { style: noteDefaults.title, flags: noteDefaults.defaultFlags.title },
     'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text },
-    'edge': { style: (item && item.dash === 'link') ? linkDefaults : glDefaults, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
+    'edge': { style: (item && item.dash === 'link') ? linkDefaults.style : glDefaults.style, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
   };
   const d = defMap[ctxTextType];
   if (d && d.flags[flagKey]) {
@@ -975,7 +975,7 @@ function toggleTextDefault(flagKey, checked) {
     'node': { style: nodeDefaults.style, flags: nodeDefaults.defaultFlags },
     'note-title': { style: noteDefaults.title, flags: noteDefaults.defaultFlags.title },
     'note-text': { style: noteDefaults.text, flags: noteDefaults.defaultFlags.text },
-    'edge': { style: (item && item.dash === 'link') ? linkDefaults : glDefaults, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
+    'edge': { style: (item && item.dash === 'link') ? linkDefaults.style : glDefaults.style, flags: (item && item.dash === 'link') ? linkDefaults.defaultFlags : glDefaults.defaultFlags }
   };
   const d = defMap[ctxTextType];
   if (!d) return;

@@ -360,11 +360,27 @@ function applyData(data) {
       if (parsed.snapSettings) snapSettings = parsed.snapSettings;
       if (parsed.glDefaults) {
         glDefaults = {...glDefaults, ...parsed.glDefaults};
+        // Migrate old text format properties from root to style sub-object
+        if (!glDefaults.style) glDefaults.style = { fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', color: null };
+        ['fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'textAlign'].forEach(key => {
+          if (parsed.glDefaults[key] !== undefined) {
+            glDefaults.style[key] = parsed.glDefaults[key];
+            delete glDefaults[key];
+          }
+        });
         if (parsed.glDefaults.defaultFlags) glDefaults.defaultFlags = {...glDefaults.defaultFlags, ...parsed.glDefaults.defaultFlags};
         else glDefaults.defaultFlags = { variant: false, size: false, color: false };
       }
       if (parsed.linkDefaults) {
         linkDefaults = {...linkDefaults, ...parsed.linkDefaults};
+        // Migrate old text format properties from root to style sub-object
+        if (!linkDefaults.style) linkDefaults.style = { fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', color: null };
+        ['fontFamily', 'fontWeight', 'fontStyle', 'fontSize', 'textAlign'].forEach(key => {
+          if (parsed.linkDefaults[key] !== undefined) {
+            linkDefaults.style[key] = parsed.linkDefaults[key];
+            delete linkDefaults[key];
+          }
+        });
         if (parsed.linkDefaults.defaultFlags) linkDefaults.defaultFlags = {...linkDefaults.defaultFlags, ...parsed.linkDefaults.defaultFlags};
         else linkDefaults.defaultFlags = { variant: false, size: false, color: false };
       }
