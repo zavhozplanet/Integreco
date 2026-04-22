@@ -384,7 +384,9 @@ async function catTrashMap(ev, filename, skipConfirm = false) {
 
     // Local reset if the deleted map was the one active in THIS tab
     if (window.storageAPI?._currentFilename === filename) {
-      if (typeof _initBlankMap === 'function') {
+      if (parentMapStack && parentMapStack.length > 0) {
+        await goBackToParentMap();
+      } else if (typeof _initBlankMap === 'function') {
         _initBlankMap();
         window.storageAPI._currentFilename = 'map.json';
         saveToLocalStorage();
