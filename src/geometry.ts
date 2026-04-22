@@ -1026,7 +1026,7 @@ function render(){
   });
 
   // Groups: Split into Background (behind SVG) and UI (above SVG)
-  nodes.filter(n=>n.type==='group' && isVisible(n.id) && (!branchViewId || branchShowGroups)).forEach(n=>{
+  nodes.filter(n=>n.type==='group' && isVisible(n.id)).forEach(n=>{
     const isSel = n.id===selN||selNSet.has(n.id);
     
     // 1. Background layer: contains color/images/border, goes behind lines

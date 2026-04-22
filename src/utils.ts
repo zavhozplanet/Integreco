@@ -18,8 +18,14 @@ function c2s(cx,cy){return{x:cx*zoom+panX,y:cy*zoom+panY}}
 function isVisible(id){
   const n = gN(id);
   if(!n) return false;
-  if(n.type === 'group') {
-    if(isBaseVisible(id)) return true;
+  
+  const inBranch = !!branchViewId;
+  const hideGroups = inBranch && !branchShowGroups;
+  const baseVis = isBaseVisible(id);
+
+  if (n.type === 'group') {
+    if (hideGroups) return false;
+    if (baseVis) return true;
     const hw = (n.width || 300)/2, hh = (n.height || 200)/2;
     return nodes.some(x => 
       x.type !== 'group' && 
@@ -27,8 +33,17 @@ function isVisible(id){
       x.y >= n.y - hh && x.y <= n.y + hh &&
       isBaseVisible(x.id)
     );
+  } else {
+    if (baseVis) return true;
+    if (hideGroups) return false;
+    const pg = nodes.find(g => 
+      g.type === 'group' &&
+      n.x >= g.x - (g.width||300)/2 && n.x <= g.x + (g.width||300)/2 &&
+      n.y >= g.y - (g.height||200)/2 && n.y <= g.y + (g.height||200)/2
+    );
+    if(pg && isVisible(pg.id)) return true;
   }
-  return isBaseVisible(id);
+  return false;
 }
 
 function isBaseVisible(id){

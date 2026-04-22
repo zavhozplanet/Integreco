@@ -3,6 +3,25 @@
    BRANCH VIEW
 ================================================================ */
 let branchBannerTimer = null;
+let branchMenuTimer = null;
+
+function clearBannerTimer() { if (branchBannerTimer) clearTimeout(branchBannerTimer); }
+function clearMenuTimer() { if (branchMenuTimer) clearTimeout(branchMenuTimer); }
+
+function hideBannerDelayed() {
+  clearBannerTimer();
+  branchBannerTimer = setTimeout(() => {
+    const banner = document.getElementById('branch-banner');
+    if (banner) banner.classList.remove('show');
+  }, 3000);
+}
+
+function hideMenuDelayed() {
+  clearMenuTimer();
+  branchMenuTimer = setTimeout(() => {
+    closeBranchSettings();
+  }, 3000);
+}
 
 function enterBranchView(id){
   branchViewId=id;
@@ -10,24 +29,26 @@ function enterBranchView(id){
   if (banner) {
     banner.style.display = 'flex';
     banner.classList.add('show');
-    if (branchBannerTimer) clearTimeout(branchBannerTimer);
-    branchBannerTimer = setTimeout(() => {
-      banner.classList.remove('show');
-    }, 3000);
+    hideBannerDelayed();
+    
+    banner.onmouseenter = () => clearBannerTimer();
+    banner.onmouseleave = () => hideBannerDelayed();
+  }
+  
+  const menu = document.getElementById('branch-settings-menu');
+  if (menu) {
+    menu.onmouseenter = () => { clearMenuTimer(); clearBannerTimer(); };
+    menu.onmouseleave = () => { hideMenuDelayed(); hideBannerDelayed(); };
   }
   
   const btn = document.getElementById('btn-branch-back');
   if (btn) {
     btn.style.display = 'flex';
     btn.onmouseenter = () => {
-      if (branchBannerTimer) clearTimeout(branchBannerTimer);
-      banner.classList.add('show');
+      clearBannerTimer();
+      if (banner) banner.classList.add('show');
     };
-    btn.onmouseleave = () => {
-      branchBannerTimer = setTimeout(() => {
-        banner.classList.remove('show');
-      }, 3000);
-    };
+    btn.onmouseleave = () => hideBannerDelayed();
   }
   document.getElementById('branch-label').textContent=gN(id)?.label||'...';
   render();
@@ -66,12 +87,21 @@ function centerOnBranch(rootId) {
   applyT();
   renderMinimap();
 }
+
 function exitBranchView(){
   branchViewId=null;
   const banner = document.getElementById('branch-banner');
   if (banner) {
     banner.classList.remove('show');
+    banner.onmouseenter = null;
+    banner.onmouseleave = null;
     setTimeout(() => { if (!branchViewId) banner.style.display='none'; }, 300);
+  }
+  
+  const menu = document.getElementById('branch-settings-menu');
+  if (menu) {
+    menu.onmouseenter = null;
+    menu.onmouseleave = null;
   }
   
   const btn = document.getElementById('btn-branch-back');
@@ -82,6 +112,8 @@ function exitBranchView(){
   }
   render();resetView();
   closeBranchSettings();
+  clearBannerTimer();
+  clearMenuTimer();
 }
 
 function toggleBranchSettings(ev) {
@@ -90,6 +122,7 @@ function toggleBranchSettings(ev) {
   const isShown = menu.style.display === 'block';
   menu.style.display = isShown ? 'none' : 'block';
   if (!isShown) {
+    clearMenuTimer();
     document.addEventListener('click', closeBranchSettings);
   }
 }
@@ -98,6 +131,7 @@ function closeBranchSettings() {
   const menu = document.getElementById('branch-settings-menu');
   if (menu) menu.style.display = 'none';
   document.removeEventListener('click', closeBranchSettings);
+  clearMenuTimer();
 }
 
 function toggleBranchGroups() {
