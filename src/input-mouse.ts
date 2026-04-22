@@ -444,7 +444,11 @@ function onRaf() {
         if(ms.dragOffsets.length===1 && !selNSet.size){
           const dn=gN(ms.dragOffsets[0].id);
           const dnEl=document.getElementById('nd'+dn.id);
+          
+          // Clear all existing highlights before searching for the current one
+          document.querySelectorAll('.edge-group.drop-target').forEach(el=>el.classList.remove('drop-target'));
           if(dnEl) dnEl.classList.remove('drop-node-target');
+          
           if(dn){
             let bestDist = Infinity;
             let bestEid = null;
