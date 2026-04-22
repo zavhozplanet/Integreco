@@ -38,6 +38,7 @@ input, textarea {user-select:text;-webkit-user-select:text}
 #btn-fs{top:14px;right:14px}
 #btn-catalog{top:14px;right:62px}
 #btn-submap-back{top:14px;right:110px;}
+#btn-branch-back{top:14px;right:110px;}
 
 /* Stealth Mode */
 .stealth-active .fb, 
@@ -335,9 +336,10 @@ body.is-resizing { cursor: nwse-resize !important; }
 
 /* ── BRANCH VIEW banner ── */
 #branch-banner{position:fixed;top:14px;left:50%;transform:translateX(-50%);
-  background:rgba(245,166,35,.92);color:#fff;border-radius:20px;padding:7px 16px;
-  font-size:13px;font-weight:500;z-index:310;display:none;cursor:pointer;
-  backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(0,0,0,.15);white-space:nowrap}
+  background:rgba(255,255,255,.9);backdrop-filter:blur(8px);
+  padding:6px 16px;border-radius:20px;border:1.5px solid var(--nbr);
+  z-index:500;font-size:13px;color:var(--tx);display:none;
+  box-shadow:0 4px 12px rgba(0,0,0,.1);pointer-events:none}
 
 /* canvas context menu */
 #canvctx{position:fixed;z-index:700;background:rgba(255,255,255,var(--ui-menu-opa));border-radius:16px;padding:8px;

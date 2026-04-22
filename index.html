@@ -31,7 +31,7 @@
 <div id="link-hint">Выберите узел для связи</div>
 
 <!-- branch banner -->
-<div id="branch-banner" onclick="exitBranchView()">Ветка: <span id="branch-label"></span> &nbsp;— Вернуться ➔</div>
+<div id="branch-banner">Ветка: <span id="branch-label"></span></div>
 
 <!-- floating buttons -->
 <div class="fb" id="btn-undo" onclick="undo()">↩</div>
@@ -45,6 +45,12 @@
     <polyline points="15 18 9 12 15 6"></polyline>
   </svg>
   <span id="submap-level" style="font-weight: bold; font-size: 17px; margin-top: 1px;">1</span>
+</div>
+<div class="fb" id="btn-branch-back" onclick="exitBranchView()" title="Выйти из режима ветки" style="display:none;">
+  <svg width="20" height="20" viewBox="8 0 10 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left: -4px; margin-right: -2px; pointer-events: none;">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+  <span style="font-weight: bold; font-size: 14px; margin-top: 1px;">🌿</span>
 </div>
 <div class="fb" id="btn-catalog" onclick="openCatalog()" title="Каталог карт">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
