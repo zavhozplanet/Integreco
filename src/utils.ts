@@ -33,7 +33,18 @@ function isVisible(id){
 
 function isBaseVisible(id){
   if(branchViewId){
-    let c=id;for(let i=0;i<200;i++){if(c===branchViewId)return true;const p=gPar(c);if(p==null)return false;c=p}
+    if(id === branchViewId) return true;
+    let q = [id];
+    let visited = new Set();
+    while(q.length > 0) {
+      let cur = q.shift();
+      if(cur === branchViewId) return true;
+      if(visited.has(cur)) continue;
+      visited.add(cur);
+      if(visited.size > 200) break;
+      const parents = edges.filter(e => e.to === cur && e.dash !== 'link' && !e.isLink);
+      for(const e of parents) q.push(e.from);
+    }
     return false;
   }
   

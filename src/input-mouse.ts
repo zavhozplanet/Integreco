@@ -37,6 +37,15 @@ function onNodeMD(ev,id){
   ms.lastId=id;ms.lastT=now;ms.drgd=false;
   if(linkMode){handleLinkClick(id);return}
 
+  if (branchViewId) {
+    if (ev.button === 1) { // MMB Pan
+      ms.panning=true;ms.psx=ev.clientX;ms.psy=ev.clientY;ms.spx=panX;ms.spy=panY;
+    } else if (ev.button === 0 && !ev.ctrlKey && !ev.metaKey) {
+      selNode(id);
+    }
+    return;
+  }
+
   if(ev.ctrlKey || ev.metaKey || ev.button === 1) {
     if(selNSet.has(id)) {
       selNSet.delete(id);
@@ -222,11 +231,19 @@ svgl.addEventListener('mousedown',ev=>{
     return;
   }
   if(ev.target.classList.contains('bz-handle')){
+    if(branchViewId) return;
     ev.preventDefault();ev.stopPropagation();
     bzDrag={active:true,eid:ev.target.dataset.eid,cp:ev.target.dataset.cp};return;
   }
   const grpEl=ev.target.closest('.edge-group');
   if(grpEl){
+    if(branchViewId) {
+      // Still allow double-click to edit edge label/note?
+      // Or just allow selection.
+      if (ev.detail === 2) { deselAll(); editEdge(parseInt(grpEl.dataset.eid)); return; }
+      ev.stopPropagation();
+      return; 
+    }
     ev.stopPropagation();const eid=parseInt(grpEl.dataset.eid);const e=gE(eid);if(!e)return;
     if(ev.detail===2){
        deselAll(); editEdge(eid); return;
