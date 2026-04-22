@@ -115,6 +115,21 @@ class StorageManager {
     }
   }
 
+  async fileExists(filename, subfolderName = null) {
+    if (!this.dirHandle || !(await this.verifyPermission())) return false;
+    try {
+      let root = this.dirHandle;
+      if (subfolderName) {
+        root = await this.dirHandle.getDirectoryHandle(subfolderName);
+      }
+      await root.getFileHandle(filename);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+
   async getTrashHandle() {
     if (!this.dirHandle || !(await this.verifyPermission())) return null;
     try {

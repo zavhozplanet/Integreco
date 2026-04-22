@@ -451,3 +451,165 @@ function autoNameMapFile(label) {
 document.addEventListener('click', () => {
   document.querySelectorAll('.cat-dl-sub').forEach(s => s.style.display = 'none');
 }, true);
+
+// ── Submap Logic ────────────────────────────────────────────────
+async function openObjectAsMap(id) {
+  const n = gN(id);
+  if (!n) return;
+
+  if (n.submapFilename && window.storageAPI) {
+    const existsInRoot = await window.storageAPI.fileExists(n.submapFilename);
+    if (existsInRoot) {
+      saveToLocalStorage();
+      catOpenMap(n.submapFilename);
+      return;
+    }
+    
+    // Check in trash
+    const existsInTrash = await window.storageAPI.fileExists(n.submapFilename, "_trash");
+    if (existsInTrash) {
+      showSubmapTrashChoice(id, n.submapFilename);
+      return;
+    }
+
+    // Not found anywhere, reset link and create new
+    delete n.submapFilename;
+    sh();
+  }
+
+  await createAndOpenSubmap(id);
+}
+
+
+function updateSubmapUi() {
+  const btn = document.getElementById('btn-submap-back');
+  const level = document.getElementById('submap-level');
+  if (!btn || !level) return;
+
+  if (parentMapStack.length > 0) {
+    btn.style.display = 'flex';
+    level.textContent = parentMapStack.length;
+    btn.title = 'Назад к «' + parentMapStack[parentMapStack.length - 1].label + '» (Двойной клик: к главной)';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+async function goBackToParentMap() {
+  if (parentMapStack.length === 0) return;
+  saveToLocalStorage();
+  const parent = parentMapStack[parentMapStack.length - 1];
+  catOpenMap(parent.filename);
+}
+
+async function goToRootMap() {
+  if (parentMapStack.length === 0) return;
+  saveToLocalStorage();
+  const root = parentMapStack[0];
+  catOpenMap(root.filename);
+}
+
+function showSubmapTrashChoice(nodeId, filename) {
+  const modal = document.getElementById('choice-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  
+  const opt1 = document.getElementById('choice-opt1');
+  const opt2 = document.getElementById('choice-opt2');
+  const cancel = document.getElementById('choice-cancel');
+  
+  opt1.onclick = async () => {
+    modal.style.display = 'none';
+    await restoreAndOpenSubmap(nodeId, filename);
+  };
+  
+  opt2.onclick = async () => {
+    modal.style.display = 'none';
+    const n = gN(nodeId);
+    if (n) {
+      delete n.submapFilename;
+      sh();
+    }
+    await createAndOpenSubmap(nodeId);
+  };
+  
+  cancel.onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+async function restoreAndOpenSubmap(nodeId, filename) {
+  if (!window.storageAPI) return;
+  const trashHandle = await window.storageAPI.getTrashHandle();
+  if (!trashHandle) return;
+  
+  try {
+    const fileHandle = await trashHandle.getFileHandle(filename);
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    
+    // Write to root
+    const ok = await window.storageAPI.saveData(text, filename);
+    if (ok) {
+      // Remove from trash
+      await trashHandle.removeEntry(filename);
+      // Refresh memory trash if needed
+      if (typeof trash !== 'undefined') {
+        const idx = trash.findIndex(t => t.filename === filename);
+        if (idx !== -1) trash.splice(idx, 1);
+        if (typeof updateTrashBadge === 'function') updateTrashBadge();
+      }
+      
+      const n = gN(nodeId);
+      if (n) {
+        n.submapFilename = filename;
+        sh();
+        saveToLocalStorage();
+      }
+
+      catOpenMap(filename);
+      toast('Карта восстановлена');
+    }
+  } catch (e) {
+    toast('Ошибка восстановления');
+  }
+}
+
+async function createAndOpenSubmap(id) {
+  const n = gN(id);
+  if (!n) return;
+  const currentFilename = window.storageAPI?._currentFilename || 'map.json';
+  const rootNode = nodes.find(rn => rn.type === 'root') || nodes[0];
+  const currentLabel = rootNode?.label || currentFilename.replace('.json', '');
+
+  const newMap = {
+    version: '1.0',
+    nodes: [{
+      ...JSON.parse(JSON.stringify(n)),
+      id: 1, type: 'root', x: CS / 2, y: CS / 2, nodes: []
+    }],
+    edges: [],
+    bgSettings: JSON.parse(JSON.stringify(bgSettings)),
+    snapSettings: JSON.parse(JSON.stringify(snapSettings)),
+    glDefaults: JSON.parse(JSON.stringify(glDefaults)),
+    linkDefaults: JSON.parse(JSON.stringify(linkDefaults)),
+    nodeDefaults: JSON.parse(JSON.stringify(nodeDefaults)),
+    groupDefaults: JSON.parse(JSON.stringify(groupDefaults)),
+    parentMapStack: [...parentMapStack, { filename: currentFilename, label: currentLabel }],
+    idC: 1
+  };
+
+  const safeLabel = (n.label || '').trim().replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_').substring(0, 30) || 'submap';
+  const newFilename = `${safeLabel}_${Date.now()}.json`;
+
+  n.submapFilename = newFilename;
+  sh();
+  saveToLocalStorage(); // Sync parent map with the link to FS
+
+  if (window.storageAPI) window.storageAPI._currentFilename = newFilename;
+  if (applyData(JSON.stringify(newMap))) {
+    toast('Подкарта создана: ' + newFilename);
+  }
+}
+
+

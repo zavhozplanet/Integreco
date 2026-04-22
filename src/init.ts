@@ -261,6 +261,7 @@ async function exportData() {
     bgSettings,
     snapSettings,
     glDefaults, linkDefaults, nodeDefaults, groupDefaults,
+    parentMapStack,
     idC
   };
   const json = JSON.stringify(data, null, 2);
@@ -314,6 +315,7 @@ function saveToLocalStorage() {
     nodes, edges, bgSettings, snapSettings,
     glDefaults, linkDefaults, nodeDefaults, noteDefaults, groupDefaults,
     lastUsedMapRootId, idC,
+    parentMapStack,
     filename: window.storageAPI?._currentFilename || 'map.json',
     hasUnsavedChanges
   };
@@ -375,6 +377,13 @@ function applyData(data) {
         groupDefaults.bg = {...groupDefaults.bg, ...parsed.groupDefaults.bg};
       }
       if (parsed.lastUsedMapRootId) lastUsedMapRootId = parsed.lastUsedMapRootId;
+      if (parsed.parentMapStack) {
+        parentMapStack = parsed.parentMapStack;
+        updateSubmapUi();
+      } else {
+        parentMapStack = [];
+        updateSubmapUi();
+      }
       idC = parsed.idC;
       hasUnsavedChanges = false;
       render();

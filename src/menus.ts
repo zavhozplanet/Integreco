@@ -224,6 +224,7 @@ function showNodeCtx(cx,cy,id){
        action:()=>{hideCtxMenu();sh();n.locked=!n.locked;render()}},
 
       {icon:'🔭',title:'Войти в режим ветки (Filter View)',action:()=>{hideCtxMenu();enterBranchView(id)}},
+      {icon:'🗺️',title:'Открыть как карту',action:()=>{hideCtxMenu();openObjectAsMap(id)}},
       {icon:'🗑',title:'Удалить',danger:true,action:()=>{
         const isRoot = n.type === 'root';
         const hasCh = gCh(id).length > 0;
@@ -256,6 +257,7 @@ function showGroupCtx(cx,cy,id){
     {icon:'📌',title:'Вставить в группу',action:()=>{hideCtxMenu();ctxExec('paste')}},
     {icon:'<div class="cdm-preview group"></div>',title:'Добавить в другую группу',action:()=>{hideCtxMenu();addToGroup()}},
     {icon:'[ \ / ]',title:'Выровнять узлы сеткой',action:()=>{hideCtxMenu();alignGroupNodes(id)}},
+    {icon:'🗺️',title:'Открыть как карту',action:()=>{hideCtxMenu();openObjectAsMap(id)}},
     {icon:lockIcon,title:g.locked?'Разблокировать':'Заблокировать',action:()=>{hideCtxMenu();sh();g.locked=!g.locked;render()}},
     {icon:'🗑️',title:'Разгруппировать/Удалить группу',danger:true,action:()=>{hideCtxMenu();delNode(id)}}
   ];

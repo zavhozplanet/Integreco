@@ -37,6 +37,7 @@ input, textarea {user-select:text;-webkit-user-select:text}
 #btn-mini{bottom:calc(14px + env(safe-area-inset-bottom));right:62px}
 #btn-fs{top:14px;right:14px}
 #btn-catalog{top:14px;right:62px}
+#btn-submap-back{top:14px;right:110px; font-weight:bold; font-size:16px;}
 
 /* Stealth Mode */
 .stealth-active .fb, 

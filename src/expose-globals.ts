@@ -62,6 +62,7 @@ Object.assign(window, {
   closeCatalog, newTab,
   setCatalogSort, setCatalogView,
   selectWorkspaceFolder,
+  openObjectAsMap, goBackToParentMap, goToRootMap,
 
   // ── Menu / Settings / Export ──
   toggleExportSub, exportData, exportFmt,
