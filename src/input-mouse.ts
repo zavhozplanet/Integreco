@@ -6,6 +6,18 @@ let ms={};   // mouse state
 let bzDrag={active:false};
 let epDrag={active:false}; // edge endpoint reconnection drag
 
+// Prevent middle-click paste globally if an editor is focused
+['mousedown', 'mouseup', 'auxclick', 'click'].forEach(evt => {
+  window.addEventListener(evt, ev => {
+    if (ev.button === 1) {
+      const active = document.activeElement;
+      if (active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) {
+        ev.preventDefault();
+      }
+    }
+  }, true);
+});
+
 function onNodeMD(ev,id){
   ev.stopPropagation();hideAllMenus();hideCanvDblMenu();
   const now=Date.now();

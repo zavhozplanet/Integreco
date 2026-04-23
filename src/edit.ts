@@ -56,6 +56,12 @@ function editNode(id, isNew=false){
     }
     if(!isRendering) render();
   };
+  ['mousedown','mouseup','auxclick','click'].forEach(evt=>{
+    ta.addEventListener(evt, ev => {
+      ev.stopPropagation();
+      if(ev.button===1) ev.preventDefault();
+    });
+  });
   ta.addEventListener('blur',(ev)=>{
     done();
   });
@@ -162,6 +168,13 @@ function editEdge(eid){
   const e=gE(eid);if(!e)return;
   const mid=edgePt(e,0.5);
   const sp=c2s(mid.x, mid.y);
+
+  // Align with notes logic: apply defaults only if label was empty and no style exists
+  const isLabelEmpty = !e.label || e.label.trim() === '';
+  if (isLabelEmpty && !e.style) {
+    const defs = e.dash === 'link' ? linkDefaults : glDefaults;
+    e.style = JSON.parse(JSON.stringify(defs.style));
+  }
   
   // Cleanup any old editor just in case
   const old=document.getElementById('edge-editor-active'); if(old)old.remove();
@@ -175,11 +188,12 @@ function editEdge(eid){
   ta.rows=1;
   
   // Extremely visible styling for debugging/visibility
-  ta.style.left=sp.x+'px';ta.style.top=sp.y+'px';
+  // Attached to canvas to move/scale with the map
+  ta.style.left=mid.x+'px';ta.style.top=mid.y+'px';
   ta.style.transform='translate(-50%,-50%)';
   ta.style.border='2px solid #4a7cf7'; 
   
-  const container = document.getElementById('wrap') || document.body;
+  const container = document.getElementById('canvas');
   container.appendChild(ta);
 
   // Apply manual styles
@@ -209,9 +223,20 @@ function editEdge(eid){
     _hideMdToolbar();
     _activeMdTextarea = null;
     const val=ta.value.trim();
-    if(val!==e.label){sh();e.label=val;saveToLocalStorage();}
+    if(val!==e.label){
+      sh();
+      e.label=val;
+      if(val==='') delete e.style;
+      saveToLocalStorage();
+    }
     ta.remove();render();
   };
+  ['mousedown','mouseup','auxclick','click'].forEach(evt=>{
+    ta.addEventListener(evt, ev => {
+      ev.stopPropagation();
+      if(ev.button===1) ev.preventDefault();
+    });
+  });
   ta.addEventListener('blur',(ev)=>{
     if(ev.relatedTarget && ev.relatedTarget.closest('#md-toolbar')) { ta.focus(); return; }
     finish();

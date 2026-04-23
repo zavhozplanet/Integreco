@@ -369,7 +369,7 @@ function applyData(data) {
           }
         });
         if (parsed.glDefaults.defaultFlags) glDefaults.defaultFlags = {...glDefaults.defaultFlags, ...parsed.glDefaults.defaultFlags};
-        else glDefaults.defaultFlags = { variant: false, size: false, color: false };
+        else glDefaults.defaultFlags = { variant: false, size: false, align: false, color: false };
       }
       if (parsed.linkDefaults) {
         linkDefaults = {...linkDefaults, ...parsed.linkDefaults};
@@ -382,7 +382,7 @@ function applyData(data) {
           }
         });
         if (parsed.linkDefaults.defaultFlags) linkDefaults.defaultFlags = {...linkDefaults.defaultFlags, ...parsed.linkDefaults.defaultFlags};
-        else linkDefaults.defaultFlags = { variant: false, size: false, color: false };
+        else linkDefaults.defaultFlags = { variant: false, size: false, align: false, color: false };
       }
       if (parsed.nodeDefaults) {
         nodeDefaults.style = {...nodeDefaults.style, ...parsed.nodeDefaults.style};

@@ -318,7 +318,7 @@ body.is-resizing { cursor: nwse-resize !important; }
   padding:3px 10px;border-radius:12px;line-height:1.25;white-space:pre-wrap;word-break:break-word;
   display:inline-block;max-width:140px}
 .is-dark-bg .edge-label-v3 span{color:#fff}
-.edge-edit{position:fixed;z-index:9999;background:#fff;border:1.5px solid var(--ac);border-radius:6px;
+.edge-edit{position:absolute;z-index:9999;background:#fff;border:1.5px solid var(--ac);border-radius:6px;
   font-family:'Inter',sans-serif;font-size:13px;padding:4px 8px;text-align:center;resize:none;
   box-shadow:0 4px 15px rgba(0,0,0,.18);min-width:80px;overflow:hidden;outline:none}
 
