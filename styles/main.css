@@ -288,7 +288,7 @@ body.is-resizing { cursor: nwse-resize !important; }
   resize:none;overflow:hidden;min-width:50px;line-height:1.45}
 
 /* ── SVG EDGES ── */
-.ep{fill:none}
+.ep{fill:none;stroke-linecap:round;stroke-linejoin:round;shape-rendering:geometricPrecision}
 .ep.solid{stroke-dasharray:none}
 .ep.dashed{stroke-dasharray:6,4}
 .ep.dotted{stroke-dasharray:2,4}

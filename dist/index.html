@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>MindMap</title>
 <link rel="manifest" href="/Integreco/assets/manifest-Bq2qPf0l.json">
-  <script type="module" crossorigin src="/Integreco/assets/index-GRq8ltjr.js"></script>
-  <link rel="stylesheet" crossorigin href="/Integreco/assets/index-s5rDLaja.css">
+  <script type="module" crossorigin src="/Integreco/assets/index-B0AJplab.js"></script>
+  <link rel="stylesheet" crossorigin href="/Integreco/assets/index-Cu9JedPn.css">
 </head>
 <body ondragstart="return false;">
 
@@ -32,7 +32,18 @@
 <div id="link-hint">Выберите узел для связи</div>
 
 <!-- branch banner -->
-<div id="branch-banner" onclick="exitBranchView()">Ветка: <span id="branch-label"></span> &nbsp;— Вернуться ➔</div>
+<div id="branch-banner">
+  Ветка: <span id="branch-label"></span>
+  <div id="branch-gear" onclick="toggleBranchSettings(event)">⚙️</div>
+</div>
+
+<!-- branch settings menu -->
+<div id="branch-settings-menu" style="display:none;" onclick="event.stopPropagation()">
+  <div class="branch-menu-item" onclick="toggleBranchGroups()">
+    <span class="branch-menu-label">Показывать группы</span>
+    <input type="checkbox" id="branch-show-groups-check" checked onclick="event.stopPropagation(); toggleBranchGroups()">
+  </div>
+</div>
 
 <!-- floating buttons -->
 <div class="fb" id="btn-undo" onclick="undo()">↩</div>
@@ -41,6 +52,18 @@
 <div class="fb" id="btn-zout" onclick="zoomOut()">-</div>
 <div class="fb" id="btn-center" onclick="handleCenterClick()">⊙</div>
 <div class="fb" id="btn-mini" onclick="toggleMini()">🗺</div>
+<div class="fb" id="btn-submap-back" onclick="goBackToParentMap()" ondblclick="goToRootMap()" title="Назад к родительской карте" style="display:none;">
+  <svg width="20" height="20" viewBox="8 0 10 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left: -4px; margin-right: -2px; pointer-events: none;">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+  <span id="submap-level" style="font-weight: bold; font-size: 17px; margin-top: 1px;">1</span>
+</div>
+<div class="fb" id="btn-branch-back" onclick="exitBranchView()" title="Выйти из режима ветки" style="display:none;">
+  <svg width="20" height="20" viewBox="8 0 10 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-left: -4px; margin-right: -2px; pointer-events: none;">
+    <polyline points="15 18 9 12 15 6"></polyline>
+  </svg>
+  <span style="font-weight: bold; font-size: 14px; margin-top: 1px;">🌿</span>
+</div>
 <div class="fb" id="btn-catalog" onclick="openCatalog()" title="Каталог карт">
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
     <path d="M6 5v14 M11 5l5 14 M16 5l5 14" />
@@ -556,8 +579,8 @@
   <div id="nbox">
     <div id="nbox-hdr">
       <button id="n-back-btn" onclick="closeNoteAndOpenTrash()" style="display:none;background:none;border:none;font-size:20px;cursor:pointer;color:var(--mu);margin-right:8px" title="Назад">🔙</button>
-      <input id="ntitle" placeholder="+" style="display:none;" onblur="renderNoteTitleView()">
-      <div id="ntitle-view" tabindex="0" style="flex:1; cursor:text; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;" onclick="editNoteTitle()"></div>
+      <input id="ntitle" placeholder="+" style="display:none;">
+      <div id="ntitle-view" style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-height:24px;"></div>
       <button id="n-fmt-title-btn" onmousedown="event.preventDefault()" onclick="openNoteTitleFmt(event)" style="background:none;border:none;font-size:18px;cursor:pointer;margin-right:8px" title="Форматирование заголовка">🖋️</button>
       <button id="n-done-btn" onclick="closeNote()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--grn);margin-right:8px" title="Готово">✅</button>
       <div id="n-burger" onclick="toggleNBurger(event)">☰</div>
@@ -575,12 +598,14 @@
         <div id="n-del-btn" class="nmi danger" onclick="deleteNote()" title="Удалить">❌</div>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:12px">
-      <textarea id="narea" placeholder="+" style="display:none;" onblur="renderNoteAreaView()"></textarea>
-      <div id="nrendered" tabindex="0" style="flex:1; overflow-y:auto; cursor:text; word-break:break-word;" onclick="editNoteArea()"></div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column">
+      <textarea id="narea" placeholder="+"></textarea>
+      <div id="nrendered"></div>
     </div>
     <div id="nfooter">
-      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px; margin-right:auto;">🖋️</button>
+      <button id="n-fmt-text-btn" class="ntab" onmousedown="event.preventDefault()" onclick="openNoteTextFmt(event)" title="Форматирование текста" style="font-size:16px">🖋️</button>
+      <button class="ntab on" id="ntab-e" onclick="noteTab('edit')">📝</button>
+      <button class="ntab" id="ntab-v" onclick="noteTab('view')">👁️</button>
     </div>
   </div>
 </div>
@@ -832,5 +857,26 @@ async function selectWorkspaceFolder() {
 }
 </script>
 
+<!-- Choice Modal -->
+<div id="choice-modal" style="display:none; position:fixed; inset:0; z-index:4000; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; pointer-events:auto;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#fff; padding:20px; border-radius:16px; box-shadow:0 8px 32px rgba(0,0,0,0.2); width:320px; pointer-events:auto;" onclick="event.stopPropagation()">
+    <div id="choice-title" style="font-weight:600; margin-bottom:15px; text-align:center; color:var(--tx);">Карта в корзине</div>
+    <div id="choice-desc" style="font-size:13px; color:var(--mu); margin-bottom:15px; text-align:center; line-height:1.4;">Эта подкарта была перемещена в корзину. Что вы хотите сделать?</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button id="choice-opt1" class="cat-select-btn" style="width:100%; margin:0; height:40px;">Восстановить из корзины</button>
+      <button id="choice-opt2" class="cat-select-btn" style="width:100%; margin:0; height:40px; border-color:var(--nbr-dk); color:var(--mu);">Создать новую карту</button>
+      <button id="choice-cancel" class="cat-select-btn" style="width:100%; margin:0; height:32px; background:none; border:none; color:var(--mu); font-size:13px;">Отмена</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
+
+    <div id="choice-desc" style="font-size:13px; color:var(--mu); margin-bottom:15px; text-align:center; line-height:1.4;">Эта подкарта была перемещена в корзину. Что вы хотите сделать?</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <button id="choice-opt1" class="cat-select-btn" style="width:100%; margin:0; height:40px;">Восстановить из корзины</button>
+      <button id="choice-opt2" class="cat-select-btn" style="width:100%; margin:0; height:40px; border-color:var(--nbr-dk); color:var(--mu);">Создать новую карту</button>
+      <button id="choice-cancel" class="cat-select-btn" style="width:100%; margin:0; height:32px; background:none; border:none; color:var(--mu); font-size:13px;">Отмена</button>
+    </div>
+  </div>
+</div>

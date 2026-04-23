@@ -913,6 +913,7 @@ function render(){
         const mid=edgePt(e,0.5);
         // SVG mask: creates visual "break" in the line under the label text
         const m = mkSVG('mask'); m.id='m-e-'+e.id;
+        m.setAttribute('maskUnits', 'userSpaceOnUse');
         const r1=mkSVG('rect'); r1.setAttribute('x',0); r1.setAttribute('y',0); r1.setAttribute('width',CS); r1.setAttribute('height',CS); r1.setAttribute('fill','white');
         const r2=mkSVG('rect'); 
         const gw=Math.max(24, e.label.length*7.5+10), gh=18;
@@ -1408,6 +1409,7 @@ function renderEdgesOnly(specificEdgeIds){
       if(e.label){
         const mid=edgePt(e,0.5);
         const m = mkSVG('mask'); m.id='m-eo-'+e.id;
+        m.setAttribute('maskUnits', 'userSpaceOnUse');
         const r1=mkSVG('rect'); r1.setAttribute('x',0); r1.setAttribute('y',0); r1.setAttribute('width',CS); r1.setAttribute('height',CS); r1.setAttribute('fill','white');
         const r2=mkSVG('rect');
         const gw=Math.max(24, e.label.length*7.5+10), gh=18;
