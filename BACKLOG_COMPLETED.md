@@ -84,3 +84,10 @@ Existing save files (JSON) must still load correctly after the migration
 
 
 - **Text Formatting Menu:** ✅ Right-click (RMB) on a text field opens standard options: font size/family, color, alignment.
+
+(4)
+- **"Open Object as Map" Button:** - Add to object context menu. Opens a new map (and adds it to the map catalog), where the map's position is displayed as a child map (submap) of the map where it was created (a map tree, like a file system), with the selected object as the root node (upon creation, only this object is displayed, without any child branches it has in the parent map).
+
+When a submap is displayed on the main screen, a return button appears to the left of the map catalog button (the same as the map catalog button, but instead of a vertical bar, its icon displays a number indicating the nesting level of this submap from the main map (a submap can also have its own submaps, and so on, i.e., a fractal system).
+
+Clicking this button returns to the previous level; double-clicking returns to the root map.
