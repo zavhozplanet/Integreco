@@ -226,8 +226,18 @@ function renderMapBgRootSelector() {
       // Lock root when bg enabled, unlock when disabled
       const rn = gN(root.id);
       if (rn) rn.locked = cb.checked;
+
+      if (cb.checked) {
+        fitMapBgToOneMap(root.id);
+        const bcx = root.x + (mb2.imgOffsetX || 0);
+        const bcy = root.y + (mb2.imgOffsetY || 0);
+        panX = window.innerWidth / 2 - bcx * zoom;
+        panY = window.innerHeight / 2 - bcy * zoom;
+      }
+
       renderAllMapBgs();
       render();
+      applyT();
       saveToLocalStorage();
     };
     cbWrap.appendChild(cb);
@@ -250,12 +260,8 @@ function renderMapBgRootSelector() {
     card.onclick = () => {
       const mbSelected = getMapBg(root.id);
       if (mbSelected && mbSelected.image && mbSelected.imgEnabled) {
-        // Zoom and center on background
-        const bw = (mbSelected.baseW || window.innerWidth) * (mbSelected.imgZoom || 1);
-        const bh = (mbSelected.baseH || window.innerHeight) * (mbSelected.imgZoom || 1);
-        const margin = 1.15;
-        const targetZ = Math.min(window.innerWidth / (bw * margin), window.innerHeight / (bh * margin));
-        zoom = Math.min(1.5, Math.max(0.08, targetZ));
+        // Fit to screen on select if enabled
+        fitMapBgToOneMap(root.id);
         const bcx = root.x + (mbSelected.imgOffsetX || 0);
         const bcy = root.y + (mbSelected.imgOffsetY || 0);
         panX = window.innerWidth / 2 - bcx * zoom;
@@ -296,22 +302,14 @@ function applyImgCatBgToRoot(file) {
     if (!mb) return;
     mb.image = e.target.result;
     mb.imgEnabled = true;
-    fitMapBgToBranch(mapBgRootId);
+    fitMapBgToOneMap(mapBgRootId);
     // Auto-lock root to its map bg
     const rn = gN(mapBgRootId);
     if (rn) rn.locked = true;
-    renderAllMapBgs();
-    saveToLocalStorage();
 
-    // Center and zoom to fit background on screen
+    // Center to fit background on screen
     const root = gN(mapBgRootId);
     if (root && mb) {
-      const bw = mb.baseW * mb.imgZoom;
-      const bh = mb.baseH * mb.imgZoom;
-      const margin = 1.15; // 15% margin
-      const targetZ = Math.min(window.innerWidth / (bw * margin), window.innerHeight / (bh * margin));
-      zoom = Math.min(1.5, Math.max(0.08, targetZ));
-      
       const bcx = root.x + (mb.imgOffsetX || 0);
       const bcy = root.y + (mb.imgOffsetY || 0);
       panX = window.innerWidth / 2 - bcx * zoom;
@@ -319,6 +317,9 @@ function applyImgCatBgToRoot(file) {
       applyT();
       if (typeof renderMinimap === 'function') renderMinimap();
     }
+
+    renderAllMapBgs();
+    saveToLocalStorage();
 
     mapBgRootId = null;
     closeImgCatalog();
@@ -389,31 +390,41 @@ function updateMapBg(key, val) {
   saveToLocalStorage();
 }
 
-function fitMapBgToBranch(rootId) {
+function fitMapBgToOneMap(rootId) {
   const root = gN(rootId);
   if (!root) return;
   const mb = getMapBg(rootId);
   if (!mb) return;
 
-  const branchNodes = [root];
+  // Identify all objects belonging to this specific map component via undirected traversal
+  const mapNodes = [root];
   const visited = new Set([root.id]);
   const queue = [root.id];
   while(queue.length > 0) {
     const id = queue.shift();
-    if(typeof gCh === 'function') {
-      gCh(id).forEach(childId => {
-        if (!visited.has(childId)) {
-          visited.add(childId);
-          queue.push(childId);
-          const cn = gN(childId);
-          if (cn) branchNodes.push(cn);
+    // Follow all connected edges regardless of direction or type to capture the entire map
+    edges.forEach(e => {
+      let other = null;
+      if (e.from === id) other = e.to;
+      else if (e.to === id) other = e.from;
+
+      if (other !== null && !visited.has(other)) {
+        const cn = gN(other);
+        if (cn) {
+          visited.add(other);
+          // If we hit another root, we include it but don't traverse further from it
+          // to avoid merging independent maps.
+          if (cn.type !== 'root') {
+            queue.push(other);
+          }
+          mapNodes.push(cn);
         }
-      });
-    }
+      }
+    });
   }
 
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  branchNodes.forEach(n => {
+  mapNodes.forEach(n => {
     const w = n.width || 120;
     const h = n.height || 40;
     minX = Math.min(minX, n.x - w / 2);
@@ -422,35 +433,26 @@ function fitMapBgToBranch(rootId) {
     maxY = Math.max(maxY, n.y + h / 2);
   });
 
-  // Include edges in the bounding box
+  // Include edges internal to this map in the bounding box with accurate curve sampling
   edges.forEach(e => {
-    if (visited.has(e.from) && visited.has(e.to)) {
-      // Internal edge: check control points
-      if (e.cp1x != null) {
-        minX = Math.min(minX, e.cp1x);
-        maxX = Math.max(maxX, e.cp1x);
-        minY = Math.min(minY, e.cp1y);
-        maxY = Math.max(maxY, e.cp1y);
-      }
-      if (e.cp2x != null) {
-        minX = Math.min(minX, e.cp2x);
-        maxX = Math.max(maxX, e.cp2x);
-        minY = Math.min(minY, e.cp2y);
-        maxY = Math.max(maxY, e.cp2y);
-      }
-      // Elbow bend points
-      const sh = e.shape || gls;
-      if (sh === 'elbow' && e.bend != null) {
-        // We could calculate the actual elbow bend point here, 
-        // but since we already have nodes and cp/offsets, this covers most cases.
+    if (visited.has(e.from) || visited.has(e.to)) {
+      // Sample points along the edge to get a tight bounding box (Bezier control points are too loose)
+      for (let t = 0; t <= 1; t += 0.1) {
+        const pt = edgePt(e, t);
+        if (pt) {
+          minX = Math.min(minX, pt.x); maxX = Math.max(maxX, pt.x);
+          minY = Math.min(minY, pt.y); maxY = Math.max(maxY, pt.y);
+        }
       }
     }
   });
 
-  const bW = maxX - minX;
-  const bH = maxY - minY;
-  const branchW = bW + 80; // Minimal padding
-  const branchH = bH + 80;
+  const bW = Math.max(maxX - minX, 100);
+  const bH = Math.max(maxY - minY, 100);
+
+  const padding = 20; // Minimal equal indent
+  const targetZ = Math.min((window.innerWidth - padding * 2) / bW, (window.innerHeight - padding * 2) / bH);
+  zoom = Math.min(1.5, Math.max(0.08, targetZ));
 
   const bCX = (minX + maxX) / 2;
   const bCY = (minY + maxY) / 2;
@@ -458,10 +460,7 @@ function fitMapBgToBranch(rootId) {
   mb.baseW = window.innerWidth / zoom;
   mb.baseH = window.innerHeight / zoom;
 
-  const scaleX = branchW / mb.baseW;
-  const scaleY = branchH / mb.baseH;
-
-  mb.imgZoom = Math.max(scaleX, scaleY);
+  mb.imgZoom = 1;
   mb.imgOffsetX = bCX - root.x;
   mb.imgOffsetY = bCY - root.y;
 }
