@@ -112,5 +112,5 @@ const mmenu=document.getElementById('mmenu');
 const glLink=document.getElementById('ghost-ln');
 const ghHd=document.getElementById('ghost-hd');
 
-let parentMapStack = []; // Stack of {filename, label}
-
+let parentMapStack = []; // Stack of {filename, label, nodeId}
+let returnHighlightNodeId = null; // Node ID to highlight after returning from submap

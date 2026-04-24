@@ -1050,7 +1050,7 @@ function render(){
 
     // 2. UI layer: contains title/buttons/resizers, goes above lines
     const divUI=document.createElement('div');
-    divUI.className='node group-box g-ui-box'+(isSel?' selected':'');
+    divUI.className='node group-box g-ui-box'+(isSel?' selected':'')+(n.id === returnHighlightNodeId ? ' ep-target' : '');
     divUI.id='nd'+n.id; // Keep id nd for drag-selection logic
     divUI.style.left=n.x+'px';divUI.style.top=n.y+'px';
     divUI.style.width=n.width+'px';divUI.style.height=n.height+'px';
@@ -1216,7 +1216,7 @@ function render(){
     const isNote=n.type==='note';
     const isMulti=n.type==='multi';
     const div=document.createElement('div');
-    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'')+(isMulti?' type-multi':'')+(pendingInsert && pendingInsert.nodeId === n.id ? ' drop-node-target' : '');
+    div.className='node'+(n.id===selN||selNSet.has(n.id)?' selected':'')+(isRoot?' is-root':'')+(n.note?' has-note':'')+(n.id===branchViewId?' branch-root':'')+(isNote?' type-note':'')+(isMulti?' type-multi':'')+(pendingInsert && pendingInsert.nodeId === n.id ? ' drop-node-target' : '')+(n.id === returnHighlightNodeId ? ' ep-target' : '');
     div.id='nd'+n.id;div.style.left=n.x+'px';div.style.top=n.y+'px';
     div.setAttribute('draggable', 'false');
     div.ondragstart = () => false;

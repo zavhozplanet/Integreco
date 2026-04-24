@@ -533,6 +533,7 @@ async function goBackToParentMap() {
   if (parentMapStack.length === 0) return;
   saveToLocalStorage();
   const parent = parentMapStack[parentMapStack.length - 1];
+  returnHighlightNodeId = parent.nodeId;
   catOpenMap(parent.filename);
 }
 
@@ -540,6 +541,7 @@ async function goToRootMap() {
   if (parentMapStack.length === 0) return;
   saveToLocalStorage();
   const root = parentMapStack[0];
+  returnHighlightNodeId = root.nodeId;
   catOpenMap(root.filename);
 }
 
@@ -631,7 +633,7 @@ async function createAndOpenSubmap(id) {
     linkDefaults: JSON.parse(JSON.stringify(linkDefaults)),
     nodeDefaults: JSON.parse(JSON.stringify(nodeDefaults)),
     groupDefaults: JSON.parse(JSON.stringify(groupDefaults)),
-    parentMapStack: [...parentMapStack, { filename: currentFilename, label: currentLabel }],
+    parentMapStack: [...parentMapStack, { filename: currentFilename, label: currentLabel, nodeId: id }],
     idC: 1
   };
 

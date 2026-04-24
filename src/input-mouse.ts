@@ -6,6 +6,16 @@ let ms={};   // mouse state
 let bzDrag={active:false};
 let epDrag={active:false}; // edge endpoint reconnection drag
 
+// Global interaction listener to clear return highlight
+['mousedown', 'touchstart', 'keydown'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    if (typeof returnHighlightNodeId !== 'undefined' && returnHighlightNodeId !== null) {
+      returnHighlightNodeId = null;
+      if (typeof render === 'function') render();
+    }
+  }, { capture: true, passive: true });
+});
+
 // Prevent middle-click paste globally if an editor is focused
 ['mousedown', 'mouseup', 'auxclick', 'click'].forEach(evt => {
   window.addEventListener(evt, ev => {
