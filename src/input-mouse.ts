@@ -688,6 +688,11 @@ window.addEventListener('mouseup',ev=>{
     }
     sb.style.display='none';selBoxState={active:false};
   }
+
+  // Safety net: if no drag is active, ensure ghost line is hidden
+  if(!plusDrag.active && !epDrag.active && !dragCreate.active){
+    if(glLink.style.display!=='none'){glLink.style.display='none';ghHd.style.display='none';}
+  }
 });
 
 window.addEventListener('click',ev=>{

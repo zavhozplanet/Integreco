@@ -864,13 +864,6 @@ async function selectWorkspaceFolder() {
       saveToLocalStorage();
       toast('Папка привязана! Текущая карта сохранена.');
     }
-    
-    // After selection, if it's the initial state, show the dbl-click menu in center
-    setTimeout(() => {
-      if (typeof showCanvDblMenu === 'function' && (typeof nodes === 'undefined' || nodes.length <= 13)) {
-        showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
-      }
-    }, 500);
   }
 }
 </script>

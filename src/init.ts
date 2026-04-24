@@ -4,17 +4,6 @@
 ================================================================ */
 function init(){
   applyBg();
-  const r=mkNode(CS/2,CS/2,'Главная тема',null,false,'root');hist=[];
-  const br=[
-    {l:'Идея 1',dx:230,dy:-150},{l:'Идея 2',dx:260,dy:50},
-    {l:'Идея 3',dx:60,dy:-220},{l:'Идея 4',dx:-220,dy:-100},
-    {l:'Идея 5',dx:-240,dy:80},{l:'Идея 6',dx:60,dy:200},
-  ];
-  br.forEach(b=>{
-    const bid=mkNode(CS/2+b.dx,CS/2+b.dy,b.l,r);
-    mkNode(CS/2+b.dx+195,CS/2+b.dy-40,'',bid);
-    mkNode(CS/2+b.dx+195,CS/2+b.dy+40,'',bid);
-  });
   hist=[];render();
   zoom=1;panX=wrap.clientWidth/2-CS/2;panY=wrap.clientHeight/2-CS/2;applyT();
 }
@@ -111,16 +100,13 @@ async function bootApp() {
   // If no folder selected yet, prompt user via catalog overlay
   if (!window.storageAPI?.dirHandle && typeof openCatalog === 'function') {
     openCatalog();
-  } else {
-    // If folder is selected (or we just loaded from localStorage),
-    // and no actions were taken yet (default init map), show the dbl-click menu in center.
-    // We check if it's the default map from init() which has 13 nodes (1 root + 6 branches * 2 nodes).
-    // Or simpler: if this is a fresh boot, just show it.
+  } else if (nodes.length === 0) {
+    // Empty canvas (first launch or new map) — show creation menu
     setTimeout(() => {
-      if (typeof showCanvDblMenu === 'function' && nodes.length <= 13) {
+      if (typeof showCanvDblMenu === 'function') {
         showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
       }
-    }, 500);
+    }, 300);
   }
 
   // Restore UI settings
@@ -143,14 +129,23 @@ async function bootApp() {
 }
 
 function _initBlankMap() {
-  // Create a fresh empty canvas with a center "+" placeholder — user will type the first title
+  // Empty canvas — user picks what to create from the dbl-click menu
   nodes = []; edges = []; idC = 0; hist = []; fut = [];
   hasUnsavedChanges = false;
-  selN = null; selE = null;
+  selN = null; selE = null; selNSet.clear();
+  linkMode = false; linkFromId = null;
+  pendingInsert = null; branchViewId = null;
+  parentMapStack = []; returnHighlightNodeId = null;
 
-  // Reset settings defaults to factory values (preventing inheritance from previous map)
-  glDefaults = {shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
-  linkDefaults = {shape:'straight',dash:'link',width:1,dir:'none',color:null, fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', defaultFlags: { variant: false, size: false, color: false }};
+  // Reset all interaction states (crucial when switching maps without page reload)
+  ms = {}; plusDrag = {active:false}; bzDrag = {active:false};
+  epDrag = {active:false}; dragCreate = {active:false};
+  selBoxState = {active:false}; groupResize = {active:false};
+  glLink.style.display = 'none'; ghHd.style.display = 'none';
+
+  // Reset settings defaults to factory values (must match structure in state.ts)
+  glDefaults = {shape:'straight',dash:'solid',width:1.5,dir:'forward',color:null, style: { fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', color: null }, defaultFlags: { variant: false, size: false, align: false, color: false }};
+  linkDefaults = {shape:'straight',dash:'link',width:1,dir:'none',color:null, style: { fontFamily: 'Inter, sans-serif', fontWeight: 'normal', fontStyle: 'normal', fontSize: 13, textAlign: 'center', color: null }, defaultFlags: { variant: false, size: false, align: false, color: false }};
   nodeDefaults = {
     style: {shape:'pill', borderType:'solid', borderWidth:1.5, padding:10, opacity:1, blur:0, borderColor:null, backgroundColor:null},
     recentColors: []
@@ -166,19 +161,22 @@ function _initBlankMap() {
     multi: false, multiAdaptive: true
   };
   autoMode = false;
-  applyBg(); // Refresh visual background immediately
+  applyBg();
 
-  // Create a root node that immediately enters edit mode so user types the title
-  const r = mkNode(CS/2, CS/2, '', null, false, 'root');
   hist = [];
   render();
   zoom = 1;
   panX = wrap.clientWidth / 2 - CS / 2;
   panY = wrap.clientHeight / 2 - CS / 2;
   applyT();
-  // Show the empty-canvas "+" prompt, then focus for typing
-  setTimeout(() => editNode(r, true), 80);
   saveToLocalStorage();
+
+  // Show creation menu in center so user picks what to create first
+  setTimeout(() => {
+    if (typeof showCanvDblMenu === 'function') {
+      showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
+    }
+  }, 100);
 }
 
 function updateUiOpa(type, val) {

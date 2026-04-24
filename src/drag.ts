@@ -54,6 +54,7 @@ function updatePlusDrag(ev){
 function endPlusDrag(ev){
   if(!plusDrag.active)return;
   glLink.style.display='none';ghHd.style.display='none';updateLinkTarget(null);
+  try {
   const rc=wrap.getBoundingClientRect();
   const wasMoved=plusDrag.moved;
   const tgt=plusDrag.targeting;
@@ -69,7 +70,6 @@ function endPlusDrag(ev){
       const exists = edges.some(e => (e.from === fromId && e.to === tgt) || (e.from === tgt && e.to === fromId));
       if(exists) {
         toast('Связь уже существует');
-        plusDrag={active:false};
         return;
       }
       const fromN=gN(fromId), toN=gN(tgt);
@@ -98,34 +98,33 @@ function endPlusDrag(ev){
       }
       
       const pStart = s2c(plusDrag.startX-rc.left, plusDrag.startY-rc.top);
-      // For fixed connection from strip, use the final cursor position 'p' to anchor it to the closest border point
       getSnapPoint(fromN, p, e, 'from'); 
       getSnapPoint(toN, p, e, 'to'); 
       render();
     } else {
       if (isPointInNode(fromId, p.x, p.y)) {
-        plusDrag = { active: false };
         return;
       }
       if (plusDrag.button === 1) {
         showPlusCtxAfterDrag(ev, fromId, plusDrag.dirHint, p, {x: plusDrag.curSX, y: plusDrag.curSY});
-        plusDrag = { active: false };
         return;
       }
       sh(); const id = mkNode(p.x, p.y, '+', fromId, false);
-      const e = edges[edges.length - 1]; // mkNode pushes edge connecting parent and child
+      const e = edges[edges.length - 1];
       const fromN = gN(fromId);
       const isStrip = plusDrag.btnEl && (plusDrag.btnEl.classList.contains('group-frame-sensor') || plusDrag.btnEl.classList.contains('multi-side-sensor'));
       if (fromN.type === 'group' || fromN.type === 'multi') {
         e.fromFixed = isStrip;
-        // Use final cursor 'p' for sliding effect
         getSnapPoint(fromN, p, e, 'from');
       }
       if(autoMode)autoLayout();render();selNode(id);
       if(isMob())showMobRename(id,true);else setTimeout(()=>editNode(id,true),50);
     }
   }
-  plusDrag={active:false};
+  } finally {
+    plusDrag={active:false};
+    glLink.style.display='none';ghHd.style.display='none';
+  }
 }
 
 /* touch drag from side plus */

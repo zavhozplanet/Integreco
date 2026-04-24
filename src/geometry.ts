@@ -852,6 +852,10 @@ function render(){
   if(isRendering) return;
   isRendering = true;
   try {
+    // Safety: hide ghost line if no drag operation is active
+    if(!plusDrag.active && !epDrag.active && !dragCreate.active){
+      glLink.style.display='none'; ghHd.style.display='none';
+    }
     document.body.classList.toggle('edge-selected', !!selE);
     canvas.querySelectorAll('.node').forEach(el=>el.remove());
     canvas.querySelectorAll('.group-box').forEach(el=>el.remove());

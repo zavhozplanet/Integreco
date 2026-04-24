@@ -336,6 +336,10 @@ function showPlusCtxAfterDrag(ev, nodeId, dirHint, targetPoint, startPoint){
   canvDblMenu._plusStartPoint = startPoint;
 }
 function addFromDbl(type){
+  // Defensive: reset any stuck drag state and hide ghost line
+  glLink.style.display='none'; ghHd.style.display='none';
+  plusDrag={active:false}; epDrag={active:false}; dragCreate={active:false};
+
   const fromPlus = canvDblMenu.classList.contains('from-plus');
   hideCanvDblMenu();
   if(fromPlus){
