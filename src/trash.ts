@@ -294,14 +294,28 @@ function trashCenterOnNode(id){
   render();
 }
 
-function hideCanvDblMenu(){canvDblMenu.style.display='none'}
-function showCanvDblMenu(cx,cy){
+function hideCanvDblMenu(){
+  canvDblMenu.style.display='none';
+  canvDblMenu.classList.remove('large');
+  canvDblMenu.style.transform = '';
+}
+function showCanvDblMenu(cx,cy,isLarge=false){
   hideAllMenus();
   canvDblMenu.classList.remove('from-plus');
+  if(isLarge) canvDblMenu.classList.add('large');
+  else {
+    canvDblMenu.classList.remove('large');
+    canvDblMenu.style.transform = '';
+  }
   const rootItem = canvDblMenu.querySelector('.cdm-root-node');
   if(rootItem) rootItem.style.display = 'flex';
   canvDblMenu.style.display='flex';
-  posMenu(canvDblMenu, cx, cy);
+  if(isLarge) {
+    canvDblMenu.style.left='50%';
+    canvDblMenu.style.top='50%';
+  } else {
+    posMenu(canvDblMenu, cx, cy);
+  }
   canvDblMenu._cx=cx;canvDblMenu._cy=cy;
 }
 function showPlusCtx(ev, nodeId, dirHint, sensorPos){

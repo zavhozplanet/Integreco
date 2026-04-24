@@ -104,7 +104,7 @@ async function bootApp() {
     // Empty canvas (first launch or new map) — show creation menu
     setTimeout(() => {
       if (typeof showCanvDblMenu === 'function') {
-        showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
+        showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2, true);
       }
     }, 300);
   }
@@ -174,7 +174,7 @@ function _initBlankMap() {
   // Show creation menu in center so user picks what to create first
   setTimeout(() => {
     if (typeof showCanvDblMenu === 'function') {
-      showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
+      showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2, true);
     }
   }, 100);
 }

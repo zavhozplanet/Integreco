@@ -159,7 +159,10 @@ function onNodeMD(ev,id){
     ms.dragOffsets.push({ id: nid, n: n, ox: p.x - n.x, oy: p.y - n.y });
 
     // Undirected graph expansion
-    if (isMapMove || n.type === 'root') {
+    // If root has an active background image, it acts as a rigid platform for the whole branch.
+    // If no background is active, the root can be moved relative to other nodes.
+    const isBgRoot = n.type === 'root' && n.mapBg && n.mapBg.image && n.mapBg.imgEnabled;
+    if (isMapMove || isBgRoot) {
       const currentBg = allowedRootBg !== undefined ? allowedRootBg : inBgRootId;
       edges.forEach(e => {
         if (e.from === nid) addNodeToDrag(e.to, true, currentBg);

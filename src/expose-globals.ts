@@ -11,7 +11,7 @@ Object.assign(window, {
   toggleFS, toggleMenu, toggleStealth, toggleSettings,
 
   // ── Canvas double-click menu ──
-  addFromDbl, hideCanvDblMenu,
+  addFromDbl, hideCanvDblMenu, showCanvDblMenu,
 
   // ── Node context menu ──
   ctxExec, ctxExecMulti,

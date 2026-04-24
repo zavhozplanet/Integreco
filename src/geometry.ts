@@ -860,6 +860,9 @@ function render(){
     canvas.querySelectorAll('.node').forEach(el=>el.remove());
     canvas.querySelectorAll('.group-box').forEach(el=>el.remove());
     Array.from(svgl.children).forEach(el=>{if(el.id!=='ghost-ln'&&el.id!=='ghost-hd')el.remove()});
+    const ecp = document.getElementById('empty-canvas-plus');
+    if (ecp) ecp.style.display = (nodes.length === 0) ? 'flex' : 'none';
+
     svgl.setAttribute('viewBox',`0 0 ${CS} ${CS}`);svgl.setAttribute('width',CS);svgl.setAttribute('height',CS);
 
     const defs = mkSVG('defs');
@@ -1262,7 +1265,7 @@ function render(){
       if(n.style.borderColor) ni.style.borderColor=n.style.borderColor;
       if(n.style.padding!=null) ni.style.padding=`${n.style.padding}px ${n.style.padding*2.2}px`;
       
-      let rgbStr = isRoot ? '61,59,56' : (isNote ? '255,253,240' : '255,255,255');
+      let rgbStr = isRoot ? '64,224,208' : (isNote ? '255,253,240' : '255,255,255');
       if(n.style.backgroundColor && n.style.backgroundColor.startsWith('#')) {
         const h = n.style.backgroundColor;
         const r = parseInt(h.slice(1,3), 16), g = parseInt(h.slice(3,5), 16), b = parseInt(h.slice(5,7), 16);
