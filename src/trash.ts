@@ -152,17 +152,17 @@ function tAction(action, singleIdx = null) {
   const indices = (singleIdx !== null) ? [singleIdx] : Array.from(selectedTrashItems).sort((a,b) => b - a);
   
   if(action === 'clear-all') {
-    if(confirm('Очистить корзину полностью? Это действие необратимо.')) {
-      (async () => {
-        for(let item of trash) {
-          await deleteTrashFromFS(item);
-        }
-        trash = [];
-        updateTrashBadge();
-        if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
-        renderTrash();
-      })();
-    }
+    (async () => {
+      for(let item of trash) {
+        await deleteTrashFromFS(item);
+      }
+      const count = trash.length;
+      trash = [];
+      updateTrashBadge();
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+      renderTrash();
+      toast('Корзина очищена (' + count + ')');
+    })();
     return;
   }
 
@@ -264,19 +264,18 @@ function tAction(action, singleIdx = null) {
     URL.revokeObjectURL(url);
     if(document.getElementById('t-dl-sub')) document.getElementById('t-dl-sub').style.display = 'none';
   } else if(action === 'delete') {
-    if(confirm(`Удалить выбранные объекты (${indices.length}) навсегда?`)) {
-      (async () => {
-        const sorted = [...indices].sort((a,b)=>b-a);
-        for(let idx of sorted) {
-          const item = trash[idx];
-          await deleteTrashFromFS(item);
-          trash.splice(idx, 1);
-        }
-        updateTrashBadge();
-        if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
-        renderTrash();
-      })();
-    }
+    (async () => {
+      const sorted = [...indices].sort((a,b)=>b-a);
+      for(let idx of sorted) {
+        const item = trash[idx];
+        await deleteTrashFromFS(item);
+        trash.splice(idx, 1);
+      }
+      updateTrashBadge();
+      if(typeof saveToLocalStorage === 'function') saveToLocalStorage();
+      renderTrash();
+      toast('Удалено: ' + sorted.length);
+    })();
   }
 }
 
