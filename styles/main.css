@@ -776,6 +776,41 @@ body.edge-selected .multi-side-sensor { pointer-events: none!important; display:
   flex-direction: row; flex-wrap: wrap;
   align-content: flex-start; gap: 14px;
 }
+#catalog-grid.tree {
+  gap: 2px; padding: 12px 16px;
+}
+
+/* ── TREE view rows ── */
+.cat-tree-row {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 38px; border-radius: 9px; cursor: pointer;
+  padding-right: 12px; padding-top: 3px; padding-bottom: 3px;
+  transition: background 0.1s;
+  position: relative;
+}
+.cat-tree-row:hover { background: var(--bg); }
+.cat-tree-row.cat-tree-active {
+  background: rgba(67,195,122,0.12);
+  outline: 1.5px solid rgba(67,195,122,0.4);
+}
+.cat-tree-toggle {
+  width: 20px; height: 20px; flex-shrink: 0;
+  border: none; background: transparent; cursor: pointer;
+  font-size: 9px; color: var(--mu); padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: background 0.1s;
+}
+.cat-tree-toggle:hover { background: var(--nbr); }
+.cat-tree-label {
+  font-size: 14px; font-weight: 600; color: var(--tx);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1; min-width: 0;
+}
+.cat-tree-meta {
+  font-size: 11px; color: var(--mu); flex-shrink: 0;
+  max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── CARD (horizontal) layout ── */
 .catalog-grid.cards .cat-card {

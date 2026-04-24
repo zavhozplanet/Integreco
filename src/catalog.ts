@@ -99,12 +99,16 @@ async function scanWorkspaceFolder() {
         const label = rootNode?.label || name.replace('.json', '');
         const thumb = buildThumb(parsed.nodes, parsed.edges || []);
         // Save mtime for sorting
+        const submapLinks = parsed.nodes
+          .filter(n => n.submapFilename)
+          .map(n => ({ nodeLabel: n.label || '', filename: n.submapFilename }));
         items.push({ 
           filename: name, 
           label, 
           thumb, 
           nodeCount: parsed.nodes.length,
-          mtime: file.lastModified 
+          mtime: file.lastModified,
+          submapLinks
         });
       } catch (e) {}
     }
@@ -187,6 +191,11 @@ function renderCatalogGrid(grid) {
   grid.className = 'catalog-grid ' + catalogView;
   grid.innerHTML = '';
   const currentFile = window.storageAPI?._currentFilename || 'map.json';
+
+  if (catalogView === 'tree') {
+    renderCatalogTree(grid, currentFile);
+    return;
+  }
 
   if (catalogSort === 'recent') {
     const now = Date.now();
@@ -298,6 +307,8 @@ function setCatalogView(view) {
   catalogView = view;
   document.getElementById('cat-view-cards').classList.toggle('active', view === 'cards');
   document.getElementById('cat-view-tiles').classList.toggle('active', view === 'tiles');
+  const treeBtn = document.getElementById('cat-view-tree');
+  if (treeBtn) treeBtn.classList.toggle('active', view === 'tree');
   const grid = document.getElementById('catalog-grid');
   if (grid) renderCatalogGrid(grid);
 }
@@ -617,3 +628,105 @@ async function createAndOpenSubmap(id) {
 }
 
 
+// ── Map Tree View ────────────────────────────────────────────────
+const catTreeCollapsed = new Set();
+
+function buildMapTree(items) {
+  const byFile = {};
+  items.forEach(it => { byFile[it.filename] = { ...it, children: [] }; });
+  const childSet = new Set();
+  items.forEach(parent => {
+    (parent.submapLinks || []).forEach(link => {
+      // Check if the link target actually exists in our file list
+      if (byFile[link.filename]) {
+        // Avoid self-reference and cycles (basic check)
+        if (link.filename !== parent.filename) {
+          byFile[parent.filename].children.push(byFile[link.filename]);
+          childSet.add(link.filename);
+        }
+      }
+    });
+  });
+  // Roots are items that are NOT marked as children of any other map
+  return items.filter(it => !childSet.has(it.filename)).map(it => byFile[it.filename]);
+}
+
+function _makeMapIcon() {
+  // Three overlapping circles: purple, turquoise, orange — black outlines on white
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
+  svg.setAttribute('viewBox', '0 0 22 22');
+  svg.style.cssText = 'flex-shrink:0;display:block;';
+  [
+    { cx: 7,  cy: 14, fill: '#9b59b6' }, // purple
+    { cx: 15, cy: 14, fill: '#1abc9c' }, // turquoise
+    { cx: 11, cy: 8,  fill: '#e67e22' }, // orange
+  ].forEach(({ cx, cy, fill }) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', cx); c.setAttribute('cy', cy);
+    c.setAttribute('r', '6'); c.setAttribute('fill', fill);
+    c.setAttribute('stroke', '#1a1a1a'); c.setAttribute('stroke-width', '1.4');
+    svg.appendChild(c);
+  });
+  return svg;
+}
+
+function renderCatalogTree(grid, currentFile) {
+  grid.innerHTML = '';
+  const roots = buildMapTree(catalogItems);
+  if (roots.length === 0) {
+    grid.innerHTML = '<div class="cat-empty">Нет карт</div>';
+    return;
+  }
+
+  function renderNode(node, depth) {
+    const hasChildren = node.children && node.children.length > 0;
+    const isCollapsed = catTreeCollapsed.has(node.filename);
+
+    const row = document.createElement('div');
+    row.className = 'cat-tree-row' + (node.filename === currentFile ? ' cat-tree-active' : '');
+    row.style.paddingLeft = (8 + depth * 24) + 'px';
+
+    // Collapse/expand toggle
+    const toggle = document.createElement('button');
+    toggle.className = 'cat-tree-toggle';
+    toggle.textContent = hasChildren ? (isCollapsed ? '▶' : '▼') : '';
+    toggle.style.visibility = hasChildren ? 'visible' : 'hidden';
+    toggle.onclick = (e) => {
+      e.stopPropagation();
+      if (isCollapsed) catTreeCollapsed.delete(node.filename);
+      else catTreeCollapsed.add(node.filename);
+      renderCatalogTree(grid, currentFile);
+    };
+
+    const icon = _makeMapIcon();
+
+    const lbl = document.createElement('span');
+    lbl.className = 'cat-tree-label';
+    lbl.textContent = node.label;
+    lbl.title = node.filename;
+
+    const meta = document.createElement('span');
+    meta.className = 'cat-tree-meta';
+    meta.textContent = node.filename;
+
+    row.appendChild(toggle);
+    row.appendChild(icon);
+    row.appendChild(lbl);
+    row.appendChild(meta);
+
+    row.addEventListener('dblclick', () => catOpenMap(node.filename));
+    row.addEventListener('contextmenu', (ev) => {
+      if (typeof showGenericContext === 'function') {
+        showGenericContext(ev, { type: 'catalog', filename: node.filename });
+      }
+    });
+    grid.appendChild(row);
+
+    if (hasChildren && !isCollapsed) {
+      node.children.forEach(child => renderNode(child, depth + 1));
+    }
+  }
+
+  roots.forEach(r => renderNode(r, 0));
+}
