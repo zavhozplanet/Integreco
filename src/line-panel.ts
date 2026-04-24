@@ -320,6 +320,7 @@ function toggleStealth() {
     document.body.classList.remove('ui-visible');
     if (stealthTimer) clearTimeout(stealthTimer);
   }
+  if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
 }
 
 function toggleSettings() {

@@ -403,7 +403,11 @@ async function catTrashMap(ev, filename, skipConfirm = false) {
       throw new Error('Не удалось прочитать данные файла перед удалением');
     }
     // Delete the file from the folder only after it's in trash
-    await window.storageAPI.deleteMapFile(filename);
+    if (typeof window.storageAPI.deleteMapFile === 'function') {
+      await window.storageAPI.deleteMapFile(filename);
+    } else {
+      await window.storageAPI.dirHandle.removeEntry(filename);
+    }
     
     // Notify other tabs to close/reset if they have this map open
     if (window._deleteChannel) {

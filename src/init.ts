@@ -312,7 +312,7 @@ function importData(input) {
 function saveToLocalStorage() {
   const data = {
     version: '1.0',
-    nodes, edges, bgSettings, snapSettings,
+    nodes, edges, bgSettings, snapSettings, stealthActive,
     glDefaults, linkDefaults, nodeDefaults, noteDefaults, groupDefaults,
     lastUsedMapRootId, idC,
     parentMapStack,
@@ -358,6 +358,12 @@ function applyData(data) {
       edges = parsed.edges;
       bgSettings = parsed.bgSettings;
       if (parsed.snapSettings) snapSettings = parsed.snapSettings;
+      if (parsed.stealthActive !== undefined) {
+        stealthActive = parsed.stealthActive;
+        document.body.classList.toggle('stealth-active', stealthActive);
+        const sw = document.getElementById('stealth-switch');
+        if (sw) sw.checked = stealthActive;
+      }
       if (parsed.glDefaults) {
         glDefaults = {...glDefaults, ...parsed.glDefaults};
         // Migrate old text format properties from root to style sub-object
@@ -495,11 +501,16 @@ window.addEventListener('load', () => {
     if (menu.style.display === 'block') closeMenu();
   });
 
-  const itemOpenNew = document.getElementById('gc-open-new-tab');
-  if (itemOpenNew) {
-    itemOpenNew.onclick = (ev) => {
-      ev.stopPropagation();
-      const data = menu._data;
+  // ── Event delegation on the menu container for all catalog actions ──
+  menu.addEventListener('click', (ev) => {
+    const target = ev.target.closest('.gc-item');
+    if (!target) return;
+    ev.stopPropagation();
+
+    const data = menu._data;
+    const id = target.id;
+
+    if (id === 'gc-open-new-tab') {
       if (!data) return;
       if (data.type === 'catalog' && typeof catOpenMap === 'function') {
         catOpenMap(data.filename, true);
@@ -507,8 +518,24 @@ window.addEventListener('load', () => {
         newTab(true);
       }
       closeMenu();
-    };
-  }
+      return;
+    }
+
+    if (!data || data.type !== 'catalog') return;
+    const fn = data.filename;
+
+    if (id === 'gc-share') {
+      catShare(ev, fn);
+      closeMenu();
+    } else if (id === 'gc-download') {
+      catDownload(ev, fn, 'jsonld');
+      closeMenu();
+    } else if (id === 'gc-trash') {
+      closeMenu();
+      // skipConfirm=true: user already chose "Move to Trash" from menu
+      catTrashMap({ stopPropagation: () => {} }, fn, true);
+    }
+  });
 
   const miNew = document.getElementById('mi-newtab');
   if (miNew) {

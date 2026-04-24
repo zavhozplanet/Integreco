@@ -54,7 +54,7 @@ input, textarea {user-select:text;-webkit-user-select:text}
 .stealth-active.ui-visible #branch-banner,
 .stealth-active.ui-visible #btn-burger-menu { 
   opacity: 1 !important; 
-  pointer-events: auto; 
+  pointer-events: auto !important; 
 }
 
 /* ── GROUPS ── */
