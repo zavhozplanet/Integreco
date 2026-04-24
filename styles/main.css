@@ -793,6 +793,10 @@ body.edge-selected .multi-side-sensor { pointer-events: none!important; display:
   background: rgba(67,195,122,0.12);
   outline: 1.5px solid rgba(67,195,122,0.4);
 }
+.cat-tree-row.cat-tree-row-ctx {
+  background: rgba(0,168,255,0.08);
+  outline: 1.5px solid rgba(0,168,255,0.3);
+}
 .cat-tree-toggle {
   width: 20px; height: 20px; flex-shrink: 0;
   border: none; background: transparent; cursor: pointer;

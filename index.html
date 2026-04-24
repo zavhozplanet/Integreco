@@ -345,9 +345,10 @@
           <button id="cat-view-tiles" class="cat-view-btn" onclick="setCatalogView('tiles')" title="Плитки">⊞</button>
           <button id="cat-view-tree" class="cat-view-btn" onclick="setCatalogView('tree')" title="Дерево карт">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 22 22">
-              <circle cx="7"  cy="14" r="6" fill="#9b59b6" stroke="#1a1a1a" stroke-width="1.4"/>
-              <circle cx="15" cy="14" r="6" fill="#1abc9c" stroke="#1a1a1a" stroke-width="1.4"/>
-              <circle cx="11" cy="8"  r="6" fill="#e67e22" stroke="#1a1a1a" stroke-width="1.4"/>
+              <path d="M11 18V4 M11 14C11 14 11 9 18 9" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <circle cx="11" cy="18" r="3.5" fill="#a55eea" stroke="#1a1a1a" stroke-width="1.2"/>
+              <circle cx="11" cy="4"  r="3.5" fill="#2bcbba" stroke="#1a1a1a" stroke-width="1.2"/>
+              <circle cx="18" cy="9"  r="3.5" fill="#fd9644" stroke="#1a1a1a" stroke-width="1.2"/>
             </svg>
           </button>
         </div>
@@ -702,8 +703,12 @@
 <script type="module" src="/src/main.ts"></script>
 
 <!-- generic context menu for catalog/buttons -->
-<div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;">
+<div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;" onclick="event.stopPropagation()">
   <div class="gc-item" id="gc-open-new-tab">🔗 Открыть в новой вкладке</div>
+  <div class="ctx-sep" id="gc-sep-catalog" style="display:none"></div>
+  <div class="gc-item" id="gc-share"    style="display:none" onclick="gcCatalogAction('share')">🔗 Поделиться</div>
+  <div class="gc-item" id="gc-download" style="display:none" onclick="gcCatalogAction('download')">⬇️ Скачать (JSON-LD)</div>
+  <div class="gc-item" id="gc-trash"    style="display:none; color:var(--red);" onclick="gcCatalogAction('trash')">🗑️ Переместить в корзину</div>
 </div>
 
 <!-- Text Field Context Menu -->

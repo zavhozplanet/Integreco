@@ -456,6 +456,17 @@ function showGenericContext(ev, data) {
   menu.style.display = 'block';
   menu._data = data;
 
+  // Toggle catalog-specific items
+  const isCatalog = data && data.type === 'catalog';
+  const sep = document.getElementById('gc-sep-catalog');
+  const share = document.getElementById('gc-share');
+  const dl = document.getElementById('gc-download');
+  const tr = document.getElementById('gc-trash');
+  if (sep) sep.style.display = isCatalog ? 'block' : 'none';
+  if (share) share.style.display = isCatalog ? 'flex' : 'none';
+  if (dl) dl.style.display = isCatalog ? 'flex' : 'none';
+  if (tr) tr.style.display = isCatalog ? 'flex' : 'none';
+
   // Prevent overflow
   const padding = 10;
   let x = ev.clientX;
@@ -471,7 +482,18 @@ function showGenericContext(ev, data) {
 window.addEventListener('load', () => {
   const menu = document.getElementById('generic-ctx');
   if (!menu) return;
-  document.addEventListener('click', () => { menu.style.display = 'none'; });
+  
+  const closeMenu = () => {
+    menu.style.display = 'none';
+    // Clean up any temporary highlights in catalog
+    document.querySelectorAll('.cat-tree-row-ctx').forEach(r => r.classList.remove('cat-tree-row-ctx'));
+  };
+
+  document.addEventListener('click', closeMenu);
+  document.addEventListener('contextmenu', (ev) => {
+    if (ev.target.closest('#generic-ctx')) return;
+    if (menu.style.display === 'block') closeMenu();
+  });
 
   const itemOpenNew = document.getElementById('gc-open-new-tab');
   if (itemOpenNew) {
@@ -484,11 +506,10 @@ window.addEventListener('load', () => {
       } else if (data.type === 'newmap' && typeof newTab === 'function') {
         newTab(true);
       }
-      menu.style.display = 'none';
+      closeMenu();
     };
   }
 
-  // Attach to New Map button in main menu
   const miNew = document.getElementById('mi-newtab');
   if (miNew) {
     miNew.addEventListener('contextmenu', (ev) => showGenericContext(ev, { type: 'newmap' }));

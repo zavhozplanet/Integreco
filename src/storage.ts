@@ -115,6 +115,17 @@ class StorageManager {
     }
   }
 
+  async deleteMapFile(filename) {
+    if (!this.dirHandle || !(await this.verifyPermission())) return false;
+    try {
+      await this.dirHandle.removeEntry(filename);
+      return true;
+    } catch (e) {
+      console.error('Failed to delete map file from FS', e);
+      return false;
+    }
+  }
+
   async fileExists(filename, subfolderName = null) {
     if (!this.dirHandle || !(await this.verifyPermission())) return false;
     try {

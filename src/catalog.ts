@@ -338,8 +338,25 @@ async function catOpenMap(filename, newWindow = false) {
 
 // ── Card action handlers ─────────────────────────────────────────
 async function catShare(ev, filename) {
-  ev.stopPropagation();
+  if (ev) ev.stopPropagation();
   toast('Ссылка на файл: ' + filename);
+}
+
+// Called by generic context menu inline onclick — reads data from the menu element directly
+async function gcCatalogAction(action) {
+  const menu = document.getElementById('generic-ctx');
+  const data = menu && menu._data;
+  if (!data || data.type !== 'catalog') return;
+  const fn = data.filename;
+  const fakeEv = { stopPropagation: () => {} };
+
+  // Close menu immediately
+  if (menu) menu.style.display = 'none';
+  document.querySelectorAll('.cat-tree-row-ctx').forEach(r => r.classList.remove('cat-tree-row-ctx'));
+
+  if (action === 'share')    await catShare(fakeEv, fn);
+  if (action === 'download') await catDownload(fakeEv, fn, 'jsonld');
+  if (action === 'trash')    await catTrashMap(fakeEv, fn);
 }
 
 function catToggleDl(ev, btn) {
@@ -377,7 +394,7 @@ async function catTrashMap(ev, filename, skipConfirm = false) {
     if (dataStr) {
       const parsed = JSON.parse(dataStr);
       const label = parsed.nodes?.find(n => n.type === 'root')?.label || filename;
-      const item = { kind: 'map', filename, label, data: dataStr, time: Date.now() };
+      const item = { kind: 'map', filename, label, data: dataStr, time: Date.now(), deletedAt: Date.now() };
       trash.push(item);
       updateTrashBadge();
       if(typeof saveTrashToFS === 'function') await saveTrashToFS(item);
@@ -386,7 +403,7 @@ async function catTrashMap(ev, filename, skipConfirm = false) {
       throw new Error('Не удалось прочитать данные файла перед удалением');
     }
     // Delete the file from the folder only after it's in trash
-    await window.storageAPI.dirHandle.removeEntry(filename);
+    await window.storageAPI.deleteMapFile(filename);
     
     // Notify other tabs to close/reset if they have this map open
     if (window._deleteChannel) {
@@ -652,20 +669,29 @@ function buildMapTree(items) {
 }
 
 function _makeMapIcon() {
-  // Three overlapping circles: purple, turquoise, orange — black outlines on white
+  // Branch icon (Git style) with three circles: light green, turquoise, and blue
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
   svg.setAttribute('viewBox', '0 0 22 22');
   svg.style.cssText = 'flex-shrink:0;display:block;';
+  
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M11 18V4 M11 14C11 14 11 9 18 9');
+  path.setAttribute('stroke', '#1a1a1a');
+  path.setAttribute('stroke-width', '1.8');
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(path);
+
   [
-    { cx: 7,  cy: 14, fill: '#9b59b6' }, // purple
-    { cx: 15, cy: 14, fill: '#1abc9c' }, // turquoise
-    { cx: 11, cy: 8,  fill: '#e67e22' }, // orange
+    { cx: 11, cy: 18, fill: '#a55eea' }, // Lavender/Purple
+    { cx: 11, cy: 4,  fill: '#2bcbba' }, // Turquoise
+    { cx: 18, cy: 9,  fill: '#fd9644' }, // Sunset Orange
   ].forEach(({ cx, cy, fill }) => {
     const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     c.setAttribute('cx', cx); c.setAttribute('cy', cy);
-    c.setAttribute('r', '6'); c.setAttribute('fill', fill);
-    c.setAttribute('stroke', '#1a1a1a'); c.setAttribute('stroke-width', '1.4');
+    c.setAttribute('r', '3.5'); c.setAttribute('fill', fill);
+    c.setAttribute('stroke', '#1a1a1a'); c.setAttribute('stroke-width', '1.2');
     svg.appendChild(c);
   });
   return svg;
@@ -718,6 +744,9 @@ function renderCatalogTree(grid, currentFile) {
     row.addEventListener('dblclick', () => catOpenMap(node.filename));
     row.addEventListener('contextmenu', (ev) => {
       if (typeof showGenericContext === 'function') {
+        // Remove highlight from any other row
+        document.querySelectorAll('.cat-tree-row-ctx').forEach(r => r.classList.remove('cat-tree-row-ctx'));
+        row.classList.add('cat-tree-row-ctx');
         showGenericContext(ev, { type: 'catalog', filename: node.filename });
       }
     });

@@ -64,6 +64,8 @@ Object.assign(window, {
   setCatalogSort, setCatalogView,
   selectWorkspaceFolder,
   openObjectAsMap, goBackToParentMap, goToRootMap,
+  gcCatalogAction, showGenericContext,
+  catShare, catDownload, catTrashMap,
 
   // ── Menu / Settings / Export ──
   toggleExportSub, exportData, exportFmt,
