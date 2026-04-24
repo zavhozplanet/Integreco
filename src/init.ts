@@ -108,6 +108,21 @@ async function bootApp() {
     init();
   }
 
+  // If no folder selected yet, prompt user via catalog overlay
+  if (!window.storageAPI?.dirHandle && typeof openCatalog === 'function') {
+    openCatalog();
+  } else {
+    // If folder is selected (or we just loaded from localStorage),
+    // and no actions were taken yet (default init map), show the dbl-click menu in center.
+    // We check if it's the default map from init() which has 13 nodes (1 root + 6 branches * 2 nodes).
+    // Or simpler: if this is a fresh boot, just show it.
+    setTimeout(() => {
+      if (typeof showCanvDblMenu === 'function' && nodes.length <= 13) {
+        showCanvDblMenu(window.innerWidth / 2, window.innerHeight / 2);
+      }
+    }, 500);
+  }
+
   // Restore UI settings
   const ui = localStorage.getItem('integreco-ui-settings');
   if (ui) {
