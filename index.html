@@ -292,8 +292,14 @@
 
 <!-- burger menu -->
 <div id="mmenu">
-  <div class="mi" id="mi-share"><span class="mic">🔗</span></div>
-  <div class="mi" id="mi-dl" onclick="toggleExportSub(event)"><span class="mic">⬇</span></div>
+  <div class="mi" id="mi-share">
+    <span class="mic">🔗</span>
+    <span>Поделиться</span>
+  </div>
+  <div class="mi" id="mi-dl" onclick="toggleExportSub(event)">
+    <span class="mic">⬇</span>
+    <span>Экспорт / Скачать</span>
+  </div>
   <div id="export-sub">
     <div class="esi" onclick="exportData()">💾 Сохранить в память (бэкап)</div>
     <div class="esi" onclick="exportFmt('jsonld')">👁️🧠 JSON-LD</div>
@@ -302,13 +308,16 @@
   </div>
   <div class="mi" id="mi-trash" onclick="openTrash()">
     <span class="mic">🗑️</span>
+    <span>Корзина</span>
     <div id="trash-badge" class="trash-badge"></div>
   </div>
   <div class="mi" id="mi-settings" onclick="toggleSettings()">
     <span class="mic">⚙️</span>
+    <span>Настройки</span>
   </div>
   <div class="mi" id="mi-stealth" onclick="toggleStealth()">
     <span class="mic">🥷</span>
+    <span>Скрывать кнопки</span>
     <label class="switch" style="margin-left:auto;pointer-events:auto" onclick="event.stopPropagation()">
       <input type="checkbox" id="stealth-switch" onchange="toggleStealth()">
       <span class="slider-sw"></span>
@@ -364,20 +373,25 @@
 
 <!-- canvas double click menu -->
 <div id="canv-dbl-menu">
-  <div class="cdm-item cdm-root-node" onclick="addFromDbl('root')" title="Создать новый стартовый узел">
+  <div class="cdm-item cdm-root-node" onclick="addFromDbl('root')" title="Создать новый корневой узел">
     <div class="cdm-icon"><div class="cdm-preview root"></div></div>
+    <span>Корневой узел</span>
   </div>
   <div class="cdm-item" onclick="addFromDbl('node')" title="Создать новый обычный узел">
     <div class="cdm-icon"><div class="cdm-preview"></div></div>
+    <span>Обычный узел</span>
   </div>
   <div class="cdm-item" onclick="addFromDbl('note')" title="Создать заметку">
     <div class="cdm-icon"><div class="cdm-preview note"></div></div>
+    <span>Заметка</span>
   </div>
   <div class="cdm-item" onclick="addFromDbl('group')" title="Создать группу">
     <div class="cdm-icon"><div class="cdm-preview group"></div></div>
+    <span>Группа</span>
   </div>
   <div class="cdm-item" onclick="addFromDbl('multi')" title="Создать мультиузел">
     <div class="cdm-icon"><div class="cdm-preview multi"></div></div>
+    <span>Мультиузел</span>
   </div>
 </div>
 
@@ -632,6 +646,18 @@
   </div>
 </div>
 
+<!-- Generic Rename Modal -->
+<div id="gen-rename-modal" style="display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;" onclick="closeGenRename()">
+  <div style="background:#fff; padding:24px; border-radius:20px; box-shadow:0 12px 48px rgba(0,0,0,0.25); width:340px;" onclick="event.stopPropagation()">
+    <div id="gen-rn-title" style="font-size:18px; font-weight:600; margin-bottom:16px; color:var(--tx);">Переименовать</div>
+    <input id="gen-rn-input" style="width:100%; padding:12px 16px; border:1.5px solid var(--nbr); border-radius:12px; font-size:15px; outline:none; margin-bottom:20px; font-family:inherit;" autocomplete="off">
+    <div style="display:flex; gap:10px;">
+      <button onclick="closeGenRename()" style="flex:1; padding:12px; border:none; border-radius:12px; background:#f5f5f5; color:var(--tx); cursor:pointer; font-size:14px; font-weight:500;">Отмена</button>
+      <button id="gen-rn-ok" style="flex:1; padding:12px; border:none; border-radius:12px; background:var(--ac); color:#fff; cursor:pointer; font-size:14px; font-weight:600;">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- line options sheet (mobile) -->
 <div class="sov" id="ls-ov" onclick="closeLSheet()"></div>
 <div class="sht" id="ls-sht">
@@ -708,6 +734,7 @@
 <!-- generic context menu for catalog/buttons -->
 <div id="generic-ctx" class="ctxmenu-v2" style="display:none;position:fixed;z-index:3000;" onclick="event.stopPropagation()">
   <div class="gc-item" id="gc-open-new-tab">🔗 Открыть в новой вкладке</div>
+  <div class="gc-item" id="gc-rename">📝 Переименовать</div>
   <div class="ctx-sep" id="gc-sep-catalog" style="display:none"></div>
   <div class="gc-item" id="gc-share"    style="display:none">🔗 Поделиться</div>
   <div class="gc-item" id="gc-download" style="display:none">⬇️ Скачать (JSON-LD)</div>

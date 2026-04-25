@@ -102,6 +102,46 @@ class StorageManager {
     }
   }
 
+  async renameMap(oldName, newName) {
+    if (!this.dirHandle || !(await this.verifyPermission())) return false;
+    if (oldName === newName) return true;
+
+    try {
+      // Check if new name exists
+      let exists = false;
+      try {
+        await this.dirHandle.getFileHandle(newName);
+        exists = true;
+      } catch(e) {}
+      
+      if (exists) {
+        throw new Error('Файл с таким названием уже существует');
+      }
+
+      // Load data from old file
+      const dataStr = await this.loadData(oldName);
+      if (!dataStr) throw new Error('Не удалось прочитать исходный файл');
+
+      // Save to new file
+      const ok = await this.saveData(dataStr, newName);
+      if (!ok) throw new Error('Не удалось сохранить файл под новым именем');
+
+      // Delete old file
+      await this.dirHandle.removeEntry(oldName);
+
+      // Update session if needed
+      if (this._currentFilename === oldName) {
+        this._currentFilename = newName;
+        if (typeof saveToLocalStorage === 'function') saveToLocalStorage();
+      }
+
+      return true;
+    } catch (e) {
+      console.error('renameMap error', e);
+      throw e;
+    }
+  }
+
   async loadData(filename = 'map.json') {
     if (!this.dirHandle || !(await this.verifyPermission())) return null;
     try {

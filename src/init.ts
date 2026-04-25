@@ -477,14 +477,19 @@ function showGenericContext(ev, data) {
 
   // Toggle catalog-specific items
   const isCatalog = data && data.type === 'catalog';
+  const showFullMenu = !isCatalog || (data.isTree === true);
+  
+  const rename = document.getElementById('gc-rename');
   const sep = document.getElementById('gc-sep-catalog');
   const share = document.getElementById('gc-share');
   const dl = document.getElementById('gc-download');
   const tr = document.getElementById('gc-trash');
-  if (sep) sep.style.display = isCatalog ? 'block' : 'none';
-  if (share) share.style.display = isCatalog ? 'flex' : 'none';
-  if (dl) dl.style.display = isCatalog ? 'flex' : 'none';
-  if (tr) tr.style.display = isCatalog ? 'flex' : 'none';
+  
+  if (rename) rename.style.display = isCatalog ? 'flex' : 'none';
+  if (sep) sep.style.display = (isCatalog && showFullMenu) ? 'block' : 'none';
+  if (share) share.style.display = (isCatalog && showFullMenu) ? 'flex' : 'none';
+  if (dl) dl.style.display = (isCatalog && showFullMenu) ? 'flex' : 'none';
+  if (tr) tr.style.display = (isCatalog && showFullMenu) ? 'flex' : 'none';
 
   // Prevent overflow
   const padding = 10;
@@ -543,6 +548,9 @@ window.addEventListener('load', () => {
     } else if (id === 'gc-download') {
       catDownload(ev, fn, 'jsonld');
       closeMenu();
+    } else if (id === 'gc-rename') {
+      closeMenu();
+      catRenameMap({ stopPropagation: () => {} }, fn);
     } else if (id === 'gc-trash') {
       closeMenu();
       // skipConfirm=true: user already chose "Move to Trash" from menu

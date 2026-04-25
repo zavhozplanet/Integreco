@@ -83,4 +83,5 @@ Object.assign(window, {
   openImgCatalog, closeImgCatalog,
   handleImgCatFileInput, deleteSelectedImgCat,
   toggleAllImgCat,
+  closeGenRename,
 });

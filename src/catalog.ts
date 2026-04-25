@@ -95,8 +95,7 @@ async function scanWorkspaceFolder() {
         
         if (parsed.version !== '1.0' || !Array.isArray(parsed.nodes)) continue;
 
-        const rootNode = parsed.nodes.find(n => n.type === 'root') || parsed.nodes[0];
-        const label = rootNode?.label || name.replace('.json', '');
+        const label = name.replace('.json', '');
         const thumb = buildThumb(parsed.nodes, parsed.edges || []);
         // Save mtime for sorting
         const submapLinks = parsed.nodes
@@ -288,7 +287,7 @@ function _createCatalogCard(item, currentFile) {
 
   card.addEventListener('contextmenu', (ev) => {
     if (typeof showGenericContext === 'function') {
-      showGenericContext(ev, { type: 'catalog', filename: fn });
+      showGenericContext(ev, { type: 'catalog', filename: fn, isTree: false });
     }
   });
 
@@ -357,6 +356,7 @@ async function gcCatalogAction(action) {
   if (action === 'share')    await catShare(fakeEv, fn);
   if (action === 'download') await catDownload(fakeEv, fn, 'jsonld');
   if (action === 'trash')    await catTrashMap(fakeEv, fn);
+  if (action === 'rename')   await catRenameMap(fakeEv, fn);
 }
 
 function catToggleDl(ev, btn) {
@@ -385,6 +385,53 @@ async function catDownload(ev, filename, fmt) {
   }
 }
 
+async function catRenameMap(ev, oldName) {
+  if (ev) ev.stopPropagation();
+  
+  const modal = document.getElementById('gen-rename-modal');
+  const inp = document.getElementById('gen-rn-input');
+  const title = document.getElementById('gen-rn-title');
+  const okBtn = document.getElementById('gen-rn-ok');
+
+  title.textContent = 'Переименовать карту';
+  inp.value = oldName.replace('.json', '');
+  
+  modal.style.display = 'flex';
+  setTimeout(() => inp.focus(), 150);
+
+  const confirm = async () => {
+    const val = inp.value.trim();
+    if (!val) return;
+
+    const safe = val.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+    const newName = safe + '.json';
+
+    if (newName === oldName) {
+      closeGenRename();
+      return;
+    }
+
+    try {
+      const ok = await window.storageAPI.renameMap(oldName, newName);
+      if (ok) {
+        toast('Переименовано в «' + newName + '»');
+        closeGenRename();
+        await refreshCatalog();
+      }
+    } catch (e) {
+      toast('Ошибка: ' + e.message);
+    }
+  };
+
+  okBtn.onclick = confirm;
+  inp.onkeydown = ev => { if (ev.key === 'Enter') confirm(); };
+}
+
+function closeGenRename() {
+  const modal = document.getElementById('gen-rename-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 async function catTrashMap(ev, filename, skipConfirm = false) {
   if (ev) ev.stopPropagation();
   if (!skipConfirm && !confirm('Отправить карту «' + filename + '» в корзину?')) return;
@@ -393,7 +440,7 @@ async function catTrashMap(ev, filename, skipConfirm = false) {
     const dataStr = await window.storageAPI.loadData(filename);
     if (dataStr) {
       const parsed = JSON.parse(dataStr);
-      const label = parsed.nodes?.find(n => n.type === 'root')?.label || filename;
+      const label = filename.replace('.json', '');
       const item = { kind: 'map', filename, label, data: dataStr, time: Date.now(), deletedAt: Date.now() };
       trash.push(item);
       updateTrashBadge();
@@ -467,16 +514,15 @@ function autoNameMapFile(label) {
     .substring(0, 60);
   const newName = safe + '.json';
 
-  // Move file: save under new name, delete old
+  // Rename file: move to new name
   (async () => {
-    const dataStr = await window.storageAPI.loadData(cur);
-    if (dataStr) {
-      const ok = await window.storageAPI.saveData(dataStr, newName);
+    try {
+      const ok = await window.storageAPI.renameMap(cur, newName);
       if (ok) {
-        try { await window.storageAPI.dirHandle.removeEntry(cur); } catch(e) {}
-        window.storageAPI._currentFilename = newName;
         toast('Карта сохранена как «' + newName + '»');
       }
+    } catch(e) {
+      console.error('autoNameMapFile error', e);
     }
   })();
 }
@@ -617,8 +663,7 @@ async function createAndOpenSubmap(id) {
   const n = gN(id);
   if (!n) return;
   const currentFilename = window.storageAPI?._currentFilename || 'map.json';
-  const rootNode = nodes.find(rn => rn.type === 'root') || nodes[0];
-  const currentLabel = rootNode?.label || currentFilename.replace('.json', '');
+  const currentLabel = currentFilename.replace('.json', '');
 
   const newMap = {
     version: '1.0',
@@ -753,7 +798,7 @@ function renderCatalogTree(grid, currentFile) {
         // Remove highlight from any other row
         document.querySelectorAll('.cat-tree-row-ctx').forEach(r => r.classList.remove('cat-tree-row-ctx'));
         row.classList.add('cat-tree-row-ctx');
-        showGenericContext(ev, { type: 'catalog', filename: node.filename });
+        showGenericContext(ev, { type: 'catalog', filename: node.filename, isTree: true });
       }
     });
     grid.appendChild(row);
