@@ -2,20 +2,20 @@
 > AI ATTENTION: This file must not exceed 30 lines. OVERWRITE old data instead of adding new data. No history.
 
 ## 🎯 Current Session Focus
-* Completing the Branch View UI/UX and ensuring robust interaction guardrails and contextual visibility.
+* Stabilizing map catalog management and enhancing deep-map navigation interactions (MMB shortcuts, centered returns).
 
 ## ✅ Latest Implemented Changes (Maximum 3 items)
-* Finalized Branch Mode UI with a smart-centering viewport, floating banner, and a hover-triggered settings menu.
-* Implemented "Show Groups" toggle in branch mode to selectively display group context and manage child node visibility.
-* Fixed persistent edge highlighting during drag and enabled text formatting menu functionality for line labels.
+* Implemented map renaming and dynamic catalog labeling (node title vs. filename priority).
+* Enabled MMB double-click navigation for submaps with centered return-viewport logic.
+* Refined UI clarity: added menu labels, node submap indicators, and polished root node aesthetics.
 
 ## 🏗️ Migration Details
-* Architecture: Pure browser app with a virtual bundle preserved global scope.
-* State: Added `branchShowGroups` and `branchViewId` to state; updated `isVisible` logic for smart context detection.
-* Exposure: Exposed `toggleBranchSettings` and `toggleBranchGroups` to `window` for HTML event handlers.
+* Storage: Added `renameMap` to `StorageManager`; implemented `cat-rename-modal`.
+* Navigation: Added `returnHighlightNodeId` centering logic in `applyData`.
+* Rendering: Added `.map-dot` (turquoise) for submap indicators and adjusted `.note-dot` positioning.
 
 ## 🚧 Known Issues / Blockers
-* Need to verify branch visibility depth limits in extremely large maps (current BFS limit: 200).
+* Need to ensure `FileSystemHandle.removeEntry` behaves consistently across all OS when a file is potentially cached by the browser.
 
 ## ⏭️ Next Step (From BACKLOG.md)
 * Implement the "Map Background smart zoom" Mode Logic (Task #6).
