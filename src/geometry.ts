@@ -1289,6 +1289,14 @@ function render(){
     ndot.setAttribute('draggable', 'false');
     ndot.ondragstart = () => false;
     ni.appendChild(ndot);
+
+    if (n.submapFilename) {
+      const mdot = document.createElement('div');
+      mdot.className = 'map-dot';
+      mdot.setAttribute('draggable', 'false');
+      mdot.ondragstart = () => false;
+      ni.appendChild(mdot);
+    }
     if(n.locked) {
       const lck = document.createElement('div');
       lck.className = 'node-lock';

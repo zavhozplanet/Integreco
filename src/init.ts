@@ -444,11 +444,17 @@ function applyData(data) {
       try { sessionStorage.setItem('integreco-tab-data', JSON.stringify(dataToSave)); } catch(e){}
 
       requestAnimationFrame(()=>{
-        const root = (typeof gN !== 'undefined' ? gN(lastUsedMapRootId) : null) || nodes.find(n => n.type === 'root');
-        if (root && typeof applyT !== 'undefined') {
+        let target = null;
+        if (typeof returnHighlightNodeId !== 'undefined' && returnHighlightNodeId) {
+          target = nodes.find(n => n.id === returnHighlightNodeId);
+        }
+        if (!target) {
+          target = (typeof gN !== 'undefined' ? gN(lastUsedMapRootId) : null) || nodes.find(n => n.type === 'root');
+        }
+        if (target && typeof applyT !== 'undefined') {
           zoom = 1;
-          panX = window.innerWidth / 2 - root.x;
-          panY = window.innerHeight / 2 - root.y;
+          panX = window.innerWidth / 2 - target.x;
+          panY = window.innerHeight / 2 - target.y;
           applyT();
         }
       });

@@ -95,7 +95,16 @@ async function scanWorkspaceFolder() {
         
         if (parsed.version !== '1.0' || !Array.isArray(parsed.nodes)) continue;
 
-        const label = name.replace('.json', '');
+        const rootNode = parsed.nodes.find(n => n.type === 'root') || parsed.nodes[0];
+        const rootLabel = (rootNode?.label || '').trim();
+        const nameWithoutExt = name.replace('.json', '');
+        
+        // Determine if the file has a "default" or "auto-generated" name
+        const safeAutoBase = rootLabel.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_').substring(0, 60);
+        const isAutoNamed = (name === safeAutoBase + '.json') || (name === 'map.json') || /^map_\d+\.json$/.test(name);
+        
+        // If auto-named, show the node's label. If manually renamed, show the filename.
+        const label = (isAutoNamed && rootLabel) ? rootLabel : nameWithoutExt;
         const thumb = buildThumb(parsed.nodes, parsed.edges || []);
         // Save mtime for sorting
         const submapLinks = parsed.nodes

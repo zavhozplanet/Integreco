@@ -43,6 +43,15 @@ function onNodeMD(ev,id){
     return;
   }
   
+  // MMB double-click on node body → open as map
+  if(isDbl && ev.button === 1 && !ms.drgd){
+    ms={};
+    if (typeof openObjectAsMap === 'function') {
+      openObjectAsMap(id);
+    }
+    return;
+  }
+  
   // double-click on node body → open note (if not inserting)
   if(isDbl && !ms.drgd){
     ms={};

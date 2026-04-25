@@ -219,7 +219,7 @@ body.is-resizing { cursor: nwse-resize !important; }
 /* ── NODES ── */
 .node{position:absolute;transform:translate(-50%,-50%);touch-action:none;user-select:none;-webkit-user-select:none}
 .ni{background:var(--nb);border:1.5px solid var(--nbr);border-radius:50px;
-  padding:10px 22px;font-size:14px;color:var(--tx);box-shadow:var(--sh);
+  padding:14px 22px;font-size:14px;color:var(--tx);box-shadow:var(--sh);
   min-width:88px;max-width:210px;text-align:center;position:relative;
   white-space:pre-wrap;word-break:break-word;line-height:1.45;
   transition:box-shadow .15s,border-color .15s;
@@ -272,7 +272,8 @@ body.is-resizing { cursor: nwse-resize !important; }
 .touch-plus .np.touch-l,.touch-plus .np.touch-r{opacity:1}
 
 /* note dot */
-.note-dot{position:absolute;top:6px;left:14px;width:9px;height:9px;background:#f5a623;border-radius:50%;border:2px solid #fff;display:none;pointer-events:none}
+.note-dot{position:absolute;top:2.5px;left:14px;width:9px;height:9px;background:#f5a623;border-radius:50%;border:2px solid #fff;display:none;pointer-events:none}
+.map-dot{position:absolute;top:2.5px;left:27px;width:9px;height:9px;background:#40E0D0;border-radius:50%;border:2px solid #fff;pointer-events:none}
 .has-note .note-dot{display:block}
 
 .node-lock{position:absolute;top:-6px;right:-6px;font-size:11px;background:#fff;border:1.5px solid var(--nbr);border-radius:50%;width:20px;height:20px;display:none;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.1)}
